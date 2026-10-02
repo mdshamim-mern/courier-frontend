@@ -1,4 +1,4 @@
-export type UserRole = "ADMIN" | "COURIER" | "CUSTOMER" | "SUPER_ADMIN";
+export type UserRole = "ADMIN" | "COURIER" | "CUSTOMER";
 export type UserStatus = "ACTIVE" | "BLOCKED" | "DELETED";
 
 export interface User {

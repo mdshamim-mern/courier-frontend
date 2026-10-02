@@ -4,7 +4,7 @@ import { useForm } from "@tanstack/react-form";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel, FieldSeparator } from "../ui/field";
-import { AuthValidation } from "@/validation";
+import { LoginZodSchema } from "@/validation";
 import { useState } from "react";
 import { Eye, EyeClosed, ShieldCheck, Truck, User } from "lucide-react";
 import { useLogin } from "@/hooks";
@@ -26,7 +26,7 @@ export default function LoginForm() {
       password: "",
     },
     validators: {
-      onSubmit: AuthValidation.LoginZodSchema.shape.body,
+      onSubmit: LoginZodSchema.shape.body as any,
     },
     onSubmit: ({ value }) => {
       login(value, {
@@ -37,7 +37,7 @@ export default function LoginForm() {
             type: "success",
           });
           const role = res.data.role;
-          if (role === "ADMIN" || role === "SUPER_ADMIN") router.push("/admin");
+          if (role === "ADMIN") router.push("/admin");
           else if (role === "COURIER") router.push("/courier");
           else router.push("/dashboard");
         },
@@ -57,7 +57,6 @@ export default function LoginForm() {
       ADMIN: { email: "admin@courier.com", password: "Admin@12345" },
       COURIER: { email: "courier@courier.com", password: "Courier@1234" },
       CUSTOMER: { email: "customer@courier.com", password: "Customer@1234" },
-      SUPER_ADMIN: { email: "admin@courier.com", password: "Admin@12345" }
     };
     
     form.setFieldValue("email", credentials[role].email);

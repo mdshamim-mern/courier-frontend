@@ -7,15 +7,48 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import TablePagination from "@/components/ui/table-pagination";
 import { useGetAllShipments } from "@/hooks";
 import { format } from "date-fns";
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 
-export default function AllShipmentsPage() {
-  const [page, setPage] = useState(1);
-  const [searchTerm, setSearchTerm] = useState("");
+function AllShipmentsContent() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const initialPage = Number(searchParams.get("page")) || 1;
+  const initialSearch = searchParams.get("search") || "";
+
+  const [page, setPage] = useState(initialPage);
+  const [searchTerm, setSearchTerm] = useState(initialSearch);
 
   const { data, isLoading } = useGetAllShipments({ page, limit: 10, searchTerm });
   const shipments = data?.data || [];
   const meta = data?.meta;
+
+  const handleSearch = (value: string) => {
+    setSearchTerm(value);
+    setPage(1);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("search", value);
+    params.set("page", "1");
+    if (!value) params.delete("search");
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("page", newPage.toString());
+    if (searchTerm) params.set("search", searchTerm);
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
+  useEffect(() => {
+    const urlPage = Number(searchParams.get("page")) || 1;
+    const urlSearch = searchParams.get("search") || "";
+    if (urlPage !== page) setPage(urlPage);
+    if (urlSearch !== searchTerm) setSearchTerm(urlSearch);
+  }, [searchParams, page, searchTerm]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -30,10 +63,7 @@ export default function AllShipmentsPage() {
         <Input
           placeholder="Search by tracking ID or receiver name..."
           value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-            setPage(1);
-          }}
+          onChange={(e) => handleSearch(e.target.value)}
           className="max-w-md"
         />
 
@@ -74,8 +104,8 @@ export default function AllShipmentsPage() {
                   <TableRow key={shipment.id}>
                     <TableCell className="font-mono text-xs font-semibold">{shipment.trackingId}</TableCell>
                     <TableCell>{format(new Date(shipment.createdAt), "MMM dd, yyyy")}</TableCell>
-                    <TableCell className="truncate max-w-[150px]">{shipment.sender?.name || "Unknown"}</TableCell>
-                    <TableCell className="truncate max-w-[150px]">
+                    <TableCell className="truncate max-w-37.5">{shipment.sender?.name || "Unknown"}</TableCell>
+                    <TableCell className="truncate max-w-37.5">
                       <div className="flex flex-col">
                         <span className="text-sm">{shipment.receiverName}</span>
                         <span className="text-xs text-muted-foreground">{shipment.receiverPhone}</span>
@@ -83,8 +113,8 @@ export default function AllShipmentsPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col text-xs">
-                        <span className="truncate max-w-[150px]">From: {shipment.originHub?.name || "N/A"}</span>
-                        <span className="truncate max-w-[150px]">To: {shipment.destinationHub?.name || "N/A"}</span>
+                        <span className="truncate max-w-37.5">From: {shipment.originHub?.name || "N/A"}</span>
+                        <span className="truncate max-w-37.5">To: {shipment.destinationHub?.name || "N/A"}</span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -110,10 +140,18 @@ export default function AllShipmentsPage() {
           <TablePagination
             page={page}
             totalPages={meta.totalPages}
-            handlePageChange={setPage}
+            handlePageChange={handlePageChange as any}
           />
         )}
       </div>
     </div>
+  );
+}
+
+export default function AllShipmentsPage() {
+  return (
+    <Suspense fallback={<Skeleton className="w-full h-150 rounded-xl" />}>
+      <AllShipmentsContent />
+    </Suspense>
   );
 }
