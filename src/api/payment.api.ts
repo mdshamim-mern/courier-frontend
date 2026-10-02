@@ -7,6 +7,13 @@ export function initiatePayment(payload: Record<string, unknown>) {
   });
 }
 
+export function initiateStripePayment(payload: Record<string, unknown>) {
+  return apiClient("/payments/stripe/initiate", {
+    method: "POST",
+    body: payload,
+  });
+}
+
 export function getPayments(params?: Record<string, unknown>) {
   return apiClient("/payments", {
     method: "GET",
