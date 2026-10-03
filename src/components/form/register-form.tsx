@@ -21,6 +21,7 @@ export default function RegisterForm() {
 
   const form = useForm({
     defaultValues: {
+      role: "CUSTOMER",
       name: "",
       email: "",
       contactNumber: "" as string | undefined,
@@ -37,6 +38,7 @@ export default function RegisterForm() {
       }
 
       const payload = {
+        role: value.role,
         name: value.name,
         email: value.email,
         contactNumber: value.contactNumber || "",
@@ -79,6 +81,38 @@ export default function RegisterForm() {
         }}
       >
         <FieldGroup>
+          <form.Field name="role">
+            {(field) => (
+              <Field>
+                <FieldLabel>Register As</FieldLabel>
+                <div className="flex gap-6 mt-1">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name={field.name}
+                      value="CUSTOMER"
+                      checked={field.state.value === "CUSTOMER"}
+                      onChange={() => field.handleChange("CUSTOMER")}
+                      className="accent-primary size-4"
+                    />
+                    <span className="text-sm font-medium">Customer</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name={field.name}
+                      value="COURIER"
+                      checked={field.state.value === "COURIER"}
+                      onChange={() => field.handleChange("COURIER")}
+                      className="accent-primary size-4"
+                    />
+                    <span className="text-sm font-medium">Courier</span>
+                  </label>
+                </div>
+              </Field>
+            )}
+          </form.Field>
+
           <form.Field name="name">
             {(field) => {
               const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
@@ -132,7 +166,7 @@ export default function RegisterForm() {
                   <Input
                     id={field.name}
                     name={field.name}
-                    type="tel"
+                    type="text"
                     placeholder="01XXXXXXXXX"
                     onChange={(e) => field.handleChange(e.target.value)}
                     onBlur={field.handleBlur}
@@ -201,10 +235,10 @@ export default function RegisterForm() {
             </form.Field>
           </div>
 
-          <Button disabled={registerPending} type="submit" className="w-full mt-2">
+          <Button disabled={registerPending} type="submit" className="w-full">
             {registerPending ? (
               <>
-                <Spinner className="mr-2" /> Creating account...
+                <Spinner className="mr-2" /> Creating...
               </>
             ) : (
               "Sign Up"

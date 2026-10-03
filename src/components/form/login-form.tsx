@@ -6,14 +6,13 @@ import { Button } from "../ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel, FieldSeparator } from "../ui/field";
 import { LoginZodSchema } from "@/validation";
 import { useState } from "react";
-import { Eye, EyeClosed, ShieldCheck, Truck, User } from "lucide-react";
+import { Eye, EyeClosed } from "lucide-react";
 import { useLogin } from "@/hooks";
 import { useRouter } from "next/navigation";
 import { toast } from "../ui/toast";
 import { Spinner } from "../ui/spinner";
 import Link from "next/link";
 import GoogleLoginComponent from "../modules/google-login/GoogleLogin";
-import { UserRole } from "@/types";
 
 export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
@@ -51,37 +50,6 @@ export default function LoginForm() {
       });
     },
   });
-
-  const handleDemoLogin = (role: UserRole) => {
-    const credentials = {
-      ADMIN: { email: "admin@courier.com", password: "Admin@12345" },
-      COURIER: { email: "courier@courier.com", password: "Courier@1234" },
-      CUSTOMER: { email: "customer@courier.com", password: "Customer@1234" },
-    };
-    
-    form.setFieldValue("email", credentials[role].email);
-    form.setFieldValue("password", credentials[role].password);
-    
-    login(credentials[role], {
-      onSuccess: () => {
-        toast.add({
-          title: "Demo Login Successful",
-          description: `Logged in as ${role}`,
-          type: "success",
-        });
-        if (role === "ADMIN") router.push("/admin");
-        else if (role === "COURIER") router.push("/courier");
-        else router.push("/dashboard");
-      },
-      onError: (err) => {
-        toast.add({
-          title: "Demo Login Failed",
-          description: err.message || "Could not login with demo credentials",
-          type: "error",
-        });
-      },
-    });
-  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -169,41 +137,6 @@ export default function LoginForm() {
           </Button>
         </FieldGroup>
       </form>
-
-      <FieldSeparator>🚀 Quick Demo Login</FieldSeparator>
-
-      <div className="grid grid-cols-3 gap-3">
-        <Button 
-          type="button" 
-          variant="outline" 
-          disabled={loginPending} 
-          onClick={() => handleDemoLogin("ADMIN")}
-          className="flex flex-col items-center py-6 h-auto gap-2"
-        >
-          <ShieldCheck className="size-5" />
-          <span className="text-xs">Admin</span>
-        </Button>
-        <Button 
-          type="button" 
-          variant="outline" 
-          disabled={loginPending} 
-          onClick={() => handleDemoLogin("COURIER")}
-          className="flex flex-col items-center py-6 h-auto gap-2"
-        >
-          <Truck className="size-5" />
-          <span className="text-xs">Courier</span>
-        </Button>
-        <Button 
-          type="button" 
-          variant="outline" 
-          disabled={loginPending} 
-          onClick={() => handleDemoLogin("CUSTOMER")}
-          className="flex flex-col items-center py-6 h-auto gap-2"
-        >
-          <User className="size-5" />
-          <span className="text-xs">Customer</span>
-        </Button>
-      </div>
 
       <FieldSeparator>Or continue with</FieldSeparator>
 
