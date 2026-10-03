@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import Providers from "@/providers";
 import { Toaster } from "@/components/ui/toast";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+import Header from "@/components/layout/public/Header";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -23,7 +24,10 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "dummy-id-for-build"}>
           <Providers>
-            {children}
+            <Header />
+            <main className="flex-1">
+              {children}
+            </main>
             <Toaster />
           </Providers>
         </GoogleOAuthProvider>

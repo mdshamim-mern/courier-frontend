@@ -7,12 +7,17 @@ import { useGetMe, useLogout } from "@/hooks";
 import { toast } from "@/components/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { UserRole } from "@/types";
+import { Search, Menu, Globe } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { useState } from "react";
 
 export default function Header() {
   const { data, isLoading } = useGetMe();
   const { mutate: logout, isPending } = useLogout();
   const queryClient = useQueryClient();
   const user = data?.data;
+  
+  const [lang, setLang] = useState("EN");
 
   const dashboardRoute: Record<UserRole, string> = {
     ADMIN: "/admin",
@@ -41,19 +46,39 @@ export default function Header() {
     });
   };
 
+  const toggleLang = () => {
+    setLang((prev) => (prev === "EN" ? "BN" : "EN"));
+  };
+
   return (
     <header className="w-full h-16 border-b bg-background/70 backdrop-blur-xl sticky top-0 z-50 transition-all shadow-sm">
       <div className="flex justify-between items-center h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
         <Link href="/" className="flex items-center gap-3 transition-transform hover:scale-105">
           <Logo className="size-8" />
           <span className="font-bold tracking-tight text-xl hidden sm:block bg-linear-to-r from-primary to-blue-600 bg-clip-text text-transparent">
-           Dropzo
+            Dropzo
           </span>
         </Link>
-        <nav className="flex items-center gap-3 sm:gap-4">
+
+        <div className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
+          <Link href="/services" className="hover:text-primary transition-colors">Services</Link>
+          <Link href="/about" className="hover:text-primary transition-colors">About</Link>
+          <Link href="/contact" className="hover:text-primary transition-colors">Contact</Link>
+        </div>
+
+        <nav className="hidden md:flex items-center gap-3">
+          <Button variant="outline" render={<Link href="/track" />} nativeButton={false} className="gap-2 border-primary/20 hover:bg-primary/5">
+            <Search className="size-4" /> Track Shipment
+          </Button>
+
+          <Button variant="ghost" onClick={toggleLang} className="gap-1 px-2 text-muted-foreground hover:text-foreground">
+            <Globe className="size-4" /> {lang}
+          </Button>
+
           {!isLoading && !user && (
             <>
-              <Button variant="ghost" render={<Link href="/login" />} nativeButton={false} className="hidden sm:inline-flex">
+              <Button variant="ghost" render={<Link href="/login" />} nativeButton={false}>
                 Login
               </Button>
               <Button render={<Link href="/register" />} nativeButton={false} className="shadow-md">
@@ -61,6 +86,7 @@ export default function Header() {
               </Button>
             </>
           )}
+          
           {!isLoading && user && (
             <>
               <Button variant="outline" render={<Link href={dashboardRoute[user.role as UserRole]} />} nativeButton={false}>
@@ -72,6 +98,56 @@ export default function Header() {
             </>
           )}
         </nav>
+
+        <div className="flex md:hidden items-center gap-2">
+          <Button variant="outline" render={<Link href="/track" />} nativeButton={false} className="px-3 border-primary/20">
+            <Search className="size-4" />
+          </Button>
+          
+          <Sheet>
+            <SheetTrigger render={<Button variant="ghost" className="px-3" />}>
+              <Menu className="size-5" />
+            </SheetTrigger>
+            <SheetContent side="right">
+              <SheetHeader>
+                <SheetTitle className="text-left">Menu</SheetTitle>
+              </SheetHeader>
+              <div className="flex flex-col gap-4 mt-6">
+                <Link href="/services" className="text-lg font-medium hover:text-primary">Services</Link>
+                <Link href="/about" className="text-lg font-medium hover:text-primary">About</Link>
+                <Link href="/contact" className="text-lg font-medium hover:text-primary">Contact</Link>
+                
+                <Button variant="ghost" className="justify-start px-0 text-lg font-medium" onClick={toggleLang}>
+                  <Globe className="size-5 mr-2" /> Language: {lang}
+                </Button>
+                
+                <hr className="my-2 border-border" />
+                
+                {!isLoading && !user && (
+                  <div className="flex flex-col gap-3">
+                    <Button variant="outline" render={<Link href="/login" />} nativeButton={false} className="w-full">
+                      Login
+                    </Button>
+                    <Button render={<Link href="/register" />} nativeButton={false} className="w-full">
+                      Sign Up
+                    </Button>
+                  </div>
+                )}
+                
+                {!isLoading && user && (
+                  <div className="flex flex-col gap-3">
+                    <Button variant="outline" render={<Link href={dashboardRoute[user.role as UserRole]} />} nativeButton={false} className="w-full">
+                      Dashboard
+                    </Button>
+                    <Button variant="destructive" onClick={handleLogout} disabled={isPending} className="w-full">
+                      {isPending ? "Logging out..." : "Logout"}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
       </div>
     </header>
   );

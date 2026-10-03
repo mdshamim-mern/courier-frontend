@@ -24,21 +24,29 @@ export default function GoogleLoginComponent() {
     googleLogin(
       { idToken },
       {
-        onSuccess: (res) => {
+        onSuccess: (res: any) => {
           toast.add({
             title: "Logged in Successfully",
             description: "Welcome to Dropzo",
             type: "success",
           });
-          const role = res.data?.role;
-          if (role === "ADMIN" || role === "SUPER_ADMIN") router.push("/admin");
-          else if (role === "COURIER") router.push("/courier");
-          else router.push("/dashboard");
+          
+          const role = res?.data?.role || res?.role;
+          
+          setTimeout(() => {
+            if (role === "ADMIN" || role === "SUPER_ADMIN") {
+              window.location.href = "/admin";
+            } else if (role === "COURIER") {
+              window.location.href = "/courier";
+            } else {
+              window.location.href = "/dashboard";
+            }
+          }, 500);
         },
-        onError: (err) => {
+        onError: (err: any) => {
           toast.add({
             title: "Google OAuth Failed",
-            description: err.message || "Something went wrong. Please try again",
+            description: err?.message || "Something went wrong. Please try again",
             type: "error",
           });
         },
