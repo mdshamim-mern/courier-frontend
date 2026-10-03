@@ -4,6 +4,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import Providers from "@/providers";
 import { Toaster } from "@/components/ui/toast";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -20,10 +21,12 @@ export default function RootLayout({
   return (
     <html lang="en" className={cn("h-full antialiased font-sans", inter.variable)}>
       <body className="min-h-full flex flex-col">
-        <Providers>
-          {children}
-          <Toaster />
-        </Providers>
+        <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "dummy-id-for-build"}>
+          <Providers>
+            {children}
+            <Toaster />
+          </Providers>
+        </GoogleOAuthProvider>
       </body>
     </html>
   );
