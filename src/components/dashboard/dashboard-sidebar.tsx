@@ -19,7 +19,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const sidebarRoutes: Record<UserRole, SidebarItems> = {
-  SUPER_ADMIN: adminRoutes,
+  
   ADMIN: adminRoutes,
   COURIER: courierRoutes,
   CUSTOMER: customerRoutes,
@@ -35,7 +35,7 @@ export function DashboardSidebar({ role }: { role: UserRole }) {
         <Link href="/">
           <div className="flex items-center gap-3 px-2">
             <Logo className="size-8" />
-            <span className="font-bold tracking-tight text-lg">PH Courier</span>
+            <span className="font-bold tracking-tight text-lg">Dropzo</span>
           </div>
         </Link>
       </SidebarHeader>

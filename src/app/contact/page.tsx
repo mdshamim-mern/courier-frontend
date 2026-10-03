@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 export const metadata: Metadata = {
-  title: "Contact Us | PH Courier & Logistics",
-  description: "Get in touch with PH Courier & Logistics for support, inquiries, or business partnerships.",
+  title: "Contact Us | Dropzo",
+  description: "Get in touch with Dropzo for support, inquiries, or business partnerships.",
 };
 
 export default function ContactPage() {
@@ -30,7 +30,7 @@ export default function ContactPage() {
           <div>
             <h3 className="text-2xl font-bold mb-2">Contact Details</h3>
             <div className="space-y-2 text-muted-foreground">
-              <p>Email: support@phcourier.com</p>
+              <p>Email: support@Dropzo.com</p>
               <p>Phone: +880 1865 111111</p>
               <p>Hotline: 16999</p>
             </div>

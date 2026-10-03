@@ -15,7 +15,6 @@ export default function Header() {
   const user = data?.data;
 
   const dashboardRoute: Record<UserRole, string> = {
-    SUPER_ADMIN: "/admin",
     ADMIN: "/admin",
     COURIER: "/courier",
     CUSTOMER: "/dashboard",
@@ -48,7 +47,7 @@ export default function Header() {
         <Link href="/" className="flex items-center gap-3 transition-transform hover:scale-105">
           <Logo className="size-8" />
           <span className="font-bold tracking-tight text-xl hidden sm:block bg-linear-to-r from-primary to-blue-600 bg-clip-text text-transparent">
-            PH Courier
+           Dropzo
           </span>
         </Link>
         <nav className="flex items-center gap-3 sm:gap-4">

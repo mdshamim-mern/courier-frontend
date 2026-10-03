@@ -8,7 +8,7 @@ import { Toaster } from "@/components/ui/toast";
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: "PH Courier & Logistics",
+  title: "Dropzo",
   description: "Fast and reliable courier service platform.",
 };
 

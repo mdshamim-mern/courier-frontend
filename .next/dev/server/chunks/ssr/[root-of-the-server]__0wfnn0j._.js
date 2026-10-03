@@ -320,12 +320,20 @@ __turbopack_context__.s([
     "getSinglePayment",
     ()=>getSinglePayment,
     "initiatePayment",
-    ()=>initiatePayment
+    ()=>initiatePayment,
+    "initiateStripePayment",
+    ()=>initiateStripePayment
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$apiClient$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/lib/apiClient.ts [app-ssr] (ecmascript)");
 ;
 function initiatePayment(payload) {
     return (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$apiClient$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"])("/payments/initiate", {
+        method: "POST",
+        body: payload
+    });
+}
+function initiateStripePayment(payload) {
+    return (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$apiClient$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"])("/payments/stripe/initiate", {
         method: "POST",
         body: payload
     });
@@ -956,7 +964,7 @@ function GoogleLoginComponent() {
             onSuccess: (res)=>{
                 __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$toast$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["toast"].add({
                     title: "Logged in Successfully",
-                    description: "Welcome to PH Courier",
+                    description: "Welcome to Dropzo",
                     type: "success"
                 });
                 const role = res.data?.role;

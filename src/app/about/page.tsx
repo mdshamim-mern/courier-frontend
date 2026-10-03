@@ -19,7 +19,7 @@ export default function AboutPage() {
         <div>
           <h2 className="text-3xl font-bold mb-4">Our Mission</h2>
           <p className="text-muted-foreground leading-relaxed mb-6">
-            At PH Courier & Logistics, our mission is to simplify the delivery process through innovative technology and a dedicated network of professionals. We aim to ensure that every parcel, no matter how small or large, reaches its destination safely, securely, and on time.
+            At Dropzo, our mission is to simplify the delivery process through innovative technology and a dedicated network of professionals. We aim to ensure that every parcel, no matter how small or large, reaches its destination safely, securely, and on time.
           </p>
           <h2 className="text-3xl font-bold mb-4">Our Vision</h2>
           <p className="text-muted-foreground leading-relaxed">

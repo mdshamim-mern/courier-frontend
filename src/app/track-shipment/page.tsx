@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Track Shipment | PH Courier & Logistics",
+  title: "Track Shipment | Dropzo",
   description: "Track the real-time status and location of your parcel using your unique tracking ID.",
 };
 

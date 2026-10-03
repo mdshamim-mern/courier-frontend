@@ -33,7 +33,7 @@ export default function LoginForm() {
         onSuccess: (res) => {
           toast.add({
             title: "Login Successful",
-            description: "Welcome back to PH Courier",
+            description: "Welcome back to Dropzo",
             type: "success",
           });
           const role = res.data.role;

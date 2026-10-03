@@ -8,7 +8,7 @@ export default function HomePage() {
     <div className="flex flex-col min-h-screen">
       <Header />
       <main className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-        <h1 className="text-4xl font-bold tracking-tight mb-4">Welcome to PH Courier & Logistics</h1>
+        <h1 className="text-4xl font-bold tracking-tight mb-4">Welcome to Dropzo</h1>
         <p className="text-muted-foreground max-w-lg mb-8">
           The fastest and most reliable way to deliver your packages across the country. 
           Manage your shipments, track deliveries, and more.

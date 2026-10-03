@@ -27,7 +27,7 @@ export default function GoogleLoginComponent() {
         onSuccess: (res) => {
           toast.add({
             title: "Logged in Successfully",
-            description: "Welcome to PH Courier",
+            description: "Welcome to Dropzo",
             type: "success",
           });
           const role = res.data?.role;

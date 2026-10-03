@@ -48,7 +48,7 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$t
 ;
 ;
 const metadata = {
-    title: "PH Courier & Logistics",
+    title: "Dropzo",
     description: "Fast and reliable courier service platform."
 };
 function RootLayout({ children }) {

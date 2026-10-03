@@ -251,12 +251,20 @@ __turbopack_context__.s([
     "getSinglePayment",
     ()=>getSinglePayment,
     "initiatePayment",
-    ()=>initiatePayment
+    ()=>initiatePayment,
+    "initiateStripePayment",
+    ()=>initiateStripePayment
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$apiClient$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/lib/apiClient.ts [app-client] (ecmascript)");
 ;
 function initiatePayment(payload) {
     return (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$apiClient$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"])("/payments/initiate", {
+        method: "POST",
+        body: payload
+    });
+}
+function initiateStripePayment(payload) {
+    return (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$apiClient$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"])("/payments/stripe/initiate", {
         method: "POST",
         body: payload
     });
@@ -1093,11 +1101,11 @@ var _s = __turbopack_context__.k.signature();
 function GoogleLoginComponent() {
     _s();
     const $ = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$compiler$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["c"])(4);
-    if ($[0] !== "d43a69d4ed1b86eeccac41e07f531b77cf7454e0542947328e0d1316cfb14adc") {
+    if ($[0] !== "c073cd39c6236c4d921a2664e24c0331f669e98e9301eabcaa637c479191097b") {
         for(let $i = 0; $i < 4; $i += 1){
             $[$i] = Symbol.for("react.memo_cache_sentinel");
         }
-        $[0] = "d43a69d4ed1b86eeccac41e07f531b77cf7454e0542947328e0d1316cfb14adc";
+        $[0] = "c073cd39c6236c4d921a2664e24c0331f669e98e9301eabcaa637c479191097b";
     }
     const router = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRouter"])();
     const { mutate: googleLogin } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$hooks$2f$auth$2e$hook$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useGoogleOAuth"])();
@@ -1120,7 +1128,7 @@ function GoogleLoginComponent() {
                     onSuccess: (res)=>{
                         __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$toast$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["toast"].add({
                             title: "Logged in Successfully",
-                            description: "Welcome to PH Courier",
+                            description: "Welcome to Dropzo",
                             type: "success"
                         });
                         const role = res.data?.role;

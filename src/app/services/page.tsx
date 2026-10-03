@@ -1,8 +1,8 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Our Services | PH Courier & Logistics",
-  description: "Explore the comprehensive range of delivery and logistics services offered by PH Courier.",
+  title: "Our Services | Dropzo",
+  description: "Explore the comprehensive range of delivery and logistics services offered by Dropzo.",
 };
 
 export default function ServicesPage() {

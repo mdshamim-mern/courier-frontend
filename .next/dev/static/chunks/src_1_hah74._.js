@@ -251,12 +251,20 @@ __turbopack_context__.s([
     "getSinglePayment",
     ()=>getSinglePayment,
     "initiatePayment",
-    ()=>initiatePayment
+    ()=>initiatePayment,
+    "initiateStripePayment",
+    ()=>initiateStripePayment
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$apiClient$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/lib/apiClient.ts [app-client] (ecmascript)");
 ;
 function initiatePayment(payload) {
     return (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$apiClient$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"])("/payments/initiate", {
+        method: "POST",
+        body: payload
+    });
+}
+function initiateStripePayment(payload) {
+    return (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$apiClient$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"])("/payments/stripe/initiate", {
         method: "POST",
         body: payload
     });
@@ -581,11 +589,11 @@ var _s = __turbopack_context__.k.signature();
 function Header() {
     _s();
     const $ = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$compiler$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["c"])(17);
-    if ($[0] !== "afdcd69f3df11f11841feccc4698e915c0f6d087b48ccefea7cc05bc8526908c") {
+    if ($[0] !== "ba34ca7da2d3a77f80cf9f9422873c38fd224afa0a4e6075a8e1a5b69dc956ba") {
         for(let $i = 0; $i < 17; $i += 1){
             $[$i] = Symbol.for("react.memo_cache_sentinel");
         }
-        $[0] = "afdcd69f3df11f11841feccc4698e915c0f6d087b48ccefea7cc05bc8526908c";
+        $[0] = "ba34ca7da2d3a77f80cf9f9422873c38fd224afa0a4e6075a8e1a5b69dc956ba";
     }
     const { data, isLoading } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$hooks$2f$user$2e$hook$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useGetMe"])();
     const { mutate: logout, isPending } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$hooks$2f$auth$2e$hook$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useLogout"])();
@@ -594,7 +602,6 @@ function Header() {
     let t0;
     if ($[1] === Symbol.for("react.memo_cache_sentinel")) {
         t0 = {
-            SUPER_ADMIN: "/admin",
             ADMIN: "/admin",
             COURIER: "/courier",
             CUSTOMER: "/dashboard"
@@ -643,21 +650,21 @@ function Header() {
                     className: "size-8"
                 }, void 0, false, {
                     fileName: "[project]/src/components/layout/public/Header.tsx",
-                    lineNumber: 71,
+                    lineNumber: 70,
                     columnNumber: 98
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                     className: "font-bold tracking-tight text-xl hidden sm:block bg-linear-to-r from-primary to-blue-600 bg-clip-text text-transparent",
-                    children: "PH Courier"
+                    children: "Dropzo"
                 }, void 0, false, {
                     fileName: "[project]/src/components/layout/public/Header.tsx",
-                    lineNumber: 71,
+                    lineNumber: 70,
                     columnNumber: 125
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/src/components/layout/public/Header.tsx",
-            lineNumber: 71,
+            lineNumber: 70,
             columnNumber: 10
         }, this);
         $[5] = t2;
@@ -674,7 +681,7 @@ function Header() {
                         href: "/login"
                     }, void 0, false, {
                         fileName: "[project]/src/components/layout/public/Header.tsx",
-                        lineNumber: 78,
+                        lineNumber: 77,
                         columnNumber: 67
                     }, this),
                     nativeButton: false,
@@ -682,7 +689,7 @@ function Header() {
                     children: "Login"
                 }, void 0, false, {
                     fileName: "[project]/src/components/layout/public/Header.tsx",
-                    lineNumber: 78,
+                    lineNumber: 77,
                     columnNumber: 35
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
@@ -690,7 +697,7 @@ function Header() {
                         href: "/register"
                     }, void 0, false, {
                         fileName: "[project]/src/components/layout/public/Header.tsx",
-                        lineNumber: 78,
+                        lineNumber: 77,
                         columnNumber: 176
                     }, this),
                     nativeButton: false,
@@ -698,13 +705,13 @@ function Header() {
                     children: "Sign Up"
                 }, void 0, false, {
                     fileName: "[project]/src/components/layout/public/Header.tsx",
-                    lineNumber: 78,
+                    lineNumber: 77,
                     columnNumber: 160
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/src/components/layout/public/Header.tsx",
-            lineNumber: 78,
+            lineNumber: 77,
             columnNumber: 33
         }, this);
         $[6] = isLoading;
@@ -723,14 +730,14 @@ function Header() {
                         href: dashboardRoute[user.role]
                     }, void 0, false, {
                         fileName: "[project]/src/components/layout/public/Header.tsx",
-                        lineNumber: 87,
+                        lineNumber: 86,
                         columnNumber: 68
                     }, this),
                     nativeButton: false,
                     children: "Dashboard"
                 }, void 0, false, {
                     fileName: "[project]/src/components/layout/public/Header.tsx",
-                    lineNumber: 87,
+                    lineNumber: 86,
                     columnNumber: 34
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
@@ -740,13 +747,13 @@ function Header() {
                     children: isPending ? "Logging out..." : "Logout"
                 }, void 0, false, {
                     fileName: "[project]/src/components/layout/public/Header.tsx",
-                    lineNumber: 87,
+                    lineNumber: 86,
                     columnNumber: 162
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/src/components/layout/public/Header.tsx",
-            lineNumber: 87,
+            lineNumber: 86,
             columnNumber: 32
         }, this);
         $[9] = handleLogout;
@@ -773,18 +780,18 @@ function Header() {
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/layout/public/Header.tsx",
-                        lineNumber: 98,
+                        lineNumber: 97,
                         columnNumber: 229
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/layout/public/Header.tsx",
-                lineNumber: 98,
+                lineNumber: 97,
                 columnNumber: 128
             }, this)
         }, void 0, false, {
             fileName: "[project]/src/components/layout/public/Header.tsx",
-            lineNumber: 98,
+            lineNumber: 97,
             columnNumber: 10
         }, this);
         $[14] = t3;
