@@ -1,0 +1,20 @@
+{
+  "HomePage": {
+    "title": "Welcome to Dropzo",
+    "description": "The fastest and most reliable way to deliver your packages across the country. Manage your shipments, track deliveries, and more.",
+    "login": "Login Now",
+    "register": "Create Account"
+  },
+  "Header": {
+    "services": "Services",
+    "about": "About",
+    "contact": "Contact",
+    "track": "Track Shipment",
+    "login": "Login",
+    "register": "Sign Up",
+    "dashboard": "Dashboard",
+    "logout": "Logout",
+    "menu": "Menu",
+    "language": "Language: "
+  }
+}

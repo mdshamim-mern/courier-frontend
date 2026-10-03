@@ -68,7 +68,7 @@ export default function Header() {
         </div>
 
         <nav className="hidden md:flex items-center gap-3">
-          <Button variant="outline" render={<Link href="/track" />} nativeButton={false} className="gap-2 border-primary/20 hover:bg-primary/5">
+          <Button variant="outline" render={<Link href="/track-shipment" />} nativeButton={false} className="gap-2 border-primary/20 hover:bg-primary/5">
             <Search className="size-4" /> Track Shipment
           </Button>
 
@@ -100,7 +100,7 @@ export default function Header() {
         </nav>
 
         <div className="flex md:hidden items-center gap-2">
-          <Button variant="outline" render={<Link href="/track" />} nativeButton={false} className="px-3 border-primary/20">
+          <Button variant="outline" render={<Link href="/track-shipment" />} nativeButton={false} className="px-3 border-primary/20">
             <Search className="size-4" />
           </Button>
           
