@@ -5,15 +5,20 @@ import { Package, Truck, CheckCircle } from "lucide-react";
 import { useGetAllShipments } from "@/hooks";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+interface IShipmentOverview {
+  status: string;
+}
 
 export default function CustomerOverview() {
+  const router = useRouter();
   const { data, isLoading } = useGetAllShipments({ limit: 100 });
   const shipments = data?.data || [];
 
   const totalShipments = shipments.length;
-  const pendingShipments = shipments.filter((s: any) => s.status === "PENDING" || s.status === "ASSIGNED").length;
-  const deliveredShipments = shipments.filter((s: any) => s.status === "DELIVERED").length;
+  const pendingShipments = shipments.filter((s: IShipmentOverview) => s.status === "PENDING" || s.status === "ASSIGNED").length;
+  const deliveredShipments = shipments.filter((s: IShipmentOverview) => s.status === "DELIVERED").length;
 
   if (isLoading) {
     return (
@@ -28,8 +33,8 @@ export default function CustomerOverview() {
   return (
     <div className="space-y-6">
       <div className="flex justify-end">
-        <Button asChild>
-          <Link href="/dashboard/new-shipment">+ Create Shipment</Link>
+        <Button onClick={() => router.push("/dashboard/new-shipment")}>
+          + Create Shipment
         </Button>
       </div>
       <div className="grid gap-4 md:grid-cols-3">

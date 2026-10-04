@@ -11,9 +11,27 @@ import { format } from "date-fns";
 import TrackingTimeline from "../shipment-tracking/tracking-timeline";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
+interface ITrackingInfo {
+  id: string;
+  status: string;
+  location: string;
+  createdAt: string;
+  timestamp?: string;
+}
+
+interface IShipmentHistory {
+  id: string;
+  trackingId: string;
+  createdAt: string;
+  receiverName: string;
+  price: number;
+  status: string;
+  trackings?: ITrackingInfo[];
+}
+
 export default function ShipmentHistory() {
   const [page, setPage] = useState(1);
-  const [selectedTracking, setSelectedTracking] = useState<any[] | null>(null);
+  const [selectedTracking, setSelectedTracking] = useState<ITrackingInfo[] | null>(null);
   
   const { data, isLoading, refetch } = useGetAllShipments({ page, limit: 10 });
   const { mutate: cancelShipment, isPending: isCanceling } = useCancelShipment();
@@ -27,7 +45,7 @@ export default function ShipmentHistory() {
         toast.add({ title: "Shipment Cancelled", type: "success" });
         refetch();
       },
-      onError: (err) => toast.add({ title: "Cancellation Failed", description: err.message, type: "error" }),
+      onError: (err: Error) => toast.add({ title: "Cancellation Failed", description: err.message, type: "error" }),
     });
   };
 
@@ -64,7 +82,7 @@ export default function ShipmentHistory() {
                 </TableCell>
               </TableRow>
             ) : (
-              shipments.map((shipment: any) => (
+              shipments.map((shipment: IShipmentHistory) => (
                 <TableRow key={shipment.id}>
                   <TableCell className="font-mono text-xs">{shipment.trackingId}</TableCell>
                   <TableCell>{format(new Date(shipment.createdAt), "PP")}</TableCell>

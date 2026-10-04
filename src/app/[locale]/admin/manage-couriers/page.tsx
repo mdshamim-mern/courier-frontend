@@ -9,7 +9,21 @@ import { useGetAllCouriers } from "@/hooks";
 import { format } from "date-fns";
 import { Plus } from "lucide-react";
 import { useState, useEffect, Suspense } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
+
+interface ICourier {
+  id: string;
+  user?: {
+    name: string;
+    email: string;
+  };
+  contactNumber: string;
+  vehicleType: string;
+  vehicleNumber: string;
+  isAvailable: boolean;
+  createdAt: string;
+}
 
 function ManageCouriersContent() {
   const router = useRouter();
@@ -36,7 +50,8 @@ function ManageCouriersContent() {
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
-  const handlePageChange = (newPage: number) => {
+  const handlePageChange: Dispatch<SetStateAction<number>> = (value) => {
+    const newPage = typeof value === "function" ? value(page) : value;
     setPage(newPage);
     const params = new URLSearchParams(searchParams.toString());
     params.set("page", newPage.toString());
@@ -104,7 +119,7 @@ function ManageCouriersContent() {
                   </TableCell>
                 </TableRow>
               ) : (
-                couriers.map((courier: any) => (
+                couriers.map((courier: ICourier) => (
                   <TableRow key={courier.id}>
                     <TableCell className="font-medium">{courier.user?.name}</TableCell>
                     <TableCell>
@@ -145,7 +160,7 @@ function ManageCouriersContent() {
           <TablePagination
             page={page}
             totalPages={meta.totalPages}
-            handlePageChange={handlePageChange as any}
+            handlePageChange={handlePageChange}
           />
         )}
       </div>

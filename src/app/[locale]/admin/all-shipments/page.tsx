@@ -8,7 +8,26 @@ import TablePagination from "@/components/ui/table-pagination";
 import { useGetAllShipments } from "@/hooks";
 import { format } from "date-fns";
 import { useState, useEffect, Suspense } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
+
+interface IAdminShipment {
+  id: string;
+  trackingId: string;
+  createdAt: string;
+  sender?: {
+    name: string;
+  };
+  receiverName: string;
+  receiverPhone: string;
+  originHub?: {
+    name: string;
+  };
+  destinationHub?: {
+    name: string;
+  };
+  status: string;
+}
 
 function AllShipmentsContent() {
   const router = useRouter();
@@ -35,7 +54,8 @@ function AllShipmentsContent() {
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
-  const handlePageChange = (newPage: number) => {
+  const handlePageChange: Dispatch<SetStateAction<number>> = (value) => {
+    const newPage = typeof value === "function" ? value(page) : value;
     setPage(newPage);
     const params = new URLSearchParams(searchParams.toString());
     params.set("page", newPage.toString());
@@ -100,7 +120,7 @@ function AllShipmentsContent() {
                   </TableCell>
                 </TableRow>
               ) : (
-                shipments.map((shipment: any) => (
+                shipments.map((shipment: IAdminShipment) => (
                   <TableRow key={shipment.id}>
                     <TableCell className="font-mono text-xs font-semibold">{shipment.trackingId}</TableCell>
                     <TableCell>{format(new Date(shipment.createdAt), "MMM dd, yyyy")}</TableCell>
@@ -140,7 +160,7 @@ function AllShipmentsContent() {
           <TablePagination
             page={page}
             totalPages={meta.totalPages}
-            handlePageChange={handlePageChange as any}
+            handlePageChange={handlePageChange}
           />
         )}
       </div>

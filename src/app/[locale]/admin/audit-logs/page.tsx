@@ -5,9 +5,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import TablePagination from "@/components/ui/table-pagination";
 import { format } from "date-fns";
 import { useState, Suspense } from "react";
-
-// Assuming you have this hook mapped to PaymentService/Audit Log endpoints
 import { useGetAuditLogs } from "@/hooks"; 
+
+interface IAuditLog {
+  id: string;
+  action: string;
+  entityType: string;
+  entityId: string;
+  details: unknown;
+  createdAt: string;
+}
 
 function AuditLogsContent() {
   const [page, setPage] = useState(1);
@@ -55,7 +62,7 @@ function AuditLogsContent() {
                   </TableCell>
                 </TableRow>
               ) : (
-                logs.map((log: any) => (
+                logs.map((log: IAuditLog) => (
                   <TableRow key={log.id}>
                     <TableCell className="whitespace-nowrap">{format(new Date(log.createdAt), "MMM dd, yyyy HH:mm")}</TableCell>
                     <TableCell>

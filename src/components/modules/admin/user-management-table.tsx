@@ -10,6 +10,15 @@ import { Input } from "@/components/ui/input";
 import TablePagination from "@/components/ui/table-pagination";
 import { format } from "date-fns";
 
+interface IUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  status: string;
+  createdAt: string;
+}
+
 export default function UserManagementTable() {
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
@@ -27,7 +36,7 @@ export default function UserManagementTable() {
       { id, payload: { status: newStatus } },
       {
         onSuccess: () => toast.add({ title: "Status Updated", type: "success" }),
-        onError: (err) => toast.add({ title: "Update Failed", description: err.message, type: "error" }),
+        onError: (err: Error) => toast.add({ title: "Update Failed", description: err.message, type: "error" }),
       }
     );
   };
@@ -37,7 +46,7 @@ export default function UserManagementTable() {
       { id, payload: { role: newRole } },
       {
         onSuccess: () => toast.add({ title: "Role Updated", type: "success" }),
-        onError: (err) => toast.add({ title: "Update Failed", description: err.message, type: "error" }),
+        onError: (err: Error) => toast.add({ title: "Update Failed", description: err.message, type: "error" }),
       }
     );
   };
@@ -87,7 +96,7 @@ export default function UserManagementTable() {
                 </TableCell>
               </TableRow>
             ) : (
-              users.map((user: any) => (
+              users.map((user: IUser) => (
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>

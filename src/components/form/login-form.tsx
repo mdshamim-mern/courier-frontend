@@ -135,6 +135,45 @@ export default function LoginForm() {
               "Login"
             )}
           </Button>
+
+          <div className="flex flex-col gap-3 pt-2">
+            <div className="text-center text-sm font-medium text-muted-foreground">One-Click Demo Login</div>
+            <div className="grid grid-cols-3 gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  form.setFieldValue("email", "admin@gmail.com");
+                  form.setFieldValue("password", "123456");
+                }}
+              >
+                Admin
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  form.setFieldValue("email", "courier@gmail.com");
+                  form.setFieldValue("password", "123456");
+                }}
+              >
+                Courier
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  form.setFieldValue("email", "user@gmail.com");
+                  form.setFieldValue("password", "123456");
+                }}
+              >
+                User
+              </Button>
+            </div>
+          </div>
         </FieldGroup>
       </form>
 

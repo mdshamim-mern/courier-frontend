@@ -10,6 +10,14 @@ import { format } from "date-fns";
 import { MapPin, Plus } from "lucide-react";
 import { useState } from "react";
 
+interface IHub {
+  id: string;
+  name: string;
+  location: string;
+  address: string;
+  createdAt: string;
+}
+
 export default function HubsManagementPage() {
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
@@ -72,7 +80,7 @@ export default function HubsManagementPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                hubs.map((hub: any) => (
+                hubs.map((hub: IHub) => (
                   <TableRow key={hub.id}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
@@ -81,7 +89,7 @@ export default function HubsManagementPage() {
                       </div>
                     </TableCell>
                     <TableCell>{hub.location}</TableCell>
-                    <TableCell className="max-w-[250px] truncate">{hub.address}</TableCell>
+                    <TableCell className="max-w-62.5 truncate">{hub.address}</TableCell>
                     <TableCell>{format(new Date(hub.createdAt), "MMM dd, yyyy")}</TableCell>
                     <TableCell className="text-right space-x-2">
                       <Button variant="outline" size="sm">

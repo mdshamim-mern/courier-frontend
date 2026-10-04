@@ -14,6 +14,12 @@ import { Spinner } from "../ui/spinner";
 import Link from "next/link";
 import GoogleLoginComponent from "../modules/google-login/GoogleLogin";
 
+interface IRegisterError {
+  data?: { message?: string };
+  response?: { _data?: { message?: string } };
+  message?: string;
+}
+
 export default function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
@@ -21,7 +27,6 @@ export default function RegisterForm() {
 
   const form = useForm({
     defaultValues: {
-      role: "CUSTOMER",
       name: "",
       email: "",
       contactNumber: "" as string | undefined,
@@ -29,7 +34,7 @@ export default function RegisterForm() {
       confirmPassword: "",
     },
     validators: {
-      onSubmit: RegisterCustomerZodSchema.shape.body as any,
+      onSubmit: RegisterCustomerZodSchema.shape.body as never,
     },
     onSubmit: ({ value }) => {
       if (value.password !== value.confirmPassword) {
@@ -38,7 +43,7 @@ export default function RegisterForm() {
       }
 
       const payload = {
-        role: value.role,
+        role: "CUSTOMER",
         name: value.name,
         email: value.email,
         contactNumber: value.contactNumber || "",
@@ -55,7 +60,7 @@ export default function RegisterForm() {
           const params = new URLSearchParams({ email: value.email });
           router.push(`/verify-account?${params.toString()}`);
         },
-        onError: (err: any) => {
+        onError: (err: IRegisterError) => {
           const errorMessage = err?.data?.message || err?.response?._data?.message || err?.message || "Something went wrong.";
           toast.add({
             title: "Registration Failed",
@@ -81,38 +86,6 @@ export default function RegisterForm() {
         }}
       >
         <FieldGroup>
-          <form.Field name="role">
-            {(field) => (
-              <Field>
-                <FieldLabel>Register As</FieldLabel>
-                <div className="flex gap-6 mt-1">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name={field.name}
-                      value="CUSTOMER"
-                      checked={field.state.value === "CUSTOMER"}
-                      onChange={() => field.handleChange("CUSTOMER")}
-                      className="accent-primary size-4"
-                    />
-                    <span className="text-sm font-medium">Customer</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name={field.name}
-                      value="COURIER"
-                      checked={field.state.value === "COURIER"}
-                      onChange={() => field.handleChange("COURIER")}
-                      className="accent-primary size-4"
-                    />
-                    <span className="text-sm font-medium">Courier</span>
-                  </label>
-                </div>
-              </Field>
-            )}
-          </form.Field>
-
           <form.Field name="name">
             {(field) => {
               const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;

@@ -5,6 +5,17 @@ import { useGoogleOAuth } from "@/hooks";
 import { GoogleLogin } from "@react-oauth/google";
 import { useRouter } from "next/navigation";
 
+interface IGoogleLoginResponse {
+  data?: {
+    role?: string;
+  };
+  role?: string;
+}
+
+interface IGoogleLoginError {
+  message?: string;
+}
+
 export default function GoogleLoginComponent() {
   const router = useRouter();
   const { mutate: googleLogin } = useGoogleOAuth();
@@ -24,7 +35,7 @@ export default function GoogleLoginComponent() {
     googleLogin(
       { idToken },
       {
-        onSuccess: (res: any) => {
+        onSuccess: (res: IGoogleLoginResponse) => {
           toast.add({
             title: "Logged in Successfully",
             description: "Welcome to Dropzo",
@@ -43,7 +54,7 @@ export default function GoogleLoginComponent() {
             }
           }, 500);
         },
-        onError: (err: any) => {
+        onError: (err: IGoogleLoginError) => {
           toast.add({
             title: "Google OAuth Failed",
             description: err?.message || "Something went wrong. Please try again",

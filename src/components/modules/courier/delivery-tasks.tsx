@@ -8,6 +8,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/toast";
 import TablePagination from "@/components/ui/table-pagination";
 
+interface IDeliveryTask {
+  id: string;
+  trackingId: string;
+  receiverName: string;
+  receiverAddress: string;
+  status: string;
+}
+
 export default function DeliveryTasks() {
   const [page, setPage] = useState(1);
   const { data, isLoading, refetch } = useGetAllShipments({ page, limit: 10 });
@@ -32,7 +40,7 @@ export default function DeliveryTasks() {
           toast.add({ title: "Status Updated", type: "success" });
           refetch();
         },
-        onError: (err) => toast.add({ title: "Update Failed", description: err.message, type: "error" }),
+        onError: (err: Error) => toast.add({ title: "Update Failed", description: err.message, type: "error" }),
       }
     );
   };
@@ -78,11 +86,11 @@ export default function DeliveryTasks() {
                 </TableCell>
               </TableRow>
             ) : (
-              shipments.map((shipment: any) => (
+              shipments.map((shipment: IDeliveryTask) => (
                 <TableRow key={shipment.id}>
                   <TableCell className="font-mono text-xs">{shipment.trackingId}</TableCell>
                   <TableCell>{shipment.receiverName}</TableCell>
-                  <TableCell className="max-w-[200px] truncate">{shipment.receiverAddress}</TableCell>
+                  <TableCell className="max-w-50 truncate">{shipment.receiverAddress}</TableCell>
                   <TableCell>
                     <span className="px-2 py-1 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
                       {shipment.status}
