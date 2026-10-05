@@ -1,4 +1,5 @@
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { XCircle } from "lucide-react";
 import Link from "next/link";
 
@@ -17,9 +18,9 @@ export default function PaymentCancelPage() {
             You have cancelled the payment process. Your shipment will remain in unpaid status.
           </p>
         </div>
-        <Button asChild size="lg" className="mt-4 w-full">
-          <Link href="/dashboard/payments">Go to Payments</Link>
-        </Button>
+        <Link href="/dashboard/payments" className={cn(buttonVariants({ size: "lg" }), "mt-4 w-full")}>
+          Go to Payments
+        </Link>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 
@@ -17,9 +18,9 @@ export default function PaymentSuccessPage() {
             Your transaction has been processed successfully. Your shipment is now confirmed and ready for dispatch.
           </p>
         </div>
-        <Button asChild size="lg" className="mt-4 w-full">
-          <Link href="/dashboard/my-shipments">View My Shipments</Link>
-        </Button>
+        <Link href="/dashboard/my-shipments" className={cn(buttonVariants({ size: "lg" }), "mt-4 w-full")}>
+          View My Shipments
+        </Link>
       </div>
     </div>
   );

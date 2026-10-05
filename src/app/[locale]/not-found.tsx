@@ -1,4 +1,5 @@
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { SearchXIcon } from "lucide-react";
 import Link from "next/link";
 
@@ -17,9 +18,9 @@ export default function NotFound() {
             The page you are looking for doesn't exist or has been moved. Please check the URL or return to the homepage.
           </p>
         </div>
-        <Button asChild variant="default" size="lg" className="mt-4">
-          <Link href="/">Return to Homepage</Link>
-        </Button>
+        <Link href="/" className={cn(buttonVariants({ variant: "default", size: "lg" }), "mt-4")}>
+          Return to Homepage
+        </Link>
       </div>
     </div>
   );
