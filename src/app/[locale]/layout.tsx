@@ -6,6 +6,7 @@ import Providers from "@/providers";
 import { Toaster } from "@/components/ui/toast";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import Header from "@/components/layout/public/Header";
+import Footer from "@/components/layout/public/Footer";
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 
@@ -36,6 +37,7 @@ export default async function RootLayout({
               <main className="flex-1">
                 {children}
               </main>
+              <Footer />
               <Toaster />
             </Providers>
           </GoogleOAuthProvider>
