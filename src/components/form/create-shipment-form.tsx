@@ -11,6 +11,13 @@ import { toast } from "../ui/toast";
 import { Spinner } from "../ui/spinner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 
+interface Hub {
+  id: string;
+  name: string;
+  location: string;
+  address: string;
+}
+
 export default function CreateShipmentForm() {
   const router = useRouter();
   const { mutate: createShipment, isPending } = useCreateShipment();
@@ -165,7 +172,7 @@ export default function CreateShipmentForm() {
                         disabled={hubsLoading}
                       >
                         <option value="" disabled>Select origin hub</option>
-                        {hubs.map((hub) => (
+                        {hubs.map((hub: Hub) => (
                           <option key={hub.id} value={hub.id}>
                             {hub.name} ({hub.location})
                           </option>
@@ -192,7 +199,7 @@ export default function CreateShipmentForm() {
                         disabled={hubsLoading}
                       >
                         <option value="" disabled>Select destination hub</option>
-                        {hubs.map((hub) => (
+                        {hubs.map((hub: Hub) => (
                           <option key={hub.id} value={hub.id}>
                             {hub.name} ({hub.location})
                           </option>

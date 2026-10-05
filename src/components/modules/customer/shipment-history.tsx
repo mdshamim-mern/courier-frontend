@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useGetAllShipments, useCancelShipment } from "@/hooks";
+import { useGetAllShipments, useCancelShipment, useInitiatePayment } from "@/hooks";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,6 +26,7 @@ interface IShipmentHistory {
   receiverName: string;
   price: number;
   status: string;
+  paymentStatus?: string;
   trackings?: ITrackingInfo[];
 }
 
@@ -35,6 +36,7 @@ export default function ShipmentHistory() {
   
   const { data, isLoading, refetch } = useGetAllShipments({ page, limit: 10 });
   const { mutate: cancelShipment, isPending: isCanceling } = useCancelShipment();
+  const { mutate: initiatePayment, isPending: isPaying } = useInitiatePayment();
 
   const shipments = data?.data || [];
   const meta = data?.meta;
@@ -46,6 +48,21 @@ export default function ShipmentHistory() {
         refetch();
       },
       onError: (err: Error) => toast.add({ title: "Cancellation Failed", description: err.message, type: "error" }),
+    });
+  };
+
+  const handlePayment = (id: string) => {
+    initiatePayment({ id }, {
+      onSuccess: (res: any) => {
+        if (res?.data?.paymentUrl) {
+          window.location.href = res.data.paymentUrl;
+        } else if (res?.data?.url) {
+          window.location.href = res.data.url;
+        } else {
+          toast.add({ title: "Payment Initiation Failed", description: "No payment URL received", type: "error" });
+        }
+      },
+      onError: (err: Error) => toast.add({ title: "Payment Failed", description: err.message, type: "error" }),
     });
   };
 
@@ -89,11 +106,28 @@ export default function ShipmentHistory() {
                   <TableCell>{shipment.receiverName}</TableCell>
                   <TableCell>৳{shipment.price}</TableCell>
                   <TableCell>
-                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
-                      {shipment.status}
-                    </span>
+                    <div className="flex flex-col gap-1">
+                      <span className="px-2 py-1 rounded-full text-[10px] font-medium bg-secondary text-secondary-foreground w-max">
+                        {shipment.status}
+                      </span>
+                      {shipment.paymentStatus && (
+                        <span className={`px-2 py-1 rounded-full text-[10px] font-medium w-max ${shipment.paymentStatus === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                          {shipment.paymentStatus}
+                        </span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right space-x-2">
+                    {(shipment.paymentStatus === "PENDING" || shipment.paymentStatus === "UNPAID") && (
+                      <Button 
+                        variant="default" 
+                        size="sm" 
+                        onClick={() => handlePayment(shipment.id)}
+                        disabled={isPaying}
+                      >
+                        Pay Now
+                      </Button>
+                    )}
                     <Button variant="outline" size="sm" onClick={() => setSelectedTracking(shipment.trackings || [])}>
                       Track
                     </Button>
