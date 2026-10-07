@@ -18,19 +18,19 @@ export default function ContactPage() {
         <section className="space-y-3 rounded-3xl border bg-card p-6">
           <MapPin aria-hidden="true" className="text-primary" />
           <h2 className="text-xl font-semibold">{ui("Head Office")}</h2>
-          <p>[Company Name]</p>
-          <p>[Address]</p>
+          <p>Dropzo</p>
+          <p>Love Road, Mirpur 2, Dhaka</p>
         </section>
         <section className="space-y-3 rounded-3xl border bg-card p-6">
           <Mail aria-hidden="true" className="text-primary" />
           <h2 className="text-xl font-semibold">{ui("Contact Details")}</h2>
-          <p>[Contact Email]</p>
-          <p>[Contact Phone]</p>
+          <p>mdshamim.mern@gmail.com</p>
+          <p>01865-190471</p>
         </section>
         <section className="space-y-3 rounded-3xl border bg-card p-6">
           <Clock3 aria-hidden="true" className="text-primary" />
           <h2 className="text-xl font-semibold">{ui("Business Hours")}</h2>
-          <p>[Business Hours]</p>
+          <p>24/7 Online Support</p>
         </section>
       </div>
       <aside role="note" className="rounded-xl border p-6">
