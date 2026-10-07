@@ -11,6 +11,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { UserRole } from "@/types";
 import { Search, Menu, Globe } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { clearAccessToken } from "@/lib/auth-token";
 
 export default function Header() {
   const t = useTranslations("Header");
@@ -32,6 +33,7 @@ export default function Header() {
   const handleLogout = () => {
     logout(undefined, {
       onSuccess: () => {
+        clearAccessToken();
         toast.add({
           title: "Logged Out",
           description: "You have been successfully logged out.",

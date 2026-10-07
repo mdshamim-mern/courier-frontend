@@ -13,6 +13,7 @@ import { toast } from "../ui/toast";
 import { Spinner } from "../ui/spinner";
 import Link from "next/link";
 import GoogleLoginComponent from "../modules/google-login/GoogleLogin";
+import { setAccessToken } from "@/lib/auth-token";
 
 export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
@@ -30,6 +31,7 @@ export default function LoginForm() {
     onSubmit: ({ value }) => {
       login(value, {
         onSuccess: (res) => {
+          setAccessToken(res.data.accessToken);
           toast.add({
             title: "Login Successful",
             description: "Welcome back to Dropzo",
