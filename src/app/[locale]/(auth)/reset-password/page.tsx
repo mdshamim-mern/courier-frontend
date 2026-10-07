@@ -1,9 +1,19 @@
 "use client";
 
+import { useUiText } from "@/i18n/use-ui-text";
 import { Button } from "@/components/ui/button";
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "@/components/ui/toast";
 import { useResetPassword } from "@/hooks";
@@ -11,10 +21,12 @@ import { AuthValidation } from "@/validation";
 import { useForm } from "@tanstack/react-form";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { Eye, EyeClosed } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { Suspense, useEffect, useState } from "react";
 
 function ResetPasswordForm() {
+  const ui = useUiText();
   const searchParams = useSearchParams();
   const router = useRouter();
   const email = searchParams.get("email") || "";
@@ -41,7 +53,8 @@ function ResetPasswordForm() {
         onSuccess: () => {
           toast.add({
             title: "Password Reset",
-            description: "Your password has been successfully reset. Please login.",
+            description:
+              "Your password has been successfully reset. Please login.",
             type: "success",
           });
           router.push("/login");
@@ -62,13 +75,18 @@ function ResetPasswordForm() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col items-center gap-2 text-center">
-        <h1 className="text-3xl font-bold tracking-tight">Reset Password</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          {ui("Reset Password")}
+        </h1>
         <p className="text-sm text-muted-foreground">
-          Enter the 6-digit OTP sent to <span className="font-semibold text-foreground">{email}</span> and your new password.
+          {ui("Enter the 6-digit OTP sent to")}{" "}
+          <span className="font-semibold text-foreground">{email}</span>{" "}
+          {ui("and your new password.")}{" "}
         </p>
       </div>
 
       <form
+        method="post"
         onSubmit={(e) => {
           e.preventDefault();
           form.handleSubmit();
@@ -77,10 +95,16 @@ function ResetPasswordForm() {
         <FieldGroup>
           <form.Field name="otp">
             {(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid;
               return (
-                <Field data-invalid={isInvalid} className="flex flex-col items-center gap-2">
-                  <FieldLabel htmlFor={field.name} className="self-start">OTP Code</FieldLabel>
+                <Field
+                  data-invalid={isInvalid}
+                  className="flex flex-col items-center gap-2"
+                >
+                  <FieldLabel htmlFor={field.name} className="self-start">
+                    {ui("OTP Code")}
+                  </FieldLabel>
                   <InputOTP
                     maxLength={6}
                     value={field.state.value}
@@ -91,15 +115,38 @@ function ResetPasswordForm() {
                     disabled={isPending}
                   >
                     <InputOTPGroup className="gap-2">
-                      <InputOTPSlot index={0} className="rounded-md border h-12 w-10 text-lg" />
-                      <InputOTPSlot index={1} className="rounded-md border h-12 w-10 text-lg" />
-                      <InputOTPSlot index={2} className="rounded-md border h-12 w-10 text-lg" />
-                      <InputOTPSlot index={3} className="rounded-md border h-12 w-10 text-lg" />
-                      <InputOTPSlot index={4} className="rounded-md border h-12 w-10 text-lg" />
-                      <InputOTPSlot index={5} className="rounded-md border h-12 w-10 text-lg" />
+                      <InputOTPSlot
+                        index={0}
+                        className="rounded-md border h-12 w-10 text-lg"
+                      />
+                      <InputOTPSlot
+                        index={1}
+                        className="rounded-md border h-12 w-10 text-lg"
+                      />
+                      <InputOTPSlot
+                        index={2}
+                        className="rounded-md border h-12 w-10 text-lg"
+                      />
+                      <InputOTPSlot
+                        index={3}
+                        className="rounded-md border h-12 w-10 text-lg"
+                      />
+                      <InputOTPSlot
+                        index={4}
+                        className="rounded-md border h-12 w-10 text-lg"
+                      />
+                      <InputOTPSlot
+                        index={5}
+                        className="rounded-md border h-12 w-10 text-lg"
+                      />
                     </InputOTPGroup>
                   </InputOTP>
-                  {isInvalid && <FieldError errors={field.state.meta.errors} className="self-start" />}
+                  {isInvalid && (
+                    <FieldError
+                      errors={field.state.meta.errors}
+                      className="self-start"
+                    />
+                  )}
                 </Field>
               );
             }}
@@ -107,10 +154,13 @@ function ResetPasswordForm() {
 
           <form.Field name="newPassword">
             {(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid;
               return (
                 <Field data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>New Password</FieldLabel>
+                  <FieldLabel htmlFor={field.name}>
+                    {ui("New Password")}
+                  </FieldLabel>
                   <div className="relative">
                     <Input
                       id={field.name}
@@ -128,7 +178,11 @@ function ResetPasswordForm() {
                       type="button"
                       onClick={() => setShowPassword((prev) => !prev)}
                     >
-                      {showPassword ? <EyeClosed className="size-4" /> : <Eye className="size-4" />}
+                      {showPassword ? (
+                        <EyeClosed className="size-4" />
+                      ) : (
+                        <Eye className="size-4" />
+                      )}
                     </button>
                   </div>
                   {isInvalid && <FieldError errors={field.state.meta.errors} />}
@@ -137,13 +191,17 @@ function ResetPasswordForm() {
             }}
           </form.Field>
 
-          <Button disabled={isPending || form.state.values.otp.length !== 6} type="submit" className="w-full mt-4">
+          <Button
+            disabled={isPending || form.state.values.otp.length !== 6}
+            type="submit"
+            className="w-full mt-4"
+          >
             {isPending ? (
               <>
-                <Spinner className="mr-2" /> Resetting...
+                <Spinner className="mr-2" /> {ui("Resetting...")}{" "}
               </>
             ) : (
-              "Reset Password"
+              ui("Reset Password")
             )}
           </Button>
         </FieldGroup>

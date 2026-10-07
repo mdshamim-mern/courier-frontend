@@ -16,6 +16,7 @@
     "logout": "Logout",
     "loggingOut": "Logging out...",
     "menu": "Menu",
-    "language": "Language: "
+    "language": "Language: ",
+    "switchLanguage": "বাংলায় দেখুন"
   }
 }

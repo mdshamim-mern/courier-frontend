@@ -1,14 +1,25 @@
 "use client";
 
+import { useUiText, useUiFormat } from "@/i18n/use-ui-text";
 import { useState } from "react";
-import { useGetAllUsers, useUpdateUserRole, useUpdateUserStatus } from "@/hooks";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  useGetAllUsers,
+  useUpdateUserRole,
+  useUpdateUserStatus,
+} from "@/hooks";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/toast";
 import { Input } from "@/components/ui/input";
 import TablePagination from "@/components/ui/table-pagination";
-import { format } from "date-fns";
 
 interface IUser {
   id: string;
@@ -20,11 +31,14 @@ interface IUser {
 }
 
 export default function UserManagementTable() {
+  const ui = useUiText();
+  const display = useUiFormat();
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
-  
+
   const { data, isLoading } = useGetAllUsers({ page, limit: 10, searchTerm });
-  const { mutate: updateStatus, isPending: isUpdatingStatus } = useUpdateUserStatus();
+  const { mutate: updateStatus, isPending: isUpdatingStatus } =
+    useUpdateUserStatus();
   const { mutate: updateRole, isPending: isUpdatingRole } = useUpdateUserRole();
 
   const users = data?.data || [];
@@ -35,9 +49,15 @@ export default function UserManagementTable() {
     updateStatus(
       { id, payload: { status: newStatus } },
       {
-        onSuccess: () => toast.add({ title: "Status Updated", type: "success" }),
-        onError: (err: Error) => toast.add({ title: "Update Failed", description: err.message, type: "error" }),
-      }
+        onSuccess: () =>
+          toast.add({ title: "Status Updated", type: "success" }),
+        onError: (err: Error) =>
+          toast.add({
+            title: "Update Failed",
+            description: err.message,
+            type: "error",
+          }),
+      },
     );
   };
 
@@ -46,8 +66,13 @@ export default function UserManagementTable() {
       { id, payload: { role: newRole } },
       {
         onSuccess: () => toast.add({ title: "Role Updated", type: "success" }),
-        onError: (err: Error) => toast.add({ title: "Update Failed", description: err.message, type: "error" }),
-      }
+        onError: (err: Error) =>
+          toast.add({
+            title: "Update Failed",
+            description: err.message,
+            type: "error",
+          }),
+      },
     );
   };
 
@@ -55,7 +80,7 @@ export default function UserManagementTable() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <Input
-          placeholder="Search users..."
+          placeholder={ui("Search users...")}
           value={searchTerm}
           onChange={(e) => {
             setSearchTerm(e.target.value);
@@ -69,30 +94,51 @@ export default function UserManagementTable() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Joined</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead>{ui("Name")}</TableHead>
+              <TableHead>{ui("Email")}</TableHead>
+              <TableHead>{ui("Role")}</TableHead>
+              <TableHead>{ui("Status")}</TableHead>
+              <TableHead>{ui("Joined")}</TableHead>
+              <TableHead className="text-right">{ui("Actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              Array.from({ length: 5 }).map((_, idx) => (
-                <TableRow key={idx}>
-                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-40" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                  <TableCell><Skeleton className="h-8 w-16 ml-auto" /></TableCell>
+              [
+                "placeholder-a",
+                "placeholder-b",
+                "placeholder-c",
+                "placeholder-d",
+                "placeholder-e",
+              ].map((key) => (
+                <TableRow key={key}>
+                  <TableCell>
+                    <Skeleton className="h-4 w-32" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-40" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-20" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-20" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-24" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-8 w-16 ml-auto" />
+                  </TableCell>
                 </TableRow>
               ))
             ) : users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                  No users found.
+                <TableCell
+                  colSpan={6}
+                  className="h-24 text-center text-muted-foreground"
+                >
+                  {ui("No users found.")}{" "}
                 </TableCell>
               </TableRow>
             ) : (
@@ -103,29 +149,37 @@ export default function UserManagementTable() {
                   <TableCell>
                     <select
                       value={user.role}
-                      onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                      onChange={(e) =>
+                        handleRoleChange(user.id, e.target.value)
+                      }
                       disabled={isUpdatingRole || user.role === "SUPER_ADMIN"}
                       className="bg-transparent border border-input rounded-md text-sm p-1 focus:ring-2 focus:ring-primary"
                     >
-                      <option value="CUSTOMER">Customer</option>
-                      <option value="COURIER">Courier</option>
-                      <option value="ADMIN">Admin</option>
+                      <option value="CUSTOMER">{ui("Customer")}</option>
+                      <option value="COURIER">{ui("Courier")}</option>
+                      <option value="ADMIN">{ui("Admin")}</option>
                     </select>
                   </TableCell>
                   <TableCell>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${user.status === 'ACTIVE' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
-                      {user.status}
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${user.status === "ACTIVE" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"}`}
+                    >
+                      {ui(user.status)}
                     </span>
                   </TableCell>
-                  <TableCell>{format(new Date(user.createdAt), "MMM dd, yyyy")}</TableCell>
+                  <TableCell>
+                    {display.date(new Date(user.createdAt))}
+                  </TableCell>
                   <TableCell className="text-right">
                     <Button
-                      variant={user.status === "ACTIVE" ? "destructive" : "default"}
+                      variant={
+                        user.status === "ACTIVE" ? "destructive" : "default"
+                      }
                       size="sm"
                       onClick={() => handleStatusChange(user.id, user.status)}
                       disabled={isUpdatingStatus || user.role === "SUPER_ADMIN"}
                     >
-                      {user.status === "ACTIVE" ? "Block" : "Unblock"}
+                      {user.status === "ACTIVE" ? ui("Block") : ui("Unblock")}
                     </Button>
                   </TableCell>
                 </TableRow>

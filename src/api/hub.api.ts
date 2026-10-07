@@ -1,34 +1,8 @@
 import apiClient from "@/lib/apiClient";
+import type { ApiResponse, Hub } from "@/types";
 
-export function createHub(payload: Record<string, unknown>) {
-  return apiClient("/hubs", {
-    method: "POST",
-    body: payload,
-  });
-}
-
-export function getAllHubs(params?: Record<string, unknown>) {
-  return apiClient("/hubs", {
-    method: "GET",
-    params,
-  });
-}
-
-export function getSingleHub(id: string) {
-  return apiClient(`/hubs/${id}`, {
-    method: "GET",
-  });
-}
-
-export function updateHub(id: string, payload: Record<string, unknown>) {
-  return apiClient(`/hubs/${id}`, {
-    method: "PATCH",
-    body: payload,
-  });
-}
-
-export function deleteHub(id: string) {
-  return apiClient(`/hubs/${id}`, {
-    method: "DELETE",
-  });
-}
+export const createHub = (payload: Record<string, unknown>) => apiClient<ApiResponse<Hub>>("/hubs", { method: "POST", body: payload });
+export const getAllHubs = (params?: Record<string, unknown>) => apiClient<ApiResponse<Hub[]>>("/hubs", { method: "GET", params });
+export const getSingleHub = (id: string) => apiClient<ApiResponse<Hub>>(`/hubs/${encodeURIComponent(id)}`, { method: "GET" });
+export const updateHub = (id: string, payload: Record<string, unknown>) => apiClient<ApiResponse<Hub>>(`/hubs/${encodeURIComponent(id)}`, { method: "PATCH", body: payload });
+export const deleteHub = (id: string) => apiClient<ApiResponse<Hub>>(`/hubs/${encodeURIComponent(id)}`, { method: "DELETE" });

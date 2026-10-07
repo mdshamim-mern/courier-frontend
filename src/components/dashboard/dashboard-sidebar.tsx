@@ -1,5 +1,6 @@
 "use client";
 
+import { useUiText } from "@/i18n/use-ui-text";
 import {
   Sidebar,
   SidebarContent,
@@ -13,21 +14,20 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import Logo from "@/assets/svg/Logo";
-import { UserRole, SidebarItems } from "@/types";
+import type { UserRole, SidebarItems } from "@/types";
 import { adminRoutes, courierRoutes, customerRoutes } from "@/routes";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Link, usePathname } from "@/i18n/navigation";
 
 const sidebarRoutes: Record<UserRole, SidebarItems> = {
-  
   ADMIN: adminRoutes,
   COURIER: courierRoutes,
   CUSTOMER: customerRoutes,
 };
 
-export function DashboardSidebar({ role }: { role: UserRole }) {
+export function DashboardSidebar({ userRole }: { userRole: UserRole }) {
+  const ui = useUiText();
   const pathname = usePathname();
-  const routes: SidebarItems = sidebarRoutes[role] || [];
+  const routes: SidebarItems = sidebarRoutes[userRole] || [];
 
   return (
     <Sidebar>
@@ -43,7 +43,7 @@ export function DashboardSidebar({ role }: { role: UserRole }) {
         {routes.map((group) => (
           <SidebarGroup key={group.title}>
             <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
-              {group.title}
+              {ui(group.title)}
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
@@ -53,7 +53,7 @@ export function DashboardSidebar({ role }: { role: UserRole }) {
                       render={<Link href={item.url} />}
                       isActive={pathname === item.url}
                     >
-                      {item.title}
+                      {ui(item.title)}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}

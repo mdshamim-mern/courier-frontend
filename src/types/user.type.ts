@@ -11,6 +11,8 @@ export interface User {
   imageUrl?: string | null;
   createdAt: string;
   updatedAt: string;
+  customer?: Customer | null;
+  courier?: import("./courier.type").Courier | null;
 }
 
 export interface Customer {

@@ -1,123 +1,131 @@
 "use client";
 
+import { useUiText } from "@/i18n/use-ui-text";
 import { useState } from "react";
 import { useGetAllShipments, useUpdateShipmentStatus } from "@/hooks";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/spinner";
 import { toast } from "@/components/ui/toast";
+import QueryError from "@/components/ui/query-error";
 import TablePagination from "@/components/ui/table-pagination";
+import { getApiErrorMessage } from "@/lib/api-error";
+import type { ShipmentStatus } from "@/types";
 
-interface IDeliveryTask {
-  id: string;
-  trackingId: string;
-  receiverName: string;
-  receiverAddress: string;
-  status: string;
-}
-
+const labels: Partial<Record<ShipmentStatus, string>> = {
+  PICKED_UP: "Mark Picked Up",
+  AT_ORIGIN_HUB: "Arrived at Origin Hub",
+  IN_TRANSIT: "Start Hub Transfer",
+  AT_DESTINATION_HUB: "Arrived at Destination Hub",
+  OUT_FOR_DELIVERY: "Out for Delivery",
+  DELIVERED: "Mark Delivered",
+  DELIVERY_FAILED: "Delivery Failed",
+  RETURNED: "Mark Returned",
+};
 export default function DeliveryTasks() {
+  const ui = useUiText();
   const [page, setPage] = useState(1);
-  const { data, isLoading, refetch } = useGetAllShipments({ page, limit: 10 });
-  const { mutate: updateStatus, isPending } = useUpdateShipmentStatus();
-
-  const shipments = data?.data || [];
-  const meta = data?.meta;
-
-  const handleUpdateStatus = (id: string, currentStatus: string) => {
-    let nextStatus = "";
-    if (currentStatus === "ASSIGNED") nextStatus = "PICKED_UP";
-    else if (currentStatus === "PICKED_UP") nextStatus = "IN_TRANSIT";
-    else if (currentStatus === "IN_TRANSIT") nextStatus = "OUT_FOR_DELIVERY";
-    else if (currentStatus === "OUT_FOR_DELIVERY") nextStatus = "DELIVERED";
-
-    if (!nextStatus) return;
-
-    updateStatus(
-      { id, payload: { status: nextStatus } },
-      {
-        onSuccess: () => {
-          toast.add({ title: "Status Updated", type: "success" });
-          refetch();
-        },
-        onError: (err: Error) => toast.add({ title: "Update Failed", description: err.message, type: "error" }),
-      }
+  const { data, isPending, error, refetch } = useGetAllShipments({
+    page,
+    limit: 10,
+  });
+  const { mutate: updateStatus, isPending: updating } =
+    useUpdateShipmentStatus();
+  if (error)
+    return (
+      <QueryError
+        retry={() => {
+          void refetch();
+        }}
+      />
     );
-  };
-
-  const getButtonLabel = (status: string) => {
-    switch (status) {
-      case "ASSIGNED": return "Mark Picked Up";
-      case "PICKED_UP": return "Mark In Transit";
-      case "IN_TRANSIT": return "Out for Delivery";
-      case "OUT_FOR_DELIVERY": return "Mark Delivered";
-      default: return "";
-    }
-  };
-
+  if (isPending) return <Spinner />;
   return (
     <div className="space-y-4">
       <div className="rounded-md border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Tracking ID</TableHead>
-              <TableHead>Receiver</TableHead>
-              <TableHead>Address</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead>{ui("Tracking ID")}</TableHead>
+              <TableHead>{ui("Receiver")}</TableHead>
+              <TableHead>{ui("Address")}</TableHead>
+              <TableHead>{ui("Status")}</TableHead>
+              <TableHead>{ui("Actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? (
-              Array.from({ length: 5 }).map((_, idx) => (
-                <TableRow key={idx}>
-                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-48" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                  <TableCell><Skeleton className="h-8 w-24 ml-auto" /></TableCell>
+            {data?.data.length ? (
+              data.data.map((shipment) => (
+                <TableRow key={shipment.id}>
+                  <TableCell className="font-mono">
+                    {shipment.trackingId}
+                  </TableCell>
+                  <TableCell>{shipment.receiverName}</TableCell>
+                  <TableCell>{shipment.receiverAddress}</TableCell>
+                  <TableCell>
+                    {ui(shipment.status.replace(/_/g, " "))}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-2">
+                      {shipment.allowedNextStatuses.map((status) => (
+                        <Button
+                          key={status}
+                          size="sm"
+                          variant={
+                            status === "DELIVERY_FAILED"
+                              ? "destructive"
+                              : "outline"
+                          }
+                          disabled={updating}
+                          onClick={() =>
+                            updateStatus(
+                              { id: shipment.id, payload: { status } },
+                              {
+                                onSuccess: () =>
+                                  toast.add({
+                                    title: "Status Updated",
+                                    type: "success",
+                                  }),
+                                onError: (failure) =>
+                                  toast.add({
+                                    title: "Update Failed",
+                                    description: getApiErrorMessage(failure),
+                                    type: "error",
+                                  }),
+                              },
+                            )
+                          }
+                        >
+                          {ui(labels[status] || status.replace(/_/g, " "))}
+                        </Button>
+                      ))}
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))
-            ) : shipments.length === 0 ? (
+            ) : (
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                  No active delivery tasks.
+                <TableCell colSpan={5}>
+                  {ui("No delivery tasks found.")}
                 </TableCell>
               </TableRow>
-            ) : (
-              shipments.map((shipment: IDeliveryTask) => (
-                <TableRow key={shipment.id}>
-                  <TableCell className="font-mono text-xs">{shipment.trackingId}</TableCell>
-                  <TableCell>{shipment.receiverName}</TableCell>
-                  <TableCell className="max-w-50 truncate">{shipment.receiverAddress}</TableCell>
-                  <TableCell>
-                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
-                      {shipment.status}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {getButtonLabel(shipment.status) ? (
-                      <Button
-                        size="sm"
-                        disabled={isPending}
-                        onClick={() => handleUpdateStatus(shipment.id, shipment.status)}
-                      >
-                        {getButtonLabel(shipment.status)}
-                      </Button>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">Completed</span>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))
             )}
           </TableBody>
         </Table>
       </div>
-
-      {meta && meta.totalPages > 1 && (
-        <TablePagination page={page} totalPages={meta.totalPages} handlePageChange={setPage} />
+      {data?.meta && data.meta.totalPages > 1 && (
+        <TablePagination
+          page={page}
+          totalPages={data.meta.totalPages}
+          handlePageChange={setPage}
+        />
       )}
     </div>
   );

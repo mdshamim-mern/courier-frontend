@@ -1,35 +1,8 @@
 import apiClient from "@/lib/apiClient";
+import type { ApiResponse, DashboardStats, User, AuditLog } from "@/types";
 
-export function getDashboardStats() {
-  return apiClient("/admin/dashboard-stats", {
-    method: "GET",
-  });
-}
-
-export function getAllUsers(params?: Record<string, unknown>) {
-  return apiClient("/admin/users", {
-    method: "GET",
-    params,
-  });
-}
-
-export function updateUserStatus(id: string, payload: Record<string, unknown>) {
-  return apiClient(`/admin/users/${id}/status`, {
-    method: "PATCH",
-    body: payload,
-  });
-}
-
-export function updateUserRole(id: string, payload: Record<string, unknown>) {
-  return apiClient(`/admin/users/${id}/role`, {
-    method: "PATCH",
-    body: payload,
-  });
-}
-
-export function getAuditLogs(params?: Record<string, unknown>) {
-  return apiClient("/audit-logs", {
-    method: "GET",
-    params,
-  });
-}
+export const getDashboardStats = () => apiClient<ApiResponse<DashboardStats>>("/admin/dashboard-stats", { method: "GET" });
+export const getAllUsers = (params?: Record<string, unknown>) => apiClient<ApiResponse<User[]>>("/admin/users", { method: "GET", params });
+export const updateUserStatus = (id: string, payload: Record<string, unknown>) => apiClient<ApiResponse<User>>(`/admin/users/${encodeURIComponent(id)}/status`, { method: "PATCH", body: payload });
+export const updateUserRole = (id: string, payload: Record<string, unknown>) => apiClient<ApiResponse<User>>(`/admin/users/${encodeURIComponent(id)}/role`, { method: "PATCH", body: payload });
+export const getAuditLogs = (params?: Record<string, unknown>) => apiClient<ApiResponse<AuditLog[]>>("/audit-logs", { method: "GET", params });

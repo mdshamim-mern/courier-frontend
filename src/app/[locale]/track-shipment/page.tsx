@@ -1,41 +1,40 @@
-import { Metadata } from "next";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { translateUi } from "@/i18n/ui";
+import type { Metadata } from "next";
+import { getLocale } from "next-intl/server";
+import TrackForm from "@/components/modules/shipment-tracking/track-form";
 
-export const metadata: Metadata = {
-  title: "Track Shipment | Dropzo",
-  description: "Track the real-time status and location of your parcel using your unique tracking ID.",
-};
-
-export default function TrackShipmentPage() {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  return {
+    title: locale === "bn" ? "পার্সেল অনুসরণ | Dropzo" : "Track Shipment | Dropzo",
+    description:
+      locale === "bn"
+        ? "অনুসন্ধানসংখ্যা দিয়ে পার্সেলের সর্বশেষ অবস্থা দেখুন।"
+        : "Track your parcel using its tracking ID.",
+  };
+}
+export default async function TrackShipmentPage() {
+  const locale = await getLocale();
+  const ui = (text: string) => translateUi(locale, text);
+  const bn = locale === "bn";
   return (
-    <div className="min-h-[80vh] flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-muted/20">
-      <div className="text-center mb-10 w-full max-w-2xl">
-        <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl mb-4">Track Your Parcel</h1>
-        <p className="text-lg text-muted-foreground">
-          Enter your Tracking ID below to get real-time updates on your shipment status and estimated delivery time.
+    <div className="min-h-[80vh] flex flex-col items-center justify-center py-12 px-4 bg-muted/20">
+      <div className="text-center mb-10 max-w-2xl">
+        <h1 className="text-4xl font-bold mb-4">
+          {bn ? "আপনার পার্সেল খুঁজুন" : ui("Track Your Parcel")}
+        </h1>
+        <p className="text-muted-foreground">
+          {bn
+            ? "পার্সেলের বর্তমান অবস্থা জানতে অনুসন্ধানসংখ্যা লিখুন।"
+            : ui("Enter your tracking ID to view the latest shipment updates.")}
         </p>
       </div>
-
-      <div className="w-full max-w-xl bg-card border rounded-2xl p-6 md:p-8 shadow-lg">
-        <form className="flex flex-col sm:flex-row gap-3">
-          <Input 
-            className="grow h-12 text-lg" 
-            placeholder="e.g. TRK-9876543210" 
-            aria-label="Tracking ID"
-          />
-          <Button type="button" className="h-12 px-8 text-base">
-            <Search className="mr-2 size-5" />
-            Track
-          </Button>
-        </form>
-        
-        <div className="mt-8 pt-8 border-t text-center text-muted-foreground">
-          <p className="text-sm">
-            Tracking information usually updates within 2-4 hours after the parcel is scanned at our hubs.
-          </p>
-        </div>
+      <div className="w-full max-w-xl bg-card border rounded-2xl p-6 shadow-lg">
+        <TrackForm />
       </div>
     </div>
   );

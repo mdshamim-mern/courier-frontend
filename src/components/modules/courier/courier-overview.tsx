@@ -1,15 +1,19 @@
 "use client";
 
+import { useUiText, useUiFormat } from "@/i18n/use-ui-text";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PackageCheck, Wallet } from "lucide-react";
 import { useGetMe, useGetCourierHistoryAndEarnings } from "@/hooks";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function CourierOverview() {
+  const ui = useUiText();
+  const display = useUiFormat();
   const { data: userData, isLoading: isUserLoading } = useGetMe();
   const courierId = userData?.data?.courier?.id;
 
-  const { data: statsData, isLoading: isStatsLoading } = useGetCourierHistoryAndEarnings(courierId || "");
+  const { data: statsData, isLoading: isStatsLoading } =
+    useGetCourierHistoryAndEarnings(courierId || "");
   const stats = statsData?.data;
 
   const isLoading = isUserLoading || isStatsLoading;
@@ -27,20 +31,30 @@ export default function CourierOverview() {
     <div className="grid gap-4 md:grid-cols-2">
       <Card className="border-muted/20 shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-          <CardTitle className="text-sm font-medium">Total Deliveries</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            {ui("Total Deliveries")}
+          </CardTitle>
           <PackageCheck className="size-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{stats?.totalShipments || 0}</div>
+          <div className="text-2xl font-bold">
+            {ui(stats?.completedDeliveries || 0)}
+          </div>
         </CardContent>
       </Card>
       <Card className="border-muted/20 shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-          <CardTitle className="text-sm font-medium">Total Earnings</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            {ui("Total Earnings")}
+          </CardTitle>
           <Wallet className="size-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">৳ {stats?.totalEarnings?.toLocaleString() || 0}</div>
+          <div className="text-2xl font-bold">
+            {stats?.totalEarnings == null
+              ? ui("Compensation needs configuration")
+              : `৳ ${display.money(stats.totalEarnings)}`}
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -1,4 +1,4 @@
-import { SidebarItems } from "@/types";
+import type { SidebarItems } from "@/types";
 
 const prefix = "/dashboard";
 

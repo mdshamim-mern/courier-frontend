@@ -1,5 +1,5 @@
-import { Hub } from "./hub.type";
-import { User } from "./user.type";
+import type { Hub } from "./hub.type";
+import type { User } from "./user.type";
 
 export interface Courier {
   id: string;
@@ -13,4 +13,13 @@ export interface Courier {
   hub?: Hub;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CourierEarnings {
+  totalEarnings: number | null;
+  totalShipments: number;
+  completedDeliveries: number;
+  performanceRate: number;
+  compensationConfigured: boolean;
+  shipments: import("./shipment.type").Shipment[];
 }

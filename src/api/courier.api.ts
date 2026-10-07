@@ -1,34 +1,8 @@
 import apiClient from "@/lib/apiClient";
+import type { ApiResponse, Courier, CourierEarnings, User } from "@/types";
 
-export function createCourier(payload: Record<string, unknown>) {
-  return apiClient("/couriers", {
-    method: "POST",
-    body: payload,
-  });
-}
-
-export function getAllCouriers(params?: Record<string, unknown>) {
-  return apiClient("/couriers", {
-    method: "GET",
-    params,
-  });
-}
-
-export function getCourierDetails(id: string) {
-  return apiClient(`/couriers/${id}`, {
-    method: "GET",
-  });
-}
-
-export function updateCourierProfile(id: string, payload: Record<string, unknown>) {
-  return apiClient(`/couriers/${id}`, {
-    method: "PATCH",
-    body: payload,
-  });
-}
-
-export function getCourierHistoryAndEarnings(id: string) {
-  return apiClient(`/couriers/${id}/history-earnings`, {
-    method: "GET",
-  });
-}
+export const createCourier = (payload: Record<string, unknown>) => apiClient<ApiResponse<{ user: User; courier: Courier }>>("/couriers", { method: "POST", body: payload });
+export const getAllCouriers = (params?: Record<string, unknown>) => apiClient<ApiResponse<Courier[]>>("/couriers", { method: "GET", params });
+export const getCourierDetails = (id: string) => apiClient<ApiResponse<Courier>>(`/couriers/${encodeURIComponent(id)}`, { method: "GET" });
+export const updateCourierProfile = (id: string, payload: Record<string, unknown>) => apiClient<ApiResponse<Courier>>(`/couriers/${encodeURIComponent(id)}`, { method: "PATCH", body: payload });
+export const getCourierHistoryAndEarnings = (id: string) => apiClient<ApiResponse<CourierEarnings>>(`/couriers/${encodeURIComponent(id)}/history-earnings`, { method: "GET" });
