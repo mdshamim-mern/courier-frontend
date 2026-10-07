@@ -3,21 +3,23 @@
 import Logo from "@/assets/svg/Logo";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { useGetMe, useLogout } from "@/hooks";
 import { toast } from "@/components/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { UserRole } from "@/types";
 import { Search, Menu, Globe } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { useState } from "react";
 
 export default function Header() {
   const { data, isLoading } = useGetMe();
   const { mutate: logout, isPending } = useLogout();
   const queryClient = useQueryClient();
   const user = data?.data;
-  
-  const [lang, setLang] = useState("EN");
+
+  const pathname = usePathname();
+  const router = useRouter();
+  const currentLocale = pathname.split("/")[1] === "bn" ? "bn" : "en";
 
   const dashboardRoute: Record<UserRole, string> = {
     ADMIN: "/admin",
@@ -47,7 +49,10 @@ export default function Header() {
   };
 
   const toggleLang = () => {
-    setLang((prev) => (prev === "EN" ? "BN" : "EN"));
+    const nextLocale = currentLocale === "en" ? "bn" : "en";
+    const segments = pathname.split("/");
+    segments[1] = nextLocale;
+    router.push(segments.join("/") || "/");
   };
 
   return (
@@ -73,7 +78,7 @@ export default function Header() {
           </Button>
 
           <Button variant="ghost" onClick={toggleLang} className="gap-1 px-2 text-muted-foreground hover:text-foreground">
-            <Globe className="size-4" /> {lang}
+            <Globe className="size-4" /> {currentLocale.toUpperCase()}
           </Button>
 
           {!isLoading && !user && (
@@ -118,7 +123,7 @@ export default function Header() {
                 <Link href="/contact" className="text-lg font-medium hover:text-primary">Contact</Link>
                 
                 <Button variant="ghost" className="justify-start px-0 text-lg font-medium" onClick={toggleLang}>
-                  <Globe className="size-5 mr-2" /> Language: {lang}
+                  <Globe className="size-5 mr-2" /> Language: {currentLocale.toUpperCase()}
                 </Button>
                 
                 <hr className="my-2 border-border" />

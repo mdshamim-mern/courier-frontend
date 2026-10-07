@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { cn } from "@/lib/utils";
 import FeaturesSection from "@/components/home/features-section";
 import HowItWorksSection from "@/components/home/how-it-works-section";
