@@ -10,7 +10,7 @@ const documents: Record<"en" | "bn", Record<LegalKind, Document>> = {
         {
           title: "1. Operator and scope",
           paragraphs: [
-            "[Company Name], located at [Address], operates this courier platform. These draft terms cover account access, parcel booking, tracking and payment. Effective date: [Effective Date]. Contact: [Contact Email].",
+            "Dropzo, located at Love Road, Mirpur 2, Dhaka, operates this courier platform. These draft terms cover account access, parcel booking, tracking and payment. Effective date: October 8, 2026. Contact: mdshamim.mern@gmail.com.",
           ],
         },
         {
@@ -158,7 +158,7 @@ const documents: Record<"en" | "bn", Record<LegalKind, Document>> = {
         {
           title: "১. পরিচালনাকারী ও প্রযোজ্য সেবা",
           paragraphs: [
-            "[Address] ঠিকানায় অবস্থিত [Company Name] এই পার্সেল পরিবহনব্যবস্থা পরিচালনা করে। অ্যাকাউন্ট ব্যবহার, পার্সেলের অনুরোধ, অনুসরণ ও অর্থপ্রদান এই খসড়ার আওতায় পড়ে। কার্যকর হওয়ার তারিখ: [Effective Date]। যোগাযোগ: [Contact Email]।",
+            "Love Road, Mirpur 2, Dhaka ঠিকানায় অবস্থিত Dropzo এই পার্সেল পরিবহনব্যবস্থা পরিচালনা করে। অ্যাকাউন্ট ব্যবহার, পার্সেলের অনুরোধ, অনুসরণ ও অর্থপ্রদান এই খসড়ার আওতায় পড়ে। কার্যকর হওয়ার তারিখ: October 8, 2026। যোগাযোগ: mdshamim.mern@gmail.com।",
           ],
         },
         {

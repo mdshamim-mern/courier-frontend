@@ -27,7 +27,7 @@ const questions = {
     ],
     [
       "How do I contact support?",
-      "The operator must replace [Contact Email], [Contact Phone] and [Address] on the Contact page. Until then, support messages cannot be submitted through this site.",
+      "The operator must replace mdshamim.mern@gmail.com, 01865-190471 and Love Road, Mirpur 2, Dhaka on the Contact page. Until then, support messages cannot be submitted through this site.",
     ],
   ],
   bn: [
@@ -53,7 +53,7 @@ const questions = {
     ],
     [
       "সহায়তার জন্য কীভাবে যোগাযোগ করব?",
-      "প্রতিষ্ঠানকে যোগাযোগের পাতায় [Contact Email], [Contact Phone] ও [Address] পূরণ করতে হবে। এর আগে এই সাইট দিয়ে সহায়তার বার্তা পাঠানো যাবে না।",
+      "প্রতিষ্ঠানকে যোগাযোগের পাতায় mdshamim.mern@gmail.com, 01865-190471 ও Love Road, Mirpur 2, Dhaka পূরণ করতে হবে। এর আগে এই সাইট দিয়ে সহায়তার বার্তা পাঠানো যাবে না।",
     ],
   ],
 };
