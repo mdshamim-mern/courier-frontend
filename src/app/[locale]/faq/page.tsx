@@ -1,0 +1,100 @@
+import type { Metadata } from "next";
+import { useLocale } from "next-intl";
+import { Link } from "@/i18n/navigation";
+import { useUiText } from "@/i18n/use-ui-text";
+
+const questions = {
+  en: [
+    [
+      "How do I track a parcel?",
+      "Use the tracking ID on the Track Shipment page. Public tracking shows the status and timeline, not recipient contact details.",
+    ],
+    [
+      "How is payment confirmed?",
+      "A payment becomes confirmed only after the server verifies it with the provider. A success URL alone is not proof of payment. Use Check Payment to view or recheck the recorded status.",
+    ],
+    [
+      "Can I cancel a shipment?",
+      "The customer dashboard offers cancellation only while a shipment is pending and unpaid. Refund and cancellation terms must be completed in [Payment and Refund Policy].",
+    ],
+    [
+      "How do I reset my password?",
+      "Use Forgot Password, enter your registered email and follow the verification-code instructions. Never share the code or your password with anyone.",
+    ],
+    [
+      "What are the delivery time and support hours?",
+      "Service areas, delivery estimates, restricted goods and support hours are not finalized here. Confirm [Delivery Terms] and [Business Hours] with [Company Name] before booking.",
+    ],
+    [
+      "How do I contact support?",
+      "The operator must replace [Contact Email], [Contact Phone] and [Address] on the Contact page. Until then, support messages cannot be submitted through this site.",
+    ],
+  ],
+  bn: [
+    [
+      "পার্সেল কীভাবে খুঁজব?",
+      "পার্সেল অনুসরণের পাতায় অনুসন্ধানসংখ্যা দিন। প্রকাশ্য অনুসরণে অবস্থা ও পথের ইতিহাস দেখা যায়, প্রাপকের যোগাযোগের তথ্য নয়।",
+    ],
+    [
+      "অর্থপ্রদান কীভাবে নিশ্চিত হয়?",
+      "সার্ভারে অর্থপ্রদানকারী প্রতিষ্ঠানের সঙ্গে যাচাইয়ের পর অর্থপ্রদান নিশ্চিত হয়। শুধু সফলতার পাতায় যাওয়া প্রমাণ নয়। নথিভুক্ত অবস্থা দেখতে বা আবার যাচাই করতে অর্থপ্রদান যাচাইয়ের বোতাম ব্যবহার করুন।",
+    ],
+    [
+      "পার্সেলের অনুরোধ বাতিল করতে পারব?",
+      "পার্সেল অপেক্ষমাণ ও অপরিশোধিত থাকলে গ্রাহকের ড্যাশবোর্ডে বাতিলের সুযোগ থাকে। ফেরত ও বাতিলের শর্ত [Payment and Refund Policy] অংশে পূরণ করতে হবে।",
+    ],
+    [
+      "পাসওয়ার্ড কীভাবে বদলাব?",
+      "পাসওয়ার্ড ভুলে যাওয়ার পাতায় নিবন্ধিত ইমেইল দিন এবং যাচাইয়ের সংকেতের নির্দেশনা অনুসরণ করুন। সংকেত বা পাসওয়ার্ড কারও সঙ্গে ভাগ করবেন না।",
+    ],
+    [
+      "সরবরাহের সময় ও সহায়তার সময় কত?",
+      "সেবার আওতা, সম্ভাব্য সরবরাহের সময়, নিষিদ্ধ পণ্য ও সহায়তার সময় এখানে চূড়ান্ত নয়। বুকিংয়ের আগে [Company Name] থেকে [Delivery Terms] ও [Business Hours] নিশ্চিত করুন।",
+    ],
+    [
+      "সহায়তার জন্য কীভাবে যোগাযোগ করব?",
+      "প্রতিষ্ঠানকে যোগাযোগের পাতায় [Contact Email], [Contact Phone] ও [Address] পূরণ করতে হবে। এর আগে এই সাইট দিয়ে সহায়তার বার্তা পাঠানো যাবে না।",
+    ],
+  ],
+};
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  return {
+    title:
+      locale === "bn"
+        ? "সচরাচর প্রশ্ন | Dropzo"
+        : "Frequently Asked Questions | Dropzo",
+  };
+}
+
+export default function FaqPage() {
+  const locale = useLocale();
+  const ui = useUiText();
+  return (
+    <article className="mx-auto max-w-4xl space-y-8 px-4 py-16 sm:px-6">
+      <h1 className="text-4xl font-bold">{ui("FAQ")}</h1>
+      {questions[locale === "bn" ? "bn" : "en"].map(([question, answer]) => (
+        <section key={question} className="space-y-3 rounded-xl border p-6">
+          <h2 className="text-xl font-semibold">{question}</h2>
+          <p className="leading-8 text-muted-foreground">{answer}</p>
+        </section>
+      ))}
+      <nav className="flex flex-wrap gap-5">
+        <Link href="/track-shipment" className="underline">
+          {ui("Shipment Tracking")}
+        </Link>
+        <Link href="/contact" className="underline">
+          {ui("Contact")}
+        </Link>
+        <Link href="/terms" className="underline">
+          {ui("Terms of Service")}
+        </Link>
+      </nav>
+    </article>
+  );
+}

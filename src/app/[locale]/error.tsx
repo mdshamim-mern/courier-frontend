@@ -1,5 +1,6 @@
 "use client";
 
+import { useUiText } from "@/i18n/use-ui-text";
 import { Button } from "@/components/ui/button";
 import { TriangleAlertIcon } from "lucide-react";
 import { useEffect } from "react";
@@ -11,6 +12,7 @@ export default function ErrorPage({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const ui = useUiText();
   useEffect(() => {
     console.error(error);
   }, [error]);
@@ -23,18 +25,24 @@ export default function ErrorPage({
         </div>
         <div className="space-y-2">
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Something went wrong!
+            {ui("Something went wrong!")}{" "}
           </h1>
           <p className="text-sm leading-relaxed text-muted-foreground">
-            We encountered an unexpected error while processing your request. Our team has been notified.
+            {ui(
+              "We encountered an unexpected error while processing your request. Our team has been notified.",
+            )}{" "}
           </p>
         </div>
         <div className="flex gap-4 mt-4">
           <Button onClick={() => reset()} variant="default" size="lg">
-            Try again
+            {ui("Try again")}{" "}
           </Button>
-          <Button onClick={() => window.location.href = '/'} variant="outline" size="lg">
-            Go to Homepage
+          <Button
+            onClick={() => (window.location.href = "/")}
+            variant="outline"
+            size="lg"
+          >
+            {ui("Go to Homepage")}{" "}
           </Button>
         </div>
       </div>

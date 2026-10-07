@@ -1,5 +1,6 @@
 "use client";
 
+import { useUiText } from "@/i18n/use-ui-text";
 import { useForm } from "@tanstack/react-form";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
@@ -9,7 +10,13 @@ import { useCreateShipment, useGetAllHubs } from "@/hooks";
 import { useRouter } from "@/i18n/navigation";
 import { toast } from "../ui/toast";
 import { Spinner } from "../ui/spinner";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../ui/card";
 
 interface Hub {
   id: string;
@@ -19,9 +26,12 @@ interface Hub {
 }
 
 export default function CreateShipmentForm() {
+  const ui = useUiText();
   const router = useRouter();
   const { mutate: createShipment, isPending } = useCreateShipment();
-  const { data: hubsData, isLoading: hubsLoading } = useGetAllHubs({ limit: 100 });
+  const { data: hubsData, isLoading: hubsLoading } = useGetAllHubs({
+    limit: 100,
+  });
   const hubs = hubsData?.data || [];
 
   const form = useForm({
@@ -60,8 +70,12 @@ export default function CreateShipmentForm() {
   return (
     <Card className="max-w-2xl mx-auto shadow-sm">
       <CardHeader>
-        <CardTitle className="text-2xl">Create New Shipment</CardTitle>
-        <CardDescription>Enter receiver details and select origin/destination hubs to generate a shipment.</CardDescription>
+        <CardTitle className="text-2xl">{ui("Create New Shipment")}</CardTitle>
+        <CardDescription>
+          {ui(
+            "Enter receiver details and select origin/destination hubs to generate a shipment.",
+          )}
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form
@@ -74,19 +88,24 @@ export default function CreateShipmentForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <form.Field name="receiverName">
                 {(field) => {
-                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid;
                   return (
                     <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Receiver Name</FieldLabel>
+                      <FieldLabel htmlFor={field.name}>
+                        {ui("Receiver Name")}
+                      </FieldLabel>
                       <Input
                         id={field.name}
                         value={field.state.value}
                         onBlur={field.handleBlur}
                         onChange={(e) => field.handleChange(e.target.value)}
-                        placeholder="Alice Smith"
+                        placeholder={ui("Alice Smith")}
                         aria-invalid={isInvalid}
                       />
-                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
                     </Field>
                   );
                 }}
@@ -94,10 +113,13 @@ export default function CreateShipmentForm() {
 
               <form.Field name="receiverPhone">
                 {(field) => {
-                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid;
                   return (
                     <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Receiver Phone</FieldLabel>
+                      <FieldLabel htmlFor={field.name}>
+                        {ui("Receiver Phone")}
+                      </FieldLabel>
                       <Input
                         id={field.name}
                         value={field.state.value}
@@ -106,7 +128,9 @@ export default function CreateShipmentForm() {
                         placeholder="01XXXXXXXXX"
                         aria-invalid={isInvalid}
                       />
-                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
                     </Field>
                   );
                 }}
@@ -115,19 +139,24 @@ export default function CreateShipmentForm() {
 
             <form.Field name="receiverAddress">
               {(field) => {
-                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid;
                 return (
                   <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Detailed Address</FieldLabel>
+                    <FieldLabel htmlFor={field.name}>
+                      {ui("Detailed Address")}
+                    </FieldLabel>
                     <Input
                       id={field.name}
                       value={field.state.value}
                       onBlur={field.handleBlur}
                       onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder="House, Road, Area, City"
+                      placeholder={ui("House, Road, Area, City")}
                       aria-invalid={isInvalid}
                     />
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
                   </Field>
                 );
               }}
@@ -135,10 +164,13 @@ export default function CreateShipmentForm() {
 
             <form.Field name="weight">
               {(field) => {
-                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid;
                 return (
                   <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Weight (kg)</FieldLabel>
+                    <FieldLabel htmlFor={field.name}>
+                      {ui("Weight (kg)")}
+                    </FieldLabel>
                     <Input
                       id={field.name}
                       type="number"
@@ -147,10 +179,14 @@ export default function CreateShipmentForm() {
                       max="100"
                       value={field.state.value}
                       onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(parseFloat(e.target.value) || 0)}
+                      onChange={(e) =>
+                        field.handleChange(parseFloat(e.target.value) || 0)
+                      }
                       aria-invalid={isInvalid}
                     />
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
                   </Field>
                 );
               }}
@@ -159,10 +195,13 @@ export default function CreateShipmentForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <form.Field name="originHubId">
                 {(field) => {
-                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid;
                   return (
                     <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Origin Hub</FieldLabel>
+                      <FieldLabel htmlFor={field.name}>
+                        {ui("Origin Hub")}
+                      </FieldLabel>
                       <select
                         id={field.name}
                         value={field.state.value}
@@ -171,14 +210,18 @@ export default function CreateShipmentForm() {
                         className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         disabled={hubsLoading}
                       >
-                        <option value="" disabled>Select origin hub</option>
+                        <option value="" disabled>
+                          {ui("Select origin hub")}
+                        </option>
                         {hubs.map((hub: Hub) => (
                           <option key={hub.id} value={hub.id}>
                             {hub.name} ({hub.location})
                           </option>
                         ))}
                       </select>
-                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
                     </Field>
                   );
                 }}
@@ -186,10 +229,13 @@ export default function CreateShipmentForm() {
 
               <form.Field name="destinationHubId">
                 {(field) => {
-                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid;
                   return (
                     <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Destination Hub</FieldLabel>
+                      <FieldLabel htmlFor={field.name}>
+                        {ui("Destination Hub")}
+                      </FieldLabel>
                       <select
                         id={field.name}
                         value={field.state.value}
@@ -198,14 +244,18 @@ export default function CreateShipmentForm() {
                         className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         disabled={hubsLoading}
                       >
-                        <option value="" disabled>Select destination hub</option>
+                        <option value="" disabled>
+                          {ui("Select destination hub")}
+                        </option>
                         {hubs.map((hub: Hub) => (
                           <option key={hub.id} value={hub.id}>
                             {hub.name} ({hub.location})
                           </option>
                         ))}
                       </select>
-                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
                     </Field>
                   );
                 }}
@@ -214,7 +264,7 @@ export default function CreateShipmentForm() {
 
             <Button type="submit" disabled={isPending} className="w-full mt-4">
               {isPending ? <Spinner className="mr-2" /> : null}
-              {isPending ? "Creating..." : "Create Shipment"}
+              {isPending ? ui("Creating...") : ui("Create Shipment")}
             </Button>
           </FieldGroup>
         </form>

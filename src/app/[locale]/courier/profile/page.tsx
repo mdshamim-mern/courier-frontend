@@ -1,5 +1,6 @@
 "use client";
 
+import { useUiText } from "@/i18n/use-ui-text";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldLabel } from "@/components/ui/field";
@@ -10,6 +11,7 @@ import { useGetMe, useUpdateMyProfile } from "@/hooks";
 import { useEffect, useState } from "react";
 
 export default function CourierProfilePage() {
+  const ui = useUiText();
   const { data, isLoading } = useGetMe();
   const { mutate: updateProfile, isPending } = useUpdateMyProfile();
 
@@ -28,9 +30,15 @@ export default function CourierProfilePage() {
     updateProfile(
       { name, contactNumber },
       {
-        onSuccess: () => toast.add({ title: "Profile Updated", type: "success" }),
-        onError: (err) => toast.add({ title: "Update Failed", description: err.message, type: "error" }),
-      }
+        onSuccess: () =>
+          toast.add({ title: "Profile Updated", type: "success" }),
+        onError: (err) =>
+          toast.add({
+            title: "Update Failed",
+            description: err.message,
+            type: "error",
+          }),
+      },
     );
   };
 
@@ -45,30 +53,50 @@ export default function CourierProfilePage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold tracking-tight">My Profile</h1>
-        <p className="text-sm text-muted-foreground">Manage your personal courier profile and settings.</p>
+        <h1 className="text-2xl font-bold tracking-tight">
+          {ui("My Profile")}
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          {ui("Manage your personal courier profile and settings.")}
+        </p>
       </div>
       <Card className="max-w-xl shadow-sm border-muted/20">
         <CardHeader>
-          <CardTitle>Profile Details</CardTitle>
+          <CardTitle>{ui("Profile Details")}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <Field>
-              <FieldLabel>Full Name</FieldLabel>
-              <Input value={name} onChange={(e) => setName(e.target.value)} required />
+              <FieldLabel>{ui("Full Name")}</FieldLabel>
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
             </Field>
             <Field>
-              <FieldLabel>Email Address</FieldLabel>
-              <Input value={data?.data?.email || ""} disabled className="bg-muted/50 cursor-not-allowed" />
+              <FieldLabel>{ui("Email Address")}</FieldLabel>
+              <Input
+                value={data?.data?.email || ""}
+                disabled
+                className="bg-muted/50 cursor-not-allowed"
+              />
             </Field>
             <Field>
-              <FieldLabel>Contact Number</FieldLabel>
-              <Input value={contactNumber} onChange={(e) => setContactNumber(e.target.value)} required />
+              <FieldLabel>{ui("Contact Number")}</FieldLabel>
+              <Input
+                value={contactNumber}
+                onChange={(e) => setContactNumber(e.target.value)}
+                required
+              />
             </Field>
-            <Button type="submit" disabled={isPending} className="mt-4 w-full sm:w-auto">
+            <Button
+              type="submit"
+              disabled={isPending}
+              className="mt-4 w-full sm:w-auto"
+            >
               {isPending ? <Spinner className="mr-2" /> : null}
-              Save Changes
+              {ui("Save Changes")}{" "}
             </Button>
           </form>
         </CardContent>

@@ -2,7 +2,7 @@
 
 মূল কাঠামো রেখে সংশোধিত ফাইলের বর্তমান কোড নিচে আছে। প্রতিটি কোডের আগে সম্পূর্ণ স্থানীয় পথ দেওয়া হয়েছে। বাস্তব শংসাপত্রের ফাইল অন্তর্ভুক্ত করা হয়নি। যেগুলোতে কার্যকর পরিবর্তনের বদলে টাইপের আমদানি, ভাষা-সচেতন লিংক বা প্রবেশযোগ্যতার সংশোধন হয়েছে, সেগুলোও অন্তর্ভুক্ত।
 
-মোট কোড ফাইল: 101।
+মোট কোড ফাইল: 128।
 
 অন্যান্য পরিবর্তিত ফাইল:
 
@@ -22,6 +22,7 @@ NEXT_PUBLIC_FRONTEND_URL=http://localhost:3000
 NEXT_PUBLIC_GOOGLE_CLIENT_ID=your_google_client_id_here
 NEXT_PUBLIC_ENABLE_DEMO_LOGIN=false
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\.github\workflows\ci.yml
@@ -57,97 +58,1050 @@ jobs:
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\e2e\critical-flows.spec.ts
 
 ```ts
 import { test, expect, type Page } from "@playwright/test";
 
 const shipmentId = "11111111-1111-4111-8111-111111111111";
-const user = { id: "22222222-2222-4222-8222-222222222222", name: "Test Customer", email: "customer@example.test", role: "CUSTOMER", status: "ACTIVE", courier: { id: "33333333-3333-4333-8333-333333333333" } };
-const shipment = { id: shipmentId, trackingId: "TRK-TEST1234", receiverName: "Receiver", receiverAddress: "Dhaka", createdAt: "2026-10-08T00:00:00.000Z", price: "120.00", status: "PICKED_UP", paymentStatus: "UNPAID", allowedNextStatuses: ["AT_ORIGIN_HUB"], trackings: [] };
+const user = {
+  id: "22222222-2222-4222-8222-222222222222",
+  name: "Test Customer",
+  email: "customer@example.test",
+  role: "CUSTOMER",
+  status: "ACTIVE",
+  courier: { id: "33333333-3333-4333-8333-333333333333" },
+};
+const shipment = {
+  id: shipmentId,
+  trackingId: "TRK-TEST1234",
+  receiverName: "Receiver",
+  receiverAddress: "Dhaka",
+  createdAt: "2026-10-08T00:00:00.000Z",
+  price: "120.00",
+  status: "PICKED_UP",
+  paymentStatus: "UNPAID",
+  allowedNextStatuses: ["AT_ORIGIN_HUB"],
+  trackings: [],
+};
 
-async function mockApi(page: Page, handler: (path: string) => { status?: number; data?: unknown }) {
-  await page.route("**/api/backend/**", async route => {
-    const path = new URL(route.request().url()).pathname.replace("/api/backend", "");
+async function mockApi(
+  page: Page,
+  handler: (path: string) => { status?: number; data?: unknown },
+) {
+  await page.route("**/api/backend/**", async (route) => {
+    const path = new URL(route.request().url()).pathname.replace(
+      "/api/backend",
+      "",
+    );
     const response = handler(path);
-    await route.fulfill({ status: response.status || 200, contentType: "application/json", body: JSON.stringify({ success: (response.status || 200) < 400, data: response.data, meta: { page: 1, limit: 10, total: 1, totalPages: 1 } }) });
+    await route.fulfill({
+      status: response.status || 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: (response.status || 200) < 400,
+        data: response.data,
+        meta: { page: 1, limit: 10, total: 1, totalPages: 1 },
+      }),
+    });
   });
 }
 
-test("public tracking returns a timeline without receiver details", async ({ page }) => {
-  await mockApi(page, path => path.startsWith("/shipments/track/") ? { data: { trackingId: shipment.trackingId, status: "PICKED_UP", trackings: [{ id: "event", status: "PICKED_UP", createdAt: shipment.createdAt }] } } : { status: 401 });
+test("public tracking returns a timeline without receiver details", async ({
+  page,
+}) => {
+  await mockApi(page, (path) =>
+    path.startsWith("/shipments/track/")
+      ? {
+          data: {
+            trackingId: shipment.trackingId,
+            status: "PICKED_UP",
+            trackings: [
+              {
+                id: "event",
+                status: "PICKED_UP",
+                createdAt: shipment.createdAt,
+              },
+            ],
+          },
+        }
+      : { status: 401 },
+  );
   await page.goto("/en/track-shipment");
-  await page.getByRole("textbox", { name: "Tracking ID" }).fill(shipment.trackingId);
+  await page
+    .getByRole("textbox", { name: "Tracking ID" })
+    .fill(shipment.trackingId);
   await page.getByRole("button", { name: "Track", exact: true }).click();
   await expect(page.getByText("PICKED UP", { exact: true })).toBeVisible();
   await expect(page.getByText("Receiver", { exact: true })).toHaveCount(0);
 });
 
-test("login preserves Bengali locale and routes verified administrators correctly", async ({ page }) => {
+test("login preserves Bengali locale and routes verified administrators correctly", async ({
+  page,
+}) => {
   let loggedIn = false;
-  await mockApi(page, path => {
-    if (path === "/auth/login") { loggedIn = true; return { data: { user: { ...user, role: "ADMIN" }, role: "ADMIN" } }; }
-    if (path === "/users/me") return loggedIn ? { data: { ...user, role: "ADMIN" } } : { status: 401 };
-    if (path === "/admin/dashboard-stats") return { data: { totalCustomers: 0, totalCouriers: 0, totalShipments: 0, totalRevenue: 0, shipmentsByStatus: [] } };
+  await mockApi(page, (path) => {
+    if (path === "/auth/login") {
+      loggedIn = true;
+      return { data: { user: { ...user, role: "ADMIN" }, role: "ADMIN" } };
+    }
+    if (path === "/users/me")
+      return loggedIn ? { data: { ...user, role: "ADMIN" } } : { status: 401 };
+    if (path === "/admin/dashboard-stats")
+      return {
+        data: {
+          totalCustomers: 0,
+          totalCouriers: 0,
+          totalShipments: 0,
+          totalRevenue: 0,
+          shipmentsByStatus: [],
+        },
+      };
     return { status: 401 };
   });
   await page.goto("/bn/login");
-  await page.getByRole("textbox", { name: "Email Address" }).fill("admin@example.test");
+  await page
+    .getByRole("textbox", { name: "ইমেইল ঠিকানা" })
+    .fill("admin@example.test");
   await page.locator("#password").fill("Valid@12345");
-  await page.getByRole("button", { name: "Login", exact: true }).click();
+  await page
+    .locator("form")
+    .getByRole("button", { name: "প্রবেশ করুন", exact: true })
+    .click();
   await expect(page).toHaveURL(/\/bn\/admin$/);
 });
 
-test("a service outage offers retry without logging the customer out", async ({ page }) => {
+test("a service outage offers retry without logging the customer out", async ({
+  page,
+}) => {
   await mockApi(page, () => ({ status: 503 }));
   await page.goto("/en/dashboard");
   await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
   await expect(page).toHaveURL(/\/en\/dashboard$/);
 });
 
-test("visiting the payment success URL cannot fake a successful payment", async ({ page }) => {
-  await mockApi(page, path => path === "/users/me" ? { data: user } : { data: shipment });
+test("visiting the payment success URL cannot fake a successful payment", async ({
+  page,
+}) => {
+  await mockApi(page, (path) =>
+    path === "/users/me" ? { data: user } : { data: shipment },
+  );
   await page.goto("/en/payment/success?shipmentId=" + shipmentId);
-  await expect(page.getByRole("heading", { name: "Payment Not Yet Confirmed" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Payment Confirmed", exact: true })).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: "Payment Not Yet Confirmed" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Payment Confirmed", exact: true }),
+  ).toHaveCount(0);
 });
 
 test("courier actions use server-approved hub steps", async ({ page }) => {
-  await mockApi(page, path => path === "/users/me" ? { data: { ...user, role: "COURIER" } } : { data: [shipment] });
+  await mockApi(page, (path) =>
+    path === "/users/me"
+      ? { data: { ...user, role: "COURIER" } }
+      : { data: [shipment] },
+  );
   await page.goto("/en/courier/deliveries");
-  await expect(page.getByRole("button", { name: "Arrived at Origin Hub" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Start Hub Transfer" })).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Arrived at Origin Hub" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Start Hub Transfer" }),
+  ).toHaveCount(0);
 });
 
 test("payment initiation sends shipmentId to the API", async ({ page }) => {
-  await mockApi(page, path => path === "/users/me" ? { data: user } : { data: [shipment] });
-  await page.route("**/api/backend/payments/initiate", async route => {
+  await mockApi(page, (path) =>
+    path === "/users/me" ? { data: user } : { data: [shipment] },
+  );
+  await page.route("**/api/backend/payments/initiate", async (route) => {
     expect(route.request().postDataJSON()).toEqual({ shipmentId });
-    await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ success: false, message: "Provider unavailable" }) });
+    await route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ success: false, message: "Provider unavailable" }),
+    });
   });
   await page.goto("/en/dashboard/my-shipments");
   await page.getByRole("button", { name: "Pay Now" }).click();
-  await expect(page.getByText("Provider unavailable", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Provider unavailable", { exact: true }),
+  ).toBeVisible();
 });
 
-test("customer overview uses full server totals rather than one page", async ({ page }) => {
-  await mockApi(page, path => path === "/users/me" ? { data: user } : path === "/shipments/summary" ? { data: { totalShipments: 251, activeShipments: 143, deliveredShipments: 108 } } : { data: [shipment] });
+test("customer overview uses full server totals rather than one page", async ({
+  page,
+}) => {
+  await mockApi(page, (path) =>
+    path === "/users/me"
+      ? { data: user }
+      : path === "/shipments/summary"
+        ? {
+            data: {
+              totalShipments: 251,
+              activeShipments: 143,
+              deliveredShipments: 108,
+            },
+          }
+        : { data: [shipment] },
+  );
   await page.goto("/en/dashboard");
-  for (const total of ["251", "143", "108"]) await expect(page.getByText(total, { exact: true })).toBeVisible();
+  for (const total of ["251", "143", "108"])
+    await expect(page.getByText(total, { exact: true })).toBeVisible();
 });
 
-test("payment recheck calls the provider reconciliation endpoint", async ({ page }) => {
-  await mockApi(page, path => path === "/users/me" ? { data: user } : { data: shipment });
-  await page.route("**/api/backend/payments/reconcile", async route => {
+test("payment recheck calls the provider reconciliation endpoint", async ({
+  page,
+}) => {
+  await mockApi(page, (path) =>
+    path === "/users/me" ? { data: user } : { data: shipment },
+  );
+  await page.route("**/api/backend/payments/reconcile", async (route) => {
     expect(route.request().postDataJSON()).toEqual({ shipmentId });
-    await route.fulfill({ status: 409, contentType: "application/json", body: JSON.stringify({ success: false, message: "Payment pending provider verification" }) });
+    await route.fulfill({
+      status: 409,
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: false,
+        message: "Payment pending provider verification",
+      }),
+    });
   });
   await page.goto("/en/payment/success?shipmentId=" + shipmentId);
   await page.getByRole("button", { name: "Check again" }).click();
-  await expect(page.getByText("Payment pending provider verification", { exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Payment Confirmed", exact: true })).toHaveCount(0);
+  await expect(
+    page.getByText("Payment pending provider verification", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Payment Confirmed", exact: true }),
+  ).toHaveCount(0);
 });
 ```
+
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\e2e\localization.spec.ts
+
+```ts
+import { test, expect, type Page } from "@playwright/test";
+
+const shipmentId = "11111111-1111-4111-8111-111111111111";
+const shipment = {
+  id: shipmentId,
+  trackingId: "TRK-TEST1234",
+  receiverName: "Test Receiver",
+  receiverAddress: "Dhaka",
+  createdAt: "2026-10-08T00:00:00.000Z",
+  price: "120.00",
+  status: "PICKED_UP",
+  paymentStatus: "UNPAID",
+  allowedNextStatuses: ["AT_ORIGIN_HUB"],
+  trackings: [],
+};
+
+async function mockGuest(page: Page) {
+  await page.route("**/api/backend/**", (route) =>
+    route.fulfill({
+      status: 401,
+      contentType: "application/json",
+      body: JSON.stringify({ success: false }),
+    }),
+  );
+}
+
+async function mockRole(page: Page, role: string) {
+  await page.route("**/api/backend/**", async (route) => {
+    const path = new URL(route.request().url()).pathname.replace(
+      "/api/backend",
+      "",
+    );
+    const user = {
+      id: "22222222-2222-4222-8222-222222222222",
+      name: "Test User",
+      email: "user@example.test",
+      role,
+      status: "ACTIVE",
+      courier: { id: "33333333-3333-4333-8333-333333333333" },
+    };
+    const data =
+      path === "/users/me"
+        ? user
+        : path === "/shipments/summary"
+          ? {
+              totalShipments: 251,
+              activeShipments: 143,
+              deliveredShipments: 108,
+            }
+          : path === "/admin/dashboard-stats"
+            ? {
+                totalCustomers: 20,
+                totalCouriers: 4,
+                totalShipments: 251,
+                totalRevenue: 120,
+                shipmentsByStatus: [],
+              }
+            : path.includes("history-earnings")
+              ? {
+                  totalEarnings: null,
+                  completedDeliveries: 8,
+                  performanceRate: 80,
+                }
+              : path === "/payments"
+                ? [
+                    {
+                      id: shipmentId,
+                      transactionId: "TEST-PAYMENT",
+                      amount: "120.00",
+                      paymentGateway: "STRIPE",
+                      status: "PAID",
+                      createdAt: shipment.createdAt,
+                    },
+                  ]
+                : path.startsWith("/shipments/")
+                  ? shipment
+                  : [shipment];
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: true,
+        data,
+        meta: { page: 1, total: 20, limit: 10, totalPages: 2 },
+      }),
+    });
+  });
+}
+
+for (const locale of ["en", "bn"]) {
+  for (const [route, title] of [
+    ["terms", locale === "bn" ? "ব্যবহারের শর্তাবলী" : "Terms of Service"],
+    ["privacy", locale === "bn" ? "গোপনীয়তার নীতি" : "Privacy Policy"],
+    ["cookies", locale === "bn" ? "কুকির নীতি" : "Cookie Policy"],
+  ]) {
+    test(
+      locale +
+        " " +
+        route +
+        " is a clearly marked legal draft with editable placeholders",
+      async ({ page }) => {
+        await mockGuest(page);
+        await page.goto("/" + locale + "/" + route);
+        await expect(
+          page.getByRole("heading", { name: title, exact: true }),
+        ).toBeVisible();
+        await expect(page.getByRole("note")).toContainText(
+          locale === "bn"
+            ? "খসড়া — চূড়ান্ত আইনি নথি নয়"
+            : "Draft — not a final legal document",
+        );
+        for (const placeholder of [
+          "[Company Name]",
+          "[Contact Email]",
+          "[Address]",
+          "[Effective Date]",
+        ])
+          await expect(page.locator("article")).toContainText(placeholder);
+        await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
+          "content",
+          /noindex/,
+        );
+        await expect(page.locator('a[href^="mailto:"]')).toHaveCount(0);
+      },
+    );
+  }
+
+  test(
+    locale + " footer links resolve and service anchors exist",
+    async ({ page }) => {
+      await mockGuest(page);
+      await page.goto("/" + locale);
+      await expect(page.locator("footer")).toBeVisible();
+      const links = await page
+        .locator("footer a")
+        .evaluateAll((nodes) =>
+          nodes.map((node) => node.getAttribute("href") || ""),
+        );
+      expect(links.length).toBeGreaterThan(10);
+      for (const href of [...new Set(links)]) {
+        expect(href).not.toBe("#");
+        expect(href).toMatch(new RegExp("^/" + locale + "(?:/|#|$)"));
+        const url = new URL(href, page.url());
+        const response = await page.request.get(url.toString());
+        expect(response.status(), href).toBe(200);
+        if (url.hash)
+          expect(await response.text(), href).toContain(
+            'id="' + url.hash.slice(1) + '"',
+          );
+      }
+    },
+  );
+}
+
+for (const route of [
+  "",
+  "/about",
+  "/services",
+  "/contact",
+  "/faq",
+  "/login",
+  "/register",
+  "/forgot-password",
+  "/reset-password?email=user@example.test",
+  "/verify-account?email=user@example.test",
+]) {
+  test(
+    "Bengali public content contains no untranslated English UI: " +
+      (route || "home"),
+    async ({ page }) => {
+      await mockGuest(page);
+      await page.goto("/bn" + route);
+      await expect(page.locator("html")).toHaveAttribute("lang", "bn");
+      const text = (await page.locator("main").first().innerText())
+        .replace(/\[[^\]]+\]/g, "")
+        .replace(/user@example\.test|Dropzo|Google|Stripe|bKash/g, "");
+      expect(text).not.toMatch(/[A-Za-z]{2,}/);
+    },
+  );
+}
+
+test("Bengali customer totals, parcel status, prices, dates and pagination are localized", async ({
+  page,
+}) => {
+  await mockRole(page, "CUSTOMER");
+  await page.goto("/bn/dashboard");
+  await expect(page.getByText("২৫১", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "আমার পার্সেলসমূহ", exact: true }),
+  ).toBeVisible();
+  await page.goto("/bn/dashboard/my-shipments");
+  await expect(
+    page.getByRole("cell", { name: "সংগ্রহ করা হয়েছে অপরিশোধিত", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText("অপরিশোধিত", { exact: true })).toBeVisible();
+  await expect(page.getByText("৳১২০.০০", { exact: true })).toBeVisible();
+  await expect(page.getByText(/২০২৬/).first()).toBeVisible();
+  await expect(page.getByLabel("পরের পাতায় যান")).toBeVisible();
+});
+
+test("Bengali administrator overview and sidebar are localized", async ({
+  page,
+}) => {
+  await mockRole(page, "ADMIN");
+  await page.goto("/bn/admin");
+  await expect(
+    page.getByRole("heading", { name: "প্রশাসকের ড্যাশবোর্ড" }),
+  ).toBeVisible();
+  await expect(page.getByText("মোট আদায়", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "ব্যবহারকারী ব্যবস্থাপনা", exact: true }),
+  ).toBeVisible();
+});
+
+test("Bengali courier actions are localized without changing API status values", async ({
+  page,
+}) => {
+  await mockRole(page, "COURIER");
+  await page.route(
+    "**/api/backend/shipments/" + shipmentId + "/status",
+    async (route) => {
+      expect(route.request().postDataJSON()).toEqual({
+        status: "AT_ORIGIN_HUB",
+      });
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: { ...shipment, status: "AT_ORIGIN_HUB" },
+        }),
+      });
+    },
+  );
+  await page.goto("/bn/courier/deliveries");
+  await page
+    .getByRole("button", { name: "প্রেরণ হাবে এসেছে", exact: true })
+    .click();
+  await expect(
+    page.getByText("অবস্থা হালনাগাদ হয়েছে", { exact: true }),
+  ).toBeVisible();
+});
+
+test("Bengali payment status and monetary amounts are localized", async ({
+  page,
+}) => {
+  await mockRole(page, "CUSTOMER");
+  await page.goto("/bn/dashboard/payments");
+  await expect(
+    page.getByRole("heading", { name: "অর্থপ্রদানের ইতিহাস" }),
+  ).toBeVisible();
+  await expect(page.getByText("পরিশোধিত", { exact: true })).toBeVisible();
+  await expect(page.getByText("৳১২০.০০", { exact: true })).toBeVisible();
+});
+
+test("Bengali login validation is localized", async ({ page }) => {
+  await mockGuest(page);
+  await page.goto("/bn/login");
+  await page
+    .getByRole("textbox", { name: "ইমেইল ঠিকানা" })
+    .fill("user@example.test");
+  await page.locator("#password").fill("a");
+  await page.locator("#password").fill("");
+  await page
+    .locator("form")
+    .getByRole("button", { name: "প্রবেশ করুন", exact: true })
+    .click();
+  await expect(page.locator('[data-slot="field-error"]')).toContainText(
+    "পাসওয়ার্ড দিন",
+  );
+});
+
+test("Bengali errors and notifications are localized", async ({ page }) => {
+  await mockGuest(page);
+  await page.route("**/api/backend/auth/login", (route) =>
+    route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ success: false, message: "Provider unavailable" }),
+    }),
+  );
+  await page.goto("/bn/login");
+  await page
+    .getByRole("textbox", { name: "ইমেইল ঠিকানা" })
+    .fill("user@example.test");
+  await page.locator("#password").fill("Valid@12345");
+  await page
+    .locator("form")
+    .getByRole("button", { name: "প্রবেশ করুন", exact: true })
+    .click();
+  await expect(
+    page.getByText("পরিচয় যাচাই ব্যর্থ হয়েছে", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.locator('[data-slot="toast-description"]'),
+  ).not.toContainText(/[A-Za-z]{2,}/);
+});
+
+test("language switching keeps reset-password query parameters", async ({
+  page,
+}) => {
+  await mockGuest(page);
+  await page.goto("/en/reset-password?email=user%40example.test");
+  await page.getByRole("button", { name: "বাংলায় দেখুন", exact: true }).click();
+  await expect(page).toHaveURL(
+    /\/bn\/reset-password\?email=user%40example\.test$/,
+  );
+  await expect(
+    page.getByRole("heading", { name: "পাসওয়ার্ড বদলান", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator("main").first()).toContainText("user@example.test");
+});
+
+test("Bengali audit action captions are localized while raw event details stay intact", async ({ page }) => {
+  await mockRole(page, "ADMIN");
+  await page.route("**/api/backend/audit-logs*", route => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify({
+      success: true,
+      data: [{ id: "event", action: "CREATE_SHIPMENT", entityType: "SHIPMENT", entityId: shipmentId, createdAt: shipment.createdAt, details: { status: "PENDING" } }],
+      meta: { page: 1, total: 1, limit: 10, totalPages: 1 },
+    }),
+  }));
+  await page.goto("/bn/admin/audit-logs");
+  await expect(page.getByText("পার্সেলের অনুরোধ তৈরি", { exact: true })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "পার্সেল", exact: true })).toBeVisible();
+  await expect(page.getByText('{"status":"PENDING"}', { exact: true })).toBeVisible();
+});
+```
+
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\messages\bn.json
+
+```json
+{
+  "HomePage": {
+    "title": "ড্রপজোতে স্বাগতম",
+    "description": "সারাদেশে আপনার প্যাকেজ পৌঁছে দেওয়ার সবচেয়ে দ্রুত ও বিশ্বস্ত মাধ্যম। আপনার পার্সেল ম্যানেজ করুন, ট্র্যাক করুন এবং আরও অনেক কিছু।",
+    "login": "প্রবেশ করুন",
+    "register": "অ্যাকাউন্ট তৈরি করুন"
+  },
+  "Header": {
+    "services": "সেবাসমূহ",
+    "about": "আমাদের সম্পর্কে",
+    "contact": "যোগাযোগ",
+    "track": "পার্সেল ট্র্যাক করুন",
+    "login": "প্রবেশ করুন",
+    "register": "নিবন্ধন করুন",
+    "dashboard": "ড্যাশবোর্ড",
+    "logout": "বের হন",
+    "loggingOut": "বের হওয়া হচ্ছে...",
+    "menu": "মেনু",
+    "language": "ভাষা: ",
+    "switchLanguage": "ইংরেজিতে দেখুন"
+  }
+}
+```
+
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\messages\en.json
+
+```json
+{
+  "HomePage": {
+    "title": "Welcome to Dropzo",
+    "description": "The fastest and most reliable way to deliver your packages across the country. Manage your shipments, track deliveries, and more.",
+    "login": "Login Now",
+    "register": "Create Account"
+  },
+  "Header": {
+    "services": "Services",
+    "about": "About",
+    "contact": "Contact",
+    "track": "Track Shipment",
+    "login": "Login",
+    "register": "Sign Up",
+    "dashboard": "Dashboard",
+    "logout": "Logout",
+    "loggingOut": "Logging out...",
+    "menu": "Menu",
+    "language": "Language: ",
+    "switchLanguage": "বাংলায় দেখুন"
+  }
+}
+```
+
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\messages\ui.bn.json
+
+```json
+{
+  "OTP Sent": "এককালীন সংকেত পাঠানো হয়েছে",
+  "Check your email for the reset instructions.": "পাসওয়ার্ড বদলানোর নির্দেশনার জন্য আপনার ইমেইল দেখুন।",
+  "Request Failed": "অনুরোধ ব্যর্থ হয়েছে",
+  "Forgot Password": "পাসওয়ার্ড ভুলে গেছেন",
+  "Enter your email address and we will send you a code to reset your password.": "আপনার ইমেইল লিখুন। পাসওয়ার্ড বদলানোর সংকেত সেখানে পাঠানো হবে।",
+  "Email Address": "ইমেইল ঠিকানা",
+  "Sending OTP...": "এককালীন সংকেত পাঠানো হচ্ছে...",
+  "Send Reset OTP": "পাসওয়ার্ড বদলানোর সংকেত পাঠান",
+  "Remember your password?": "পাসওয়ার্ড মনে পড়েছে?",
+  "Back to Login": "প্রবেশের পাতায় ফিরুন",
+  "Password Reset": "পাসওয়ার্ড বদলানো হয়েছে",
+  "Your password has been successfully reset. Please login.": "পাসওয়ার্ড সফলভাবে বদলানো হয়েছে। এখন প্রবেশ করুন।",
+  "Reset Failed": "পাসওয়ার্ড বদলানো যায়নি",
+  "Reset Password": "পাসওয়ার্ড বদলান",
+  "Enter the 6-digit OTP sent to": "৬ সংখ্যার এককালীন সংকেতটি লিখুন, যা পাঠানো হয়েছে",
+  "and your new password.": "এবং নতুন পাসওয়ার্ড দিন।",
+  "OTP Code": "এককালীন সংকেত",
+  "New Password": "নতুন পাসওয়ার্ড",
+  "Resetting...": "পাসওয়ার্ড বদলানো হচ্ছে...",
+  "About Courier": "ড্রপজো সম্পর্কে",
+  "Delivering trust and reliability across every mile. We are dedicated to providing seamless logistics solutions for businesses and individuals alike.": "প্রতিটি পথেই আস্থা ও নির্ভরযোগ্যতা। ব্যক্তি ও প্রতিষ্ঠানের জন্য সহজ পরিবহনসেবা দিতে আমরা প্রতিশ্রুতিবদ্ধ।",
+  "Our Mission": "আমাদের লক্ষ্য",
+  "At Dropzo, our mission is to simplify the delivery process through innovative technology and a dedicated network of professionals. We aim to ensure that every parcel, no matter how small or large, reaches its destination safely, securely, and on time.": "প্রযুক্তি ও দক্ষ কর্মীদের মাধ্যমে পার্সেল পৌঁছানোর প্রক্রিয়া সহজ করাই ড্রপজোর লক্ষ্য। ছোট-বড় সব পার্সেল নিরাপদে ও সময়মতো গন্তব্যে পৌঁছানোর জন্য আমরা কাজ করি।",
+  "Our Vision": "আমাদের স্বপ্ন",
+  "We envision a future where logistics barriers are completely eliminated, making commerce more accessible for everyone. By expanding our hub networks and integrating real-time AI-driven tracking, we strive to become the most trusted logistics partner in the region.": "হাবের বিস্তৃত নেটওয়ার্ক ও পার্সেলের হালনাগাদ তথ্যের মাধ্যমে সবার জন্য পণ্য আদান-প্রদান সহজ করতে চাই। অঞ্চলের বিশ্বস্ত পরিবহন সহযোগী হয়ে ওঠাই আমাদের স্বপ্ন।",
+  "Why Choose Us?": "কেন আমাদের বেছে নেবেন?",
+  "Fast & Secure": "দ্রুত ও নিরাপদ",
+  "Industry-leading delivery speeds with guaranteed item security.": "পার্সেল নিরাপদে ও দ্রুত পৌঁছানোর জন্য যত্নশীল ব্যবস্থাপনা।",
+  "Real-time Tracking": "হালনাগাদ পার্সেল অনুসরণ",
+  "Monitor your shipments at every step of the journey.": "যাত্রার প্রতিটি ধাপে আপনার পার্সেলের খবর রাখুন।",
+  "24/7 Support": "সহায়তা",
+  "Dedicated customer service team ready to assist you anytime.": "সহায়তার জন্য আমাদের গ্রাহকসেবা দলের সঙ্গে যোগাযোগ করুন।",
+  "All Shipments": "সব পার্সেল",
+  "Monitor all active and completed shipments across the platform.": "চলমান ও সম্পন্ন সব পার্সেলের অবস্থা দেখুন।",
+  "Search by tracking ID or receiver name...": "অনুসন্ধানসংখ্যা বা প্রাপকের নাম দিয়ে খুঁজুন...",
+  "Tracking ID": "পার্সেলের অনুসন্ধানসংখ্যা",
+  "Date": "তারিখ",
+  "Customer": "গ্রাহক",
+  "Receiver": "প্রাপক",
+  "Hubs": "হাবসমূহ",
+  "Status": "অবস্থা",
+  "Actions": "করণীয়",
+  "No shipments found.": "কোনো পার্সেল পাওয়া যায়নি।",
+  "From:": "প্রেরণ:",
+  "To:": "গন্তব্য:",
+  "Assign Courier": "বাহক নিয়োগ করুন",
+  "View Details": "বিস্তারিত দেখুন",
+  "System Audit Logs": "ব্যবস্থার কার্যক্রমের নথি",
+  "View system-wide automated logs, tracking history, and payment events.": "স্বয়ংক্রিয় কার্যক্রমের নথি, পার্সেলের ইতিহাস ও অর্থপ্রদানের ঘটনা দেখুন।",
+  "Date & Time": "তারিখ ও সময়",
+  "Action": "কার্যক্রম",
+  "Entity Type": "তথ্যের ধরন",
+  "Entity ID": "তথ্যের পরিচয়সংখ্যা",
+  "Details": "বিস্তারিত",
+  "No logs found.": "কোনো নথি পাওয়া যায়নি।",
+  "Hub Management": "হাব ব্যবস্থাপনা",
+  "Manage origin and destination hubs for routing shipments.": "পার্সেলের প্রেরণ ও গন্তব্য হাব পরিচালনা করুন।",
+  "Add Hub": "হাব যোগ করুন",
+  "Search hubs...": "হাব খুঁজুন...",
+  "Hub Name": "হাবের নাম",
+  "Location": "অবস্থান",
+  "Detailed Address": "বিস্তারিত ঠিকানা",
+  "Created At": "তৈরির তারিখ",
+  "No hubs found.": "কোনো হাব পাওয়া যায়নি।",
+  "Edit": "সম্পাদনা করুন",
+  "Delete": "মুছুন",
+  "Loading dashboard data...": "ড্যাশবোর্ডের তথ্য আনা হচ্ছে...",
+  "Manage Couriers": "বাহক ব্যবস্থাপনা",
+  "Manage delivery personnel, check availability, and view assigned hubs.": "বাহকদের পরিচালনা করুন, কাজের জন্য প্রস্তুতি ও নির্ধারিত হাব দেখুন।",
+  "Add Courier": "বাহক যোগ করুন",
+  "Search couriers...": "বাহক খুঁজুন...",
+  "Name": "নাম",
+  "Email & Phone": "ইমেইল ও ফোন",
+  "Vehicle": "যানবাহন",
+  "Availability": "কাজের জন্য প্রস্তুতি",
+  "Joined": "যোগদানের তারিখ",
+  "No couriers found.": "কোনো বাহক পাওয়া যায়নি।",
+  "N/A": "প্রযোজ্য নয়",
+  "Unknown": "অজানা",
+  "Available": "প্রস্তুত",
+  "Unavailable": "প্রস্তুত নন",
+  "View": "দেখুন",
+  "Manage Users": "ব্যবহারকারী ব্যবস্থাপনা",
+  "View, filter, and modify user roles and account statuses across the platform.": "ব্যবহারকারীর তালিকা দেখুন, খুঁজুন এবং ভূমিকা ও অ্যাকাউন্টের অবস্থা পরিবর্তন করুন।",
+  "Admin Dashboard": "প্রশাসকের ড্যাশবোর্ড",
+  "Overview of platform statistics and recent activities.": "সার্বিক পরিসংখ্যান ও সাম্প্রতিক কার্যক্রমের সারসংক্ষেপ।",
+  "Contact Us": "যোগাযোগ করুন",
+  "Have a question or need assistance? We are here to help you every step of the way.": "কোনো প্রশ্ন বা সহায়তা দরকার? যোগাযোগের তথ্য পূরণ করা হলে আমাদের সঙ্গে যোগাযোগ করতে পারবেন।",
+  "Head Office": "প্রধান কার্যালয়",
+  "Contact Details": "যোগাযোগের তথ্য",
+  "Business Hours": "কর্মসময়",
+  "First Name": "নামের প্রথম অংশ",
+  "Last Name": "নামের শেষ অংশ",
+  "Subject": "বিষয়",
+  "Message": "বার্তা",
+  "How can we help?": "কীভাবে সহায়তা করতে পারি?",
+  "Write your message here...": "এখানে আপনার বার্তা লিখুন...",
+  "Send Message": "বার্তা পাঠান",
+  "My Deliveries": "আমার সরবরাহের কাজ",
+  "Manage your assigned shipments and update delivery statuses.": "আপনার জন্য নির্ধারিত পার্সেল পরিচালনা করুন এবং সরবরাহের অবস্থা হালনাগাদ করুন।",
+  "Earnings & History": "আয় ও কাজের ইতিহাস",
+  "View your total earnings and delivery performance over time.": "আপনার মোট আয় ও সরবরাহের কাজের অগ্রগতি দেখুন।",
+  "Total Earnings": "মোট আয়",
+  "Completed Deliveries": "সম্পন্ন সরবরাহ",
+  "Performance Rate": "সফলতার হার",
+  "Compensation needs configuration": "পারিশ্রমিকের নিয়ম নির্ধারণ করা প্রয়োজন",
+  "Loading courier dashboard...": "বাহকের ড্যাশবোর্ড আনা হচ্ছে...",
+  "Courier Dashboard": "বাহকের ড্যাশবোর্ড",
+  "Overview of your deliveries and earnings.": "আপনার সরবরাহ ও আয়ের সারসংক্ষেপ।",
+  "Profile Updated": "ব্যক্তিগত তথ্য হালনাগাদ হয়েছে",
+  "Update Failed": "হালনাগাদ করা যায়নি",
+  "My Profile": "আমার ব্যক্তিগত তথ্য",
+  "Manage your personal courier profile and settings.": "আপনার ব্যক্তিগত তথ্য ও বাহকের সেটিংস পরিচালনা করুন।",
+  "Profile Details": "ব্যক্তিগত তথ্যের বিবরণ",
+  "Full Name": "পুরো নাম",
+  "Contact Number": "যোগাযোগের নম্বর",
+  "Save Changes": "পরিবর্তন সংরক্ষণ করুন",
+  "My Shipments": "আমার পার্সেলসমূহ",
+  "View and track all your active and past shipments.": "আপনার চলমান ও আগের সব পার্সেল দেখুন ও অনুসরণ করুন।",
+  "New Shipment": "নতুন পার্সেল",
+  "Fill in the details below to create a new delivery request.": "নতুন সরবরাহের অনুরোধ করতে নিচের তথ্য পূরণ করুন।",
+  "Dashboard": "ড্যাশবোর্ড",
+  "Payment History": "অর্থপ্রদানের ইতিহাস",
+  "View your transaction records and payment statuses.": "আপনার লেনদেনের নথি ও অর্থপ্রদানের অবস্থা দেখুন।",
+  "Transaction ID": "লেনদেনের পরিচয়সংখ্যা",
+  "Amount": "পরিমাণ",
+  "Gateway": "অর্থপ্রদানের মাধ্যম",
+  "No payment records found.": "অর্থপ্রদানের কোনো নথি পাওয়া যায়নি।",
+  "Manage your personal information and settings.": "আপনার ব্যক্তিগত তথ্য ও সেটিংস পরিচালনা করুন।",
+  "Default Address": "নিয়মিত ব্যবহৃত ঠিকানা",
+  "House, Street, City": "বাড়ি, সড়ক, শহর",
+  "Something went wrong!": "কিছু একটা সমস্যা হয়েছে!",
+  "We encountered an unexpected error while processing your request. Our team has been notified.": "আপনার অনুরোধ সম্পন্ন করতে অপ্রত্যাশিত সমস্যা হয়েছে। আবার চেষ্টা করুন; সমস্যা থাকলে সহায়তা নিন।",
+  "Try again": "আবার চেষ্টা করুন",
+  "Go to Homepage": "প্রথম পাতায় যান",
+  "Page Not Found": "পাতাটি পাওয়া যায়নি",
+  "The page you are looking for doesn't exist or has been moved. Please check the URL or return to the homepage.": "আপনি যে পাতাটি খুঁজছেন তা নেই অথবা সরানো হয়েছে। ঠিকানা যাচাই করুন বা প্রথম পাতায় ফিরুন।",
+  "Return to Homepage": "প্রথম পাতায় ফিরুন",
+  "Payment Cancelled": "অর্থপ্রদান বাতিল হয়েছে",
+  "You have cancelled the payment process. Your shipment will remain in unpaid status.": "অর্থপ্রদানের প্রক্রিয়া বাতিল হয়েছে। চূড়ান্ত অবস্থা জানতে অর্থপ্রদানের তালিকা দেখুন।",
+  "Go to Payments": "অর্থপ্রদানের তালিকায় যান",
+  "Payment Failed": "অর্থপ্রদান ব্যর্থ হয়েছে",
+  "We were unable to process your payment at this time. Please check your credentials or try again with a different payment method.": "এই মুহূর্তে অর্থপ্রদান সম্পন্ন করা যায়নি। তথ্য যাচাই করুন অথবা অন্য মাধ্যম দিয়ে আবার চেষ্টা করুন।",
+  "Back": "ফিরে যান",
+  "Try Again": "আবার চেষ্টা করুন",
+  "Standard Delivery": "সাধারণ সরবরাহ",
+  "Reliable and cost-effective delivery for your everyday parcels. Expected delivery within 2-3 business days across major cities.": "আপনার নিয়মিত পার্সেলের জন্য নির্ভরযোগ্য ও সাশ্রয়ী সরবরাহ। সম্ভাব্য সময় ও সেবার আওতা জানতে যোগাযোগ করুন।",
+  "Express Delivery": "জরুরি সরবরাহ",
+  "Urgent shipments require priority handling. Our express service guarantees next-day delivery for time-sensitive documents and goods.": "জরুরি নথি ও পণ্যের জন্য অগ্রাধিকারভিত্তিক সরবরাহ। প্রাপ্যতা ও সময়সীমা আগেই নিশ্চিত করুন।",
+  "Corporate Logistics": "প্রাতিষ্ঠানিক পরিবহন",
+  "Tailored B2B logistics solutions for businesses of all sizes. Manage bulk shipments easily with our dedicated corporate dashboard.": "প্রতিষ্ঠানের প্রয়োজন অনুযায়ী পণ্য পরিবহনের ব্যবস্থা। আপনার পার্সেলগুলো ড্যাশবোর্ড থেকে পরিচালনা করুন।",
+  "Fragile Handling": "ভঙ্গুর পণ্যের যত্ন",
+  "Specialized care and secure packaging for delicate items. We ensure your fragile goods arrive in pristine condition.": "ভঙ্গুর পণ্য পাঠানোর আগে উপযুক্ত মোড়ক, গ্রহণযোগ্যতা ও বিশেষ ব্যবস্থার শর্ত নিশ্চিত করুন।",
+  "Cash on Delivery (COD)": "পণ্য হাতে পেয়ে মূল্য পরিশোধ",
+  "Empower your e-commerce business with our seamless COD service. Fast remittance and transparent payment tracking.": "পণ্য হাতে পেয়ে মূল্য পরিশোধের সুবিধা ও টাকা পাঠানোর নিয়ম চালুর আগে প্রতিষ্ঠানের সঙ্গে নিশ্চিত করুন।",
+  "E-commerce Fulfillment": "অনলাইন ব্যবসার সরবরাহ",
+  "From warehouse storage to last-mile delivery, we handle the entire supply chain so you can focus on growing your business.": "অনলাইন ব্যবসার পণ্য পৌঁছানোর ব্যবস্থা নিয়ে আলোচনা করুন। গুদাম ও অতিরিক্ত সেবার প্রাপ্যতা আগে নিশ্চিত করুন।",
+  "Our Services": "আমাদের সেবাসমূহ",
+  "Comprehensive logistics solutions designed to meet the unique needs of individuals and modern businesses.": "ব্যক্তি ও আধুনিক প্রতিষ্ঠানের চাহিদা অনুযায়ী পণ্য পরিবহনের সেবা।",
+  "Access Denied": "প্রবেশের অনুমতি নেই",
+  "You do not have the required permissions to view this page. If you believe this is a mistake, please contact your administrator.": "এই পাতা দেখার প্রয়োজনীয় অনুমতি আপনার নেই। ভুল মনে হলে প্রশাসকের সঙ্গে যোগাযোগ করুন।",
+  "Shipment Created": "পার্সেলের অনুরোধ তৈরি হয়েছে",
+  "Your shipment has been created successfully.": "আপনার পার্সেলের অনুরোধ সফলভাবে তৈরি হয়েছে।",
+  "Creation Failed": "অনুরোধ তৈরি করা যায়নি",
+  "Create New Shipment": "নতুন পার্সেলের অনুরোধ",
+  "Enter receiver details and select origin/destination hubs to generate a shipment.": "প্রাপকের তথ্য দিন এবং প্রেরণ ও গন্তব্য হাব বেছে নিন।",
+  "Receiver Name": "প্রাপকের নাম",
+  "Alice Smith": "প্রাপকের পুরো নাম",
+  "Receiver Phone": "প্রাপকের ফোন",
+  "House, Road, Area, City": "বাড়ি, সড়ক, এলাকা, শহর",
+  "Weight (kg)": "ওজন (কিলোগ্রাম)",
+  "Origin Hub": "প্রেরণ হাব",
+  "Select origin hub": "প্রেরণ হাব বেছে নিন",
+  "Destination Hub": "গন্তব্য হাব",
+  "Select destination hub": "গন্তব্য হাব বেছে নিন",
+  "Login Successful": "প্রবেশ সফল হয়েছে",
+  "Welcome back to Dropzo": "ড্রপজোতে আবার স্বাগতম",
+  "Authentication Failed": "পরিচয় যাচাই ব্যর্থ হয়েছে",
+  "Welcome Back 👋": "আবার স্বাগতম 👋",
+  "Login to your account to continue": "এগিয়ে যেতে আপনার অ্যাকাউন্টে প্রবেশ করুন",
+  "Password": "পাসওয়ার্ড",
+  "Forgot Password?": "পাসওয়ার্ড ভুলে গেছেন?",
+  "Authenticating...": "পরিচয় যাচাই করা হচ্ছে...",
+  "One-Click Demo Login": "এক ক্লিকে নমুনা অ্যাকাউন্টে প্রবেশ",
+  "Admin": "প্রশাসক",
+  "Courier": "বাহক",
+  "User": "ব্যবহারকারী",
+  "Or continue with": "অথবা এই মাধ্যমে এগিয়ে যান",
+  "Don't have an account?": "অ্যাকাউন্ট নেই?",
+  "Create Account": "অ্যাকাউন্ট তৈরি করুন",
+  "Validation Error": "তথ্য যাচাইয়ে সমস্যা",
+  "Passwords do not match": "পাসওয়ার্ড দুটি মিলছে না",
+  "Registration Successful": "নিবন্ধন সফল হয়েছে",
+  "Please check your email for the OTP.": "এককালীন সংকেতের জন্য আপনার ইমেইল দেখুন।",
+  "Registration Failed": "নিবন্ধন ব্যর্থ হয়েছে",
+  "Create an Account": "অ্যাকাউন্ট তৈরি করুন",
+  "Enter your details to get started": "শুরু করতে আপনার তথ্য দিন",
+  "John Doe": "আপনার পুরো নাম",
+  "Phone Number": "ফোন নম্বর",
+  "Confirm": "নিশ্চিত করুন",
+  "Creating...": "তৈরি করা হচ্ছে...",
+  "Already have an account?": "আগেই অ্যাকাউন্ট আছে?",
+  "Login here": "এখানে প্রবেশ করুন",
+  "Verification Successful": "যাচাই সফল হয়েছে",
+  "Your account is now verified.": "আপনার অ্যাকাউন্ট যাচাই করা হয়েছে।",
+  "Verification Failed": "যাচাই ব্যর্থ হয়েছে",
+  "Verify your email": "আপনার ইমেইল যাচাই করুন",
+  "We sent a 6-digit code to": "৬ সংখ্যার সংকেত পাঠানো হয়েছে",
+  "Invalid or expired code": "সংকেত ভুল অথবা মেয়াদ শেষ",
+  "Please enter the code to complete registration": "নিবন্ধন শেষ করতে সংকেতটি দিন",
+  "Fast Delivery": "দ্রুত সরবরাহ",
+  "We ensure your packages reach their destination in the shortest time possible.": "আপনার পার্সেল দ্রুত গন্তব্যে পৌঁছানোর জন্য আমরা কাজ করি।",
+  "Secure Handling": "নিরাপদ ব্যবস্থাপনা",
+  "Your packages are handled with the utmost care and security at every step.": "প্রতিটি ধাপে আপনার পার্সেল যত্নের সঙ্গে পরিচালনা করা হয়।",
+  "Live Tracking": "পার্সেলের হালনাগাদ তথ্য",
+  "Track your shipments in real-time from our hubs directly to your doorstep.": "হাব থেকে গন্তব্য পর্যন্ত আপনার পার্সেলের সর্বশেষ অবস্থা দেখুন।",
+  "Our dedicated support team is available around the clock to assist you.": "সহায়তার প্রাপ্যতা ও সময় জানতে যোগাযোগের পাতায় দেখুন।",
+  "Why Choose Dropzo?": "কেন ড্রপজো বেছে নেবেন?",
+  "We provide top-notch logistics solutions designed for businesses and individuals alike.": "ব্যক্তি ও প্রতিষ্ঠানের জন্য সহজ পণ্য পরিবহনব্যবস্থা।",
+  "Create Shipment": "পার্সেলের অনুরোধ তৈরি করুন",
+  "Enter package details and destination.": "পার্সেলের বিবরণ ও গন্তব্য দিন।",
+  "Hub Assignment": "হাব নির্ধারণ",
+  "Package is routed through our network.": "আমাদের হাবের মাধ্যমে পার্সেলের পথ নির্ধারিত হয়।",
+  "In Transit": "পথে রয়েছে",
+  "Assigned to a courier for delivery.": "সরবরাহের জন্য বাহক নিয়োগ করা হয়।",
+  "Delivered": "পৌঁছে দেওয়া হয়েছে",
+  "Successfully handed over to receiver.": "প্রাপকের কাছে সফলভাবে হস্তান্তর করা হয়েছে।",
+  "How It Works": "যেভাবে কাজ করে",
+  "A simple, streamlined process to get your package from A to B.": "প্রেরণস্থান থেকে গন্তব্যে পার্সেল পৌঁছানোর সহজ প্রক্রিয়া।",
+  "Cities Covered": "সেবার আওতায় শহর",
+  "Happy Customers": "সন্তুষ্ট গ্রাহক",
+  "Delivery Success": "সরবরাহের সফলতা",
+  "Customer Support": "গ্রাহক সহায়তা",
+  "Fast, secure, and reliable parcel delivery services across the nation. We bridge the gap between businesses and their customers.": "দ্রুত ও নির্ভরযোগ্য পার্সেল সরবরাহের মাধ্যমে প্রতিষ্ঠান ও গ্রাহকের মধ্যে সংযোগ গড়ে তুলি।",
+  "Quick Links": "প্রয়োজনীয় লিংক",
+  "Home": "প্রথম পাতা",
+  "About Us": "আমাদের সম্পর্কে",
+  "Services": "সেবাসমূহ",
+  "Contact": "যোগাযোগ",
+  "Express Courier": "জরুরি সরবরাহ",
+  "E-commerce Logistics": "অনলাইন ব্যবসার পরিবহন",
+  "Heavy Freight": "ভারী পণ্য পরিবহন",
+  "Legal & Support": "নীতি ও সহায়তা",
+  "Privacy Policy": "গোপনীয়তার নীতি",
+  "Terms of Service": "ব্যবহারের শর্তাবলী",
+  "Cookie Policy": "কুকির নীতি",
+  "FAQ": "সচরাচর প্রশ্ন",
+  "Dropzo. All rights reserved.": "ড্রপজো। সর্বস্বত্ব সংরক্ষিত।",
+  "Designed for secure and fast logistics.": "নিরাপদ ও দ্রুত পণ্য পরিবহনের জন্য তৈরি।",
+  "Logged Out": "বের হওয়া হয়েছে",
+  "You have been successfully logged out.": "আপনি সফলভাবে অ্যাকাউন্ট থেকে বের হয়েছেন।",
+  "Logout Failed": "অ্যাকাউন্ট থেকে বের হওয়া যায়নি",
+  "Something went wrong.": "কিছু একটা সমস্যা হয়েছে।",
+  "Failed to load dashboard statistics.": "ড্যাশবোর্ডের পরিসংখ্যান আনা যায়নি।",
+  "Total Revenue": "মোট আদায়",
+  "Total Customers": "মোট গ্রাহক",
+  "Total Couriers": "মোট বাহক",
+  "Total Shipments": "মোট পার্সেল",
+  "Status Updated": "অবস্থা হালনাগাদ হয়েছে",
+  "Role Updated": "ভূমিকা হালনাগাদ হয়েছে",
+  "Search users...": "ব্যবহারকারী খুঁজুন...",
+  "Email": "ইমেইল",
+  "Role": "ভূমিকা",
+  "No users found.": "কোনো ব্যবহারকারী পাওয়া যায়নি।",
+  "Total Deliveries": "মোট সরবরাহ",
+  "Address": "ঠিকানা",
+  "No delivery tasks found.": "সরবরাহের কোনো কাজ পাওয়া যায়নি।",
+  "+ Create Shipment": "+ পার্সেলের অনুরোধ তৈরি করুন",
+  "Active & Pending": "চলমান ও অপেক্ষমাণ",
+  "Price": "মূল্য",
+  "Pay Now": "এখন পরিশোধ করুন",
+  "Track": "খুঁজুন",
+  "Check Payment": "অর্থপ্রদান যাচাই করুন",
+  "Shipment Cancelled": "পার্সেলের অনুরোধ বাতিল হয়েছে",
+  "Cancellation Failed": "বাতিল করা যায়নি",
+  "Cancel": "বাতিল করুন",
+  "Shipment Tracking": "পার্সেলের পথের বিবরণ",
+  "Logged in Successfully": "সফলভাবে প্রবেশ হয়েছে",
+  "Google Login Failed": "গুগলের মাধ্যমে প্রবেশ ব্যর্থ হয়েছে",
+  "No tracking information available yet.": "পার্সেলের পথের তথ্য এখনো পাওয়া যায়নি।",
+  "Close": "বন্ধ করুন",
+  "pagination": "পাতা নির্বাচন",
+  "Go to previous page": "আগের পাতায় যান",
+  "Go to next page": "পরের পাতায় যান",
+  "More pages": "আরও পাতা",
+  "Previous": "আগের পাতা",
+  "Next": "পরের পাতা",
+  "Sidebar": "পাশের মেনু",
+  "Displays the mobile sidebar.": "মুঠোফোনের পাশের মেনু দেখায়।",
+  "Toggle Sidebar": "পাশের মেনু খুলুন বা বন্ধ করুন",
+  "Loading": "তথ্য আনা হচ্ছে",
+  "Close toast": "বিজ্ঞপ্তি বন্ধ করুন",
+  "Management": "ব্যবস্থাপনা",
+  "Overview": "সারসংক্ষেপ",
+  "Delivery Management": "সরবরাহ ব্যবস্থাপনা",
+  "Earnings": "আয়",
+  "Settings": "সেটিংস",
+  "Profile": "ব্যক্তিগত তথ্য",
+  "Shipments": "পার্সেলসমূহ",
+  "Billing & Settings": "বিল ও সেটিংস",
+  "Payments": "অর্থপ্রদান",
+  "Login": "প্রবেশ করুন",
+  "Sign Up": "নিবন্ধন করুন",
+  "Verifying...": "যাচাই করা হচ্ছে...",
+  "Verify Account": "অ্যাকাউন্ট যাচাই করুন",
+  "Block": "বন্ধ করুন",
+  "Unblock": "আবার চালু করুন",
+  "50+": "৫০+",
+  "10K+": "১০ হাজারের বেশি",
+  "99.9%": "৯৯.৯%",
+  "24/7": "২৪ ঘণ্টা, সপ্তাহে ৭ দিন",
+  "Name must be at least 3 characters": "নাম কমপক্ষে ৩ অক্ষরের হতে হবে",
+  "Invalid email address": "সঠিক ইমেইল ঠিকানা দিন",
+  "Invalid phone number": "সঠিক ফোন নম্বর দিন",
+  "Password must be at least 8 characters": "পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে",
+  "Password must be at most 72 characters": "পাসওয়ার্ড সর্বোচ্চ ৭২ অক্ষরের হতে পারবে",
+  "Must contain a lowercase letter": "কমপক্ষে একটি ছোট হাতের ইংরেজি অক্ষর থাকতে হবে",
+  "Must contain an uppercase letter": "কমপক্ষে একটি বড় হাতের ইংরেজি অক্ষর থাকতে হবে",
+  "Must contain a number": "কমপক্ষে একটি সংখ্যা থাকতে হবে",
+  "Must contain a special character": "কমপক্ষে একটি বিশেষ চিহ্ন থাকতে হবে",
+  "Please confirm your password": "পাসওয়ার্ডটি আবার লিখে নিশ্চিত করুন",
+  "Password is required": "পাসওয়ার্ড দিন",
+  "OTP must be exactly 6 digits": "এককালীন সংকেত ঠিক ৬ সংখ্যার হতে হবে",
+  "Name is required": "নাম দিন",
+  "Receiver name is required": "প্রাপকের নাম দিন",
+  "Detailed address is required": "বিস্তারিত ঠিকানা দিন",
+  "Weight exceeds limit": "ওজন অনুমোদিত সীমার বেশি",
+  "Origin hub is required": "প্রেরণ হাব বেছে নিন",
+  "Destination hub is required": "গন্তব্য হাব বেছে নিন",
+  "Origin and Destination hubs cannot be the same": "প্রেরণ ও গন্তব্য হাব একই হতে পারে না",
+  "Invalid input: expected number, received NaN": "ওজনের ঘরে সঠিক সংখ্যা দিন",
+  "Too small: expected number to be >0": "ওজন শূন্যের বেশি হতে হবে",
+  "Unable to complete this request": "অনুরোধটি সম্পন্ন করা যায়নি",
+  "Invalid email or password": "ইমেইল অথবা পাসওয়ার্ড ভুল",
+  "Provider unavailable": "অর্থপ্রদানের সেবা এখন পাওয়া যাচ্ছে না",
+  "Payment pending provider verification": "অর্থপ্রদানকারী প্রতিষ্ঠানের যাচাই এখনো সম্পন্ন হয়নি",
+  "Mark Picked Up": "সংগ্রহ করা হয়েছে",
+  "Arrived at Origin Hub": "প্রেরণ হাবে এসেছে",
+  "Start Hub Transfer": "হাবের মধ্যে পরিবহন শুরু করুন",
+  "Arrived at Destination Hub": "গন্তব্য হাবে এসেছে",
+  "Out for Delivery": "প্রাপকের কাছে পৌঁছানোর পথে",
+  "Mark Delivered": "সরবরাহ সম্পন্ন করুন",
+  "Delivery Failed": "সরবরাহ ব্যর্থ হয়েছে",
+  "Mark Returned": "ফেরত দেওয়া হয়েছে",
+  "PENDING": "অপেক্ষমাণ",
+  "ASSIGNED": "বাহক নির্ধারিত",
+  "PICKED_UP": "সংগ্রহ করা হয়েছে",
+  "AT_ORIGIN_HUB": "প্রেরণ হাবে",
+  "IN_TRANSIT": "পরিবহনে",
+  "AT_DESTINATION_HUB": "গন্তব্য হাবে",
+  "OUT_FOR_DELIVERY": "প্রাপকের কাছে পৌঁছানোর পথে",
+  "DELIVERED": "পৌঁছে দেওয়া হয়েছে",
+  "DELIVERY_FAILED": "সরবরাহ ব্যর্থ হয়েছে",
+  "RETURNED": "ফেরত দেওয়া হয়েছে",
+  "CANCELLED": "বাতিল হয়েছে",
+  "PICKED UP": "সংগ্রহ করা হয়েছে",
+  "AT ORIGIN HUB": "প্রেরণ হাবে",
+  "IN TRANSIT": "পরিবহনে",
+  "AT DESTINATION HUB": "গন্তব্য হাবে",
+  "OUT FOR DELIVERY": "প্রাপকের কাছে পৌঁছানোর পথে",
+  "DELIVERY FAILED": "সরবরাহ ব্যর্থ হয়েছে",
+  "PAID": "পরিশোধিত",
+  "UNPAID": "অপরিশোধিত",
+  "FAILED": "ব্যর্থ হয়েছে",
+  "REFUNDED": "ফেরত দেওয়া হয়েছে",
+  "ACTIVE": "সক্রিয়",
+  "BLOCKED": "বন্ধ",
+  "INACTIVE": "নিষ্ক্রিয়",
+  "ADMIN": "প্রশাসক",
+  "SUPER_ADMIN": "প্রধান প্রশাসক",
+  "COURIER": "বাহক",
+  "CUSTOMER": "গ্রাহক",
+  "TRUCK": "ট্রাক",
+  "BIKE": "মোটরসাইকেল",
+  "BICYCLE": "সাইকেল",
+  "VAN": "ভ্যান",
+  "Draft — not a final legal document": "খসড়া — চূড়ান্ত আইনি নথি নয়",
+  "Fill in every placeholder and obtain legal review before publishing this as your final policy.": "চূড়ান্ত নীতি হিসেবে প্রকাশের আগে সব প্লেসহোল্ডার পূরণ করুন এবং আইনি পর্যালোচনা করান।",
+  "Company": "প্রতিষ্ঠান",
+  "Effective date": "কার্যকর হওয়ার তারিখ",
+  "Legal address": "প্রতিষ্ঠানের ঠিকানা",
+  "Contact information is not configured yet. Replace the placeholders before accepting support requests.": "যোগাযোগের তথ্য এখনো নির্ধারিত নয়। সহায়তার অনুরোধ গ্রহণের আগে প্লেসহোল্ডারগুলো পূরণ করুন।",
+  "Contact form is not available until a verified support address is configured.": "যাচাইকৃত সহায়তার ঠিকানা নির্ধারিত না হওয়া পর্যন্ত যোগাযোগের ফরম চালু নয়।",
+  "View frequently asked questions": "সচরাচর প্রশ্ন দেখুন",
+  "Read our privacy policy": "গোপনীয়তার নীতি পড়ুন",
+  "Contact and delivery information": "যোগাযোগ ও সরবরাহের তথ্য",
+  "Service availability and delivery terms must be confirmed before booking.": "বুকিংয়ের আগে সেবার প্রাপ্যতা ও সরবরাহের শর্ত নিশ্চিত করতে হবে।",
+  "SLA and support hours require configuration": "সেবার সময়সীমা ও সহায়তার সময় নির্ধারণ প্রয়োজন",
+  "Show password": "পাসওয়ার্ড দেখুন",
+  "Hide password": "পাসওয়ার্ড লুকান",
+  "No shipment was provided for payment verification.": "অর্থপ্রদান যাচাই করার পরিচয়সংখ্যা নেই।",
+  "Sign in to view payment status": "অর্থপ্রদানের অবস্থা দেখতে প্রবেশ করুন",
+  "Payment Confirmed": "অর্থপ্রদান নিশ্চিত হয়েছে",
+  "Payment Not Yet Confirmed": "অর্থপ্রদান এখনও নিশ্চিত হয়নি",
+  "Your payment has been verified and recorded.": "সার্ভারে আপনার অর্থপ্রদানের নথি সংরক্ষিত হয়েছে।",
+  "Awaiting verified payment confirmation from the provider.": "অর্থপ্রদানকারী প্রতিষ্ঠানের যাচাইয়ের জন্য অপেক্ষা করছি।",
+  "Check again": "আবার যাচাই করুন",
+  "View My Shipments": "পার্সেলের তালিকায় যান",
+  "Track Your Parcel": "আপনার পার্সেল খুঁজুন",
+  "Enter your tracking ID to view the latest shipment updates.": "পার্সেলের বর্তমান অবস্থা জানতে অনুসন্ধানসংখ্যা লিখুন।",
+  "Unable to load this information. Please try again.": "তথ্য আনা যায়নি। আবার চেষ্টা করুন।",
+  "truck": "ট্রাক",
+  "bike": "মোটরসাইকেল",
+  "bicycle": "সাইকেল",
+  "van": "ভ্যান",
+  "DELETED": "মুছে ফেলা হয়েছে",
+  "Notifications": "বিজ্ঞপ্তি",
+  "STRIPE": "স্ট্রাইপ",
+  "BKASH": "বিকাশ",
+  "SSLCOMMERZ": "এসএসএলকমার্জ",
+  "PAYMENT_REQUIRES_REVIEW": "অর্থপ্রদান পর্যালোচনা প্রয়োজন",
+  "PAYMENT_SUCCESS": "অর্থপ্রদান সফল",
+  "UPDATE_USER_STATUS": "ব্যবহারকারীর অবস্থা পরিবর্তন",
+  "UPDATE_USER_ROLE": "ব্যবহারকারীর ভূমিকা পরিবর্তন",
+  "CREATE_SHIPMENT": "পার্সেলের অনুরোধ তৈরি",
+  "ASSIGN_COURIER": "বাহক নিয়োগ",
+  "UPDATE_STATUS": "অবস্থা পরিবর্তন",
+  "CANCEL_SHIPMENT": "পার্সেলের অনুরোধ বাতিল",
+  "SHIPMENT": "পার্সেল",
+  "USER": "ব্যবহারকারী"
+}
+```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\next.config.ts
@@ -175,6 +1129,7 @@ const nextConfig: NextConfig = {
 };
 export default withNextIntl(nextConfig);
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\package.json
@@ -235,6 +1190,7 @@ export default withNextIntl(nextConfig);
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\playwright.config.ts
 
 ```ts
@@ -263,6 +1219,7 @@ export default defineConfig({
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\api\admin.api.ts
 
 ```ts
@@ -275,6 +1232,7 @@ export const updateUserStatus = (id: string, payload: Record<string, unknown>) =
 export const updateUserRole = (id: string, payload: Record<string, unknown>) => apiClient<ApiResponse<User>>(`/admin/users/${encodeURIComponent(id)}/role`, { method: "PATCH", body: payload });
 export const getAuditLogs = (params?: Record<string, unknown>) => apiClient<ApiResponse<AuditLog[]>>("/audit-logs", { method: "GET", params });
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\api\auth.api.ts
@@ -294,6 +1252,7 @@ export const userLogout = () => apiClient<ApiResponse<null>>("/auth/logout", { m
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\api\courier.api.ts
 
 ```ts
@@ -306,6 +1265,7 @@ export const getCourierDetails = (id: string) => apiClient<ApiResponse<Courier>>
 export const updateCourierProfile = (id: string, payload: Record<string, unknown>) => apiClient<ApiResponse<Courier>>(`/couriers/${encodeURIComponent(id)}`, { method: "PATCH", body: payload });
 export const getCourierHistoryAndEarnings = (id: string) => apiClient<ApiResponse<CourierEarnings>>(`/couriers/${encodeURIComponent(id)}/history-earnings`, { method: "GET" });
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\api\hub.api.ts
@@ -322,6 +1282,7 @@ export const deleteHub = (id: string) => apiClient<ApiResponse<Hub>>(`/hubs/${en
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\api\payment.api.ts
 
 ```ts
@@ -336,6 +1297,7 @@ export const initiateStripePayment = (payload: PaymentRequest) => apiClient<ApiR
 export const getPayments = (params?: Record<string, unknown>) => apiClient<ApiResponse<Payment[]>>("/payments", { method: "GET", params });
 export const getSinglePayment = (id: string) => apiClient<ApiResponse<Payment>>(`/payments/${encodeURIComponent(id)}`, { method: "GET" });
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\api\shipment.api.ts
@@ -356,6 +1318,7 @@ export const cancelShipment = (id: string) => apiClient<ApiResponse<Shipment>>(`
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\api\user.api.ts
 
 ```ts
@@ -368,13 +1331,20 @@ export const updateProfileImage = (payload: FormData) => apiClient<ApiResponse<U
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\(auth)\forgot-password\page.tsx
 
 ```tsx
 "use client";
 
+import { useUiText } from "@/i18n/use-ui-text";
 import { Button } from "@/components/ui/button";
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "@/components/ui/toast";
@@ -385,6 +1355,7 @@ import { Link } from "@/i18n/navigation";
 import { useRouter } from "@/i18n/navigation";
 
 export default function ForgotPasswordPage() {
+  const ui = useUiText();
   const router = useRouter();
   const { mutate: forgotPassword, isPending } = useForgotPassword();
 
@@ -422,9 +1393,13 @@ export default function ForgotPasswordPage() {
       <div className="w-full max-w-[440px] rounded-2xl bg-background p-6 sm:p-8 shadow-xl ring-1 ring-border/50 backdrop-blur-md">
         <div className="flex flex-col gap-6">
           <div className="flex flex-col items-center gap-2 text-center">
-            <h1 className="text-3xl font-bold tracking-tight">Forgot Password</h1>
+            <h1 className="text-3xl font-bold tracking-tight">
+              {ui("Forgot Password")}
+            </h1>
             <p className="text-sm text-muted-foreground">
-              Enter your email address and we will send you a code to reset your password.
+              {ui(
+                "Enter your email address and we will send you a code to reset your password.",
+              )}{" "}
             </p>
           </div>
 
@@ -437,10 +1412,13 @@ export default function ForgotPasswordPage() {
             <FieldGroup>
               <form.Field name="email">
                 {(field) => {
-                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid;
                   return (
                     <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Email Address</FieldLabel>
+                      <FieldLabel htmlFor={field.name}>
+                        {ui("Email Address")}
+                      </FieldLabel>
                       <Input
                         id={field.name}
                         name={field.name}
@@ -451,28 +1429,37 @@ export default function ForgotPasswordPage() {
                         value={field.state.value}
                         aria-invalid={isInvalid}
                       />
-                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
                     </Field>
                   );
                 }}
               </form.Field>
 
-              <Button disabled={isPending} type="submit" className="w-full mt-2">
+              <Button
+                disabled={isPending}
+                type="submit"
+                className="w-full mt-2"
+              >
                 {isPending ? (
                   <>
-                    <Spinner className="mr-2" /> Sending OTP...
+                    <Spinner className="mr-2" /> {ui("Sending OTP...")}{" "}
                   </>
                 ) : (
-                  "Send Reset OTP"
+                  ui("Send Reset OTP")
                 )}
               </Button>
             </FieldGroup>
           </form>
 
           <div className="text-center text-sm text-muted-foreground mt-2">
-            Remember your password?{" "}
-            <Link href="/login" className="font-semibold text-primary hover:underline underline-offset-4">
-              Back to Login
+            {ui("Remember your password?")}{" "}
+            <Link
+              href="/login"
+              className="font-semibold text-primary hover:underline underline-offset-4"
+            >
+              {ui("Back to Login")}{" "}
             </Link>
           </div>
         </div>
@@ -481,6 +1468,7 @@ export default function ForgotPasswordPage() {
   );
 }
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\(auth)\layout.tsx
@@ -494,15 +1482,26 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\(auth)\reset-password\page.tsx
 
 ```tsx
 "use client";
 
+import { useUiText } from "@/i18n/use-ui-text";
 import { Button } from "@/components/ui/button";
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "@/components/ui/toast";
 import { useResetPassword } from "@/hooks";
@@ -515,6 +1514,7 @@ import { useRouter } from "@/i18n/navigation";
 import { Suspense, useEffect, useState } from "react";
 
 function ResetPasswordForm() {
+  const ui = useUiText();
   const searchParams = useSearchParams();
   const router = useRouter();
   const email = searchParams.get("email") || "";
@@ -541,7 +1541,8 @@ function ResetPasswordForm() {
         onSuccess: () => {
           toast.add({
             title: "Password Reset",
-            description: "Your password has been successfully reset. Please login.",
+            description:
+              "Your password has been successfully reset. Please login.",
             type: "success",
           });
           router.push("/login");
@@ -562,9 +1563,13 @@ function ResetPasswordForm() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col items-center gap-2 text-center">
-        <h1 className="text-3xl font-bold tracking-tight">Reset Password</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          {ui("Reset Password")}
+        </h1>
         <p className="text-sm text-muted-foreground">
-          Enter the 6-digit OTP sent to <span className="font-semibold text-foreground">{email}</span> and your new password.
+          {ui("Enter the 6-digit OTP sent to")}{" "}
+          <span className="font-semibold text-foreground">{email}</span>{" "}
+          {ui("and your new password.")}{" "}
         </p>
       </div>
 
@@ -578,10 +1583,16 @@ function ResetPasswordForm() {
         <FieldGroup>
           <form.Field name="otp">
             {(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid;
               return (
-                <Field data-invalid={isInvalid} className="flex flex-col items-center gap-2">
-                  <FieldLabel htmlFor={field.name} className="self-start">OTP Code</FieldLabel>
+                <Field
+                  data-invalid={isInvalid}
+                  className="flex flex-col items-center gap-2"
+                >
+                  <FieldLabel htmlFor={field.name} className="self-start">
+                    {ui("OTP Code")}
+                  </FieldLabel>
                   <InputOTP
                     maxLength={6}
                     value={field.state.value}
@@ -592,15 +1603,38 @@ function ResetPasswordForm() {
                     disabled={isPending}
                   >
                     <InputOTPGroup className="gap-2">
-                      <InputOTPSlot index={0} className="rounded-md border h-12 w-10 text-lg" />
-                      <InputOTPSlot index={1} className="rounded-md border h-12 w-10 text-lg" />
-                      <InputOTPSlot index={2} className="rounded-md border h-12 w-10 text-lg" />
-                      <InputOTPSlot index={3} className="rounded-md border h-12 w-10 text-lg" />
-                      <InputOTPSlot index={4} className="rounded-md border h-12 w-10 text-lg" />
-                      <InputOTPSlot index={5} className="rounded-md border h-12 w-10 text-lg" />
+                      <InputOTPSlot
+                        index={0}
+                        className="rounded-md border h-12 w-10 text-lg"
+                      />
+                      <InputOTPSlot
+                        index={1}
+                        className="rounded-md border h-12 w-10 text-lg"
+                      />
+                      <InputOTPSlot
+                        index={2}
+                        className="rounded-md border h-12 w-10 text-lg"
+                      />
+                      <InputOTPSlot
+                        index={3}
+                        className="rounded-md border h-12 w-10 text-lg"
+                      />
+                      <InputOTPSlot
+                        index={4}
+                        className="rounded-md border h-12 w-10 text-lg"
+                      />
+                      <InputOTPSlot
+                        index={5}
+                        className="rounded-md border h-12 w-10 text-lg"
+                      />
                     </InputOTPGroup>
                   </InputOTP>
-                  {isInvalid && <FieldError errors={field.state.meta.errors} className="self-start" />}
+                  {isInvalid && (
+                    <FieldError
+                      errors={field.state.meta.errors}
+                      className="self-start"
+                    />
+                  )}
                 </Field>
               );
             }}
@@ -608,10 +1642,13 @@ function ResetPasswordForm() {
 
           <form.Field name="newPassword">
             {(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid;
               return (
                 <Field data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>New Password</FieldLabel>
+                  <FieldLabel htmlFor={field.name}>
+                    {ui("New Password")}
+                  </FieldLabel>
                   <div className="relative">
                     <Input
                       id={field.name}
@@ -629,7 +1666,11 @@ function ResetPasswordForm() {
                       type="button"
                       onClick={() => setShowPassword((prev) => !prev)}
                     >
-                      {showPassword ? <EyeClosed className="size-4" /> : <Eye className="size-4" />}
+                      {showPassword ? (
+                        <EyeClosed className="size-4" />
+                      ) : (
+                        <Eye className="size-4" />
+                      )}
                     </button>
                   </div>
                   {isInvalid && <FieldError errors={field.state.meta.errors} />}
@@ -638,13 +1679,17 @@ function ResetPasswordForm() {
             }}
           </form.Field>
 
-          <Button disabled={isPending || form.state.values.otp.length !== 6} type="submit" className="w-full mt-4">
+          <Button
+            disabled={isPending || form.state.values.otp.length !== 6}
+            type="submit"
+            className="w-full mt-4"
+          >
             {isPending ? (
               <>
-                <Spinner className="mr-2" /> Resetting...
+                <Spinner className="mr-2" /> {ui("Resetting...")}{" "}
               </>
             ) : (
-              "Reset Password"
+              ui("Reset Password")
             )}
           </Button>
         </FieldGroup>
@@ -673,18 +1718,31 @@ export default function ResetPasswordPage() {
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\about\page.tsx
 
 ```tsx
+import { useUiText } from "@/i18n/use-ui-text";
 import type { Metadata } from "next";
 import { ShieldCheck, MapPin, Clock3 } from "lucide-react";
 
-export const metadata: Metadata = {
-  title: "About Us | Courier & Logistics",
-  description: "Learn about Courier & Logistics, our mission, vision, and how we are transforming the delivery ecosystem.",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  return {
+    title: locale === "bn" ? "আমাদের সম্পর্কে | Dropzo" : "About Us | Dropzo",
+    description:
+      locale === "bn"
+        ? "ড্রপজোর লক্ষ্য, স্বপ্ন ও পণ্য পরিবহনব্যবস্থা সম্পর্কে জানুন।"
+        : "Learn about Dropzo, our mission, vision and delivery platform.",
+  };
+}
 
 export default function AboutPage() {
+  const ui = useUiText();
   return (
     <div className="relative overflow-hidden">
       <div className="pointer-events-none absolute -top-32 left-1/3 size-96 rounded-full bg-primary/10 blur-3xl" />
@@ -692,34 +1750,46 @@ export default function AboutPage() {
 
       <div className="relative max-w-5xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl mb-4">About Courier</h1>
+          <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl mb-4">
+            {ui("About Courier")}
+          </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Delivering trust and reliability across every mile. We are dedicated to providing seamless logistics solutions for businesses and individuals alike.
+            {ui(
+              "Delivering trust and reliability across every mile. We are dedicated to providing seamless logistics solutions for businesses and individuals alike.",
+            )}{" "}
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start mb-16">
           <div className="rounded-3xl border border-white/40 bg-white/60 p-8 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.06)] dark:border-white/10 dark:bg-white/4">
-            <h2 className="text-3xl font-bold mb-4">Our Mission</h2>
+            <h2 className="text-3xl font-bold mb-4">{ui("Our Mission")}</h2>
             <p className="text-muted-foreground leading-relaxed mb-8">
-              At Dropzo, our mission is to simplify the delivery process through innovative technology and a dedicated network of professionals. We aim to ensure that every parcel, no matter how small or large, reaches its destination safely, securely, and on time.
+              {ui(
+                "At Dropzo, our mission is to simplify the delivery process through innovative technology and a dedicated network of professionals. We aim to ensure that every parcel, no matter how small or large, reaches its destination safely, securely, and on time.",
+              )}{" "}
             </p>
-            <h2 className="text-3xl font-bold mb-4">Our Vision</h2>
+            <h2 className="text-3xl font-bold mb-4">{ui("Our Vision")}</h2>
             <p className="text-muted-foreground leading-relaxed">
-              We envision a future where logistics barriers are completely eliminated, making commerce more accessible for everyone. By expanding our hub networks and integrating real-time AI-driven tracking, we strive to become the most trusted logistics partner in the region.
+              {ui(
+                "We envision a future where logistics barriers are completely eliminated, making commerce more accessible for everyone. By expanding our hub networks and integrating real-time AI-driven tracking, we strive to become the most trusted logistics partner in the region.",
+              )}{" "}
             </p>
           </div>
 
           <div className="rounded-3xl border border-white/40 bg-white/60 p-8 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.06)] dark:border-white/10 dark:bg-white/4">
-            <h3 className="text-xl font-bold mb-6">Why Choose Us?</h3>
+            <h3 className="text-xl font-bold mb-6">{ui("Why Choose Us?")}</h3>
             <ul className="space-y-6">
               <li className="flex items-start gap-4">
                 <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-primary/15 to-blue-500/15 ring-1 ring-primary/10">
                   <ShieldCheck className="size-5 text-primary" />
                 </div>
                 <div>
-                  <strong className="block">Fast & Secure</strong>
-                  <span className="text-sm text-muted-foreground">Industry-leading delivery speeds with guaranteed item security.</span>
+                  <strong className="block">{ui("Fast & Secure")}</strong>
+                  <span className="text-sm text-muted-foreground">
+                    {ui(
+                      "Industry-leading delivery speeds with guaranteed item security.",
+                    )}
+                  </span>
                 </div>
               </li>
               <li className="flex items-start gap-4">
@@ -727,8 +1797,10 @@ export default function AboutPage() {
                   <MapPin className="size-5 text-primary" />
                 </div>
                 <div>
-                  <strong className="block">Real-time Tracking</strong>
-                  <span className="text-sm text-muted-foreground">Monitor your shipments at every step of the journey.</span>
+                  <strong className="block">{ui("Real-time Tracking")}</strong>
+                  <span className="text-sm text-muted-foreground">
+                    {ui("Monitor your shipments at every step of the journey.")}
+                  </span>
                 </div>
               </li>
               <li className="flex items-start gap-4">
@@ -736,8 +1808,12 @@ export default function AboutPage() {
                   <Clock3 className="size-5 text-primary" />
                 </div>
                 <div>
-                  <strong className="block">24/7 Support</strong>
-                  <span className="text-sm text-muted-foreground">Dedicated customer service team ready to assist you anytime.</span>
+                  <strong className="block">{ui("24/7 Support")}</strong>
+                  <span className="text-sm text-muted-foreground">
+                    {ui(
+                      "Dedicated customer service team ready to assist you anytime.",
+                    )}
+                  </span>
                 </div>
               </li>
             </ul>
@@ -750,23 +1826,33 @@ export default function AboutPage() {
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\admin\all-shipments\page.tsx
 
 ```tsx
 "use client";
 
+import { useUiText, useUiFormat } from "@/i18n/use-ui-text";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import TablePagination from "@/components/ui/table-pagination";
 import { useGetAllShipments } from "@/hooks";
-import { format } from "date-fns";
 import { useState, useEffect, Suspense } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 
 function AllShipmentsContent() {
+  const ui = useUiText();
+  const display = useUiFormat();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -777,7 +1863,11 @@ function AllShipmentsContent() {
   const [page, setPage] = useState(initialPage);
   const [searchTerm, setSearchTerm] = useState(initialSearch);
 
-  const { data, isLoading } = useGetAllShipments({ page, limit: 10, searchTerm });
+  const { data, isLoading } = useGetAllShipments({
+    page,
+    limit: 10,
+    searchTerm,
+  });
   const shipments = data?.data || [];
   const meta = data?.meta;
 
@@ -810,15 +1900,19 @@ function AllShipmentsContent() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold tracking-tight">All Shipments</h1>
+        <h1 className="text-2xl font-bold tracking-tight">
+          {ui("All Shipments")}
+        </h1>
         <p className="text-sm text-muted-foreground">
-          Monitor all active and completed shipments across the platform.
+          {ui(
+            "Monitor all active and completed shipments across the platform.",
+          )}{" "}
         </p>
       </div>
 
       <div className="flex flex-col gap-4">
         <Input
-          placeholder="Search by tracking ID or receiver name..."
+          placeholder={ui("Search by tracking ID or receiver name...")}
           value={searchTerm}
           onChange={(e) => handleSearch(e.target.value)}
           className="max-w-md"
@@ -828,62 +1922,102 @@ function AllShipmentsContent() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Tracking ID</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Receiver</TableHead>
-                <TableHead>Hubs</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{ui("Tracking ID")}</TableHead>
+                <TableHead>{ui("Date")}</TableHead>
+                <TableHead>{ui("Customer")}</TableHead>
+                <TableHead>{ui("Receiver")}</TableHead>
+                <TableHead>{ui("Hubs")}</TableHead>
+                <TableHead>{ui("Status")}</TableHead>
+                <TableHead className="text-right">{ui("Actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                ["placeholder-a", "placeholder-b", "placeholder-c", "placeholder-d", "placeholder-e"].map(key => (
+                [
+                  "placeholder-a",
+                  "placeholder-b",
+                  "placeholder-c",
+                  "placeholder-d",
+                  "placeholder-e",
+                ].map((key) => (
                   <TableRow key={key}>
-                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-8 w-24 ml-auto" /></TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-20" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-24" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-32" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-32" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-32" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-20" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-8 w-24 ml-auto" />
+                    </TableCell>
                   </TableRow>
                 ))
               ) : shipments.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                    No shipments found.
+                  <TableCell
+                    colSpan={7}
+                    className="h-24 text-center text-muted-foreground"
+                  >
+                    {ui("No shipments found.")}{" "}
                   </TableCell>
                 </TableRow>
               ) : (
-              shipments.map((shipment) => (
+                shipments.map((shipment) => (
                   <TableRow key={shipment.id}>
-                    <TableCell className="font-mono text-xs font-semibold">{shipment.trackingId}</TableCell>
-                    <TableCell>{format(new Date(shipment.createdAt), "MMM dd, yyyy")}</TableCell>
-                    <TableCell className="truncate max-w-37.5">{shipment.sender?.name || "Unknown"}</TableCell>
+                    <TableCell className="font-mono text-xs font-semibold">
+                      {shipment.trackingId}
+                    </TableCell>
+                    <TableCell>
+                      {display.date(new Date(shipment.createdAt))}
+                    </TableCell>
+                    <TableCell className="truncate max-w-37.5">
+                      {shipment.sender?.name || ui("Unknown")}
+                    </TableCell>
                     <TableCell className="truncate max-w-37.5">
                       <div className="flex flex-col">
                         <span className="text-sm">{shipment.receiverName}</span>
-                        <span className="text-xs text-muted-foreground">{shipment.receiverPhone}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {shipment.receiverPhone}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col text-xs">
-                        <span className="truncate max-w-37.5">From: {shipment.originHub?.name || "N/A"}</span>
-                        <span className="truncate max-w-37.5">To: {shipment.destinationHub?.name || "N/A"}</span>
+                        <span className="truncate max-w-37.5">
+                          {ui("From:")} {shipment.originHub?.name || ui("N/A")}
+                        </span>
+                        <span className="truncate max-w-37.5">
+                          {ui("To:")}{" "}
+                          {shipment.destinationHub?.name || ui("N/A")}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <span className="px-2 py-1 rounded-full text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20 tracking-wider">
-                        {shipment.status.replace(/_/g, " ")}
+                        {ui(shipment.status.replace(/_/g, " "))}
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
                       {shipment.status === "PENDING" ? (
-                        <Button variant="default" size="sm">Assign Courier</Button>
+                        <Button variant="default" size="sm">
+                          {ui("Assign Courier")}
+                        </Button>
                       ) : (
-                        <Button variant="outline" size="sm">View Details</Button>
+                        <Button variant="outline" size="sm">
+                          {ui("View Details")}
+                        </Button>
                       )}
                     </TableCell>
                   </TableRow>
@@ -915,31 +2049,45 @@ export default function AllShipmentsPage() {
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\admin\audit-logs\page.tsx
 
 ```tsx
 "use client";
 
+import { useUiText, useUiFormat } from "@/i18n/use-ui-text";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import TablePagination from "@/components/ui/table-pagination";
-import { format } from "date-fns";
 import { useState, Suspense } from "react";
 import { useGetAuditLogs } from "@/hooks";
 
 function AuditLogsContent() {
+  const ui = useUiText();
+  const display = useUiFormat();
   const [page, setPage] = useState(1);
   const { data, isLoading } = useGetAuditLogs({ page, limit: 10 });
-  
+
   const logs = data?.data || [];
   const meta = data?.meta;
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold tracking-tight">System Audit Logs</h1>
+        <h1 className="text-2xl font-bold tracking-tight">
+          {ui("System Audit Logs")}
+        </h1>
         <p className="text-sm text-muted-foreground">
-          View system-wide automated logs, tracking history, and payment events.
+          {ui(
+            "View system-wide automated logs, tracking history, and payment events.",
+          )}{" "}
         </p>
       </div>
 
@@ -948,41 +2096,64 @@ function AuditLogsContent() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date & Time</TableHead>
-                <TableHead>Action</TableHead>
-                <TableHead>Entity Type</TableHead>
-                <TableHead>Entity ID</TableHead>
-                <TableHead>Details</TableHead>
+                <TableHead>{ui("Date & Time")}</TableHead>
+                <TableHead>{ui("Action")}</TableHead>
+                <TableHead>{ui("Entity Type")}</TableHead>
+                <TableHead>{ui("Entity ID")}</TableHead>
+                <TableHead>{ui("Details")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                ["placeholder-a", "placeholder-b", "placeholder-c", "placeholder-d", "placeholder-e"].map(key => (
+                [
+                  "placeholder-a",
+                  "placeholder-b",
+                  "placeholder-c",
+                  "placeholder-d",
+                  "placeholder-e",
+                ].map((key) => (
                   <TableRow key={key}>
-                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-40" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-48" /></TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-32" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-24" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-24" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-40" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-48" />
+                    </TableCell>
                   </TableRow>
                 ))
               ) : logs.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                    No logs found.
+                  <TableCell
+                    colSpan={5}
+                    className="h-24 text-center text-muted-foreground"
+                  >
+                    {ui("No logs found.")}{" "}
                   </TableCell>
                 </TableRow>
               ) : (
-              logs.map((log) => (
+                logs.map((log) => (
                   <TableRow key={log.id}>
-                    <TableCell className="whitespace-nowrap">{format(new Date(log.createdAt), "MMM dd, yyyy HH:mm")}</TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {display.date(new Date(log.createdAt), true)}
+                    </TableCell>
                     <TableCell>
                       <span className="px-2 py-1 rounded-md text-xs font-semibold bg-muted">
-                        {log.action}
+                        {ui(log.action)}
                       </span>
                     </TableCell>
-                    <TableCell>{log.entityType}</TableCell>
-                    <TableCell className="font-mono text-xs">{log.entityId}</TableCell>
+                    <TableCell>{ui(log.entityType)}</TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {log.entityId}
+                    </TableCell>
                     <TableCell className="text-xs text-muted-foreground max-w-50 truncate">
                       {JSON.stringify(log.details)}
                     </TableCell>
@@ -1015,18 +2186,26 @@ export default function AuditLogsPage() {
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\admin\hubs\page.tsx
 
 ```tsx
 "use client";
 
+import { useUiText, useUiFormat } from "@/i18n/use-ui-text";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import TablePagination from "@/components/ui/table-pagination";
 import { useGetAllHubs } from "@/hooks";
-import { format } from "date-fns";
 import { MapPin, Plus } from "lucide-react";
 import { useState } from "react";
 
@@ -1039,6 +2218,8 @@ interface IHub {
 }
 
 export default function HubsManagementPage() {
+  const ui = useUiText();
+  const display = useUiFormat();
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -1050,19 +2231,23 @@ export default function HubsManagementPage() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold tracking-tight">Hub Management</h1>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {ui("Hub Management")}
+          </h1>
           <p className="text-sm text-muted-foreground">
-            Manage origin and destination hubs for routing shipments.
+            {ui(
+              "Manage origin and destination hubs for routing shipments.",
+            )}{" "}
           </p>
         </div>
         <Button>
-          <Plus className="mr-2" /> Add Hub
+          <Plus className="mr-2" /> {ui("Add Hub")}{" "}
         </Button>
       </div>
 
       <div className="flex flex-col gap-4">
         <Input
-          placeholder="Search hubs..."
+          placeholder={ui("Search hubs...")}
           value={searchTerm}
           onChange={(e) => {
             setSearchTerm(e.target.value);
@@ -1075,28 +2260,47 @@ export default function HubsManagementPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Hub Name</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Detailed Address</TableHead>
-                <TableHead>Created At</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{ui("Hub Name")}</TableHead>
+                <TableHead>{ui("Location")}</TableHead>
+                <TableHead>{ui("Detailed Address")}</TableHead>
+                <TableHead>{ui("Created At")}</TableHead>
+                <TableHead className="text-right">{ui("Actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                ["placeholder-a", "placeholder-b", "placeholder-c", "placeholder-d", "placeholder-e"].map(key => (
+                [
+                  "placeholder-a",
+                  "placeholder-b",
+                  "placeholder-c",
+                  "placeholder-d",
+                  "placeholder-e",
+                ].map((key) => (
                   <TableRow key={key}>
-                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-48" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-8 w-24 ml-auto" /></TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-32" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-24" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-48" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-24" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-8 w-24 ml-auto" />
+                    </TableCell>
                   </TableRow>
                 ))
               ) : hubs.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                    No hubs found.
+                  <TableCell
+                    colSpan={5}
+                    className="h-24 text-center text-muted-foreground"
+                  >
+                    {ui("No hubs found.")}{" "}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -1109,14 +2313,18 @@ export default function HubsManagementPage() {
                       </div>
                     </TableCell>
                     <TableCell>{hub.location}</TableCell>
-                    <TableCell className="max-w-62.5 truncate">{hub.address}</TableCell>
-                    <TableCell>{format(new Date(hub.createdAt), "MMM dd, yyyy")}</TableCell>
+                    <TableCell className="max-w-62.5 truncate">
+                      {hub.address}
+                    </TableCell>
+                    <TableCell>
+                      {display.date(new Date(hub.createdAt))}
+                    </TableCell>
                     <TableCell className="text-right space-x-2">
                       <Button variant="outline" size="sm">
-                        Edit
+                        {ui("Edit")}{" "}
                       </Button>
                       <Button variant="destructive" size="sm">
-                        Delete
+                        {ui("Delete")}{" "}
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -1140,6 +2348,7 @@ export default function HubsManagementPage() {
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\admin\layout.tsx
 
 ```tsx
@@ -1157,24 +2366,55 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 ```
 
 
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\admin\loading.tsx
+
+```tsx
+import { useUiText } from "@/i18n/use-ui-text";
+import { Spinner } from "@/components/ui/spinner";
+
+export default function AdminLoading() {
+  const ui = useUiText();
+  return (
+    <div className="flex h-[calc(100vh-4rem)] w-full flex-col items-center justify-center gap-4">
+      <Spinner className="size-8 text-primary" />
+      <p className="text-sm font-medium text-muted-foreground animate-pulse">
+        {ui("Loading dashboard data...")}{" "}
+      </p>
+    </div>
+  );
+}
+```
+
+
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\admin\manage-couriers\page.tsx
 
 ```tsx
 "use client";
 
+import { useUiText, useUiFormat } from "@/i18n/use-ui-text";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import TablePagination from "@/components/ui/table-pagination";
 import { useGetAllCouriers } from "@/hooks";
-import { format } from "date-fns";
 import { Plus } from "lucide-react";
 import { useState, useEffect, Suspense } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 
 function ManageCouriersContent() {
+  const ui = useUiText();
+  const display = useUiFormat();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -1185,7 +2425,11 @@ function ManageCouriersContent() {
   const [page, setPage] = useState(initialPage);
   const [searchTerm, setSearchTerm] = useState(initialSearch);
 
-  const { data, isLoading } = useGetAllCouriers({ page, limit: 10, searchTerm });
+  const { data, isLoading } = useGetAllCouriers({
+    page,
+    limit: 10,
+    searchTerm,
+  });
   const couriers = data?.data || [];
   const meta = data?.meta;
 
@@ -1219,19 +2463,23 @@ function ManageCouriersContent() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold tracking-tight">Manage Couriers</h1>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {ui("Manage Couriers")}
+          </h1>
           <p className="text-sm text-muted-foreground">
-            Manage delivery personnel, check availability, and view assigned hubs.
+            {ui(
+              "Manage delivery personnel, check availability, and view assigned hubs.",
+            )}{" "}
           </p>
         </div>
         <Button>
-          <Plus className="mr-2" /> Add Courier
+          <Plus className="mr-2" /> {ui("Add Courier")}{" "}
         </Button>
       </div>
 
       <div className="flex flex-col gap-4">
         <Input
-          placeholder="Search couriers..."
+          placeholder={ui("Search couriers...")}
           value={searchTerm}
           onChange={(e) => handleSearch(e.target.value)}
           className="max-w-sm"
@@ -1241,61 +2489,98 @@ function ManageCouriersContent() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email & Phone</TableHead>
-                <TableHead>Vehicle</TableHead>
-                <TableHead>Availability</TableHead>
-                <TableHead>Joined</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{ui("Name")}</TableHead>
+                <TableHead>{ui("Email & Phone")}</TableHead>
+                <TableHead>{ui("Vehicle")}</TableHead>
+                <TableHead>{ui("Availability")}</TableHead>
+                <TableHead>{ui("Joined")}</TableHead>
+                <TableHead className="text-right">{ui("Actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                ["placeholder-a", "placeholder-b", "placeholder-c", "placeholder-d", "placeholder-e"].map(key => (
+                [
+                  "placeholder-a",
+                  "placeholder-b",
+                  "placeholder-c",
+                  "placeholder-d",
+                  "placeholder-e",
+                ].map((key) => (
                   <TableRow key={key}>
-                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-40" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-8 w-16 ml-auto" /></TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-32" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-40" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-20" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-24" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-24" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-8 w-16 ml-auto" />
+                    </TableCell>
                   </TableRow>
                 ))
               ) : couriers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                    No couriers found.
+                  <TableCell
+                    colSpan={6}
+                    className="h-24 text-center text-muted-foreground"
+                  >
+                    {ui("No couriers found.")}{" "}
                   </TableCell>
                 </TableRow>
               ) : (
-              couriers.map((courier) => (
+                couriers.map((courier) => (
                   <TableRow key={courier.id}>
-                    <TableCell className="font-medium">{courier.user?.name}</TableCell>
+                    <TableCell className="font-medium">
+                      {courier.user?.name}
+                    </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
                         <span className="text-sm">{courier.user?.email}</span>
-                        <span className="text-xs text-muted-foreground">{courier.contactNumber}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {courier.contactNumber}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell>
                       {courier.vehicleType ? (
                         <div className="flex flex-col">
-                          <span className="text-sm capitalize">{courier.vehicleType}</span>
-                          <span className="text-xs text-muted-foreground">{courier.vehicleNumber}</span>
+                          <span className="text-sm capitalize">
+                            {ui(courier.vehicleType)}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {courier.vehicleNumber}
+                          </span>
                         </div>
                       ) : (
-                        <span className="text-muted-foreground">N/A</span>
+                        <span className="text-muted-foreground">
+                          {ui("N/A")}
+                        </span>
                       )}
                     </TableCell>
                     <TableCell>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${courier.isAvailable ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
-                        {courier.isAvailable ? "Available" : "Unavailable"}
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${courier.isAvailable ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"}`}
+                      >
+                        {courier.isAvailable
+                          ? ui("Available")
+                          : ui("Unavailable")}
                       </span>
                     </TableCell>
-                    <TableCell>{format(new Date(courier.createdAt), "MMM dd, yyyy")}</TableCell>
+                    <TableCell>
+                      {display.date(new Date(courier.createdAt))}
+                    </TableCell>
                     <TableCell className="text-right">
                       <Button variant="outline" size="sm">
-                        View
+                        {ui("View")}{" "}
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -1327,120 +2612,173 @@ export default function ManageCouriersPage() {
 ```
 
 
-## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\contact\page.tsx
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\admin\manage-users\page.tsx
 
 ```tsx
-import type { Metadata } from "next";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { MapPin, Mail, Clock3 } from "lucide-react";
+import { useUiText } from "@/i18n/use-ui-text";
+import UserManagementTable from "@/components/modules/admin/user-management-table";
 
-export const metadata: Metadata = {
-  title: "Contact Us | Dropzo",
-  description: "Get in touch with Dropzo for support, inquiries, or business partnerships.",
-};
-
-export default function ContactPage() {
+export default function ManageUsersPage() {
+  const ui = useUiText();
   return (
-    <div className="relative overflow-hidden">
-      <div className="pointer-events-none absolute -top-24 left-1/4 size-96 rounded-full bg-primary/10 blur-3xl" />
-      <div className="pointer-events-none absolute bottom-0 right-1/4 size-96 rounded-full bg-blue-500/10 blur-3xl" />
-
-      <div className="relative max-w-5xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl mb-4">Contact Us</h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Have a question or need assistance? We are here to help you every step of the way.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="space-y-6">
-            <div className="rounded-3xl border border-white/40 bg-white/60 p-6 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.06)] dark:border-white/10 dark:bg-white/4">
-              <div className="flex items-start gap-4">
-                <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-primary/15 to-blue-500/15 ring-1 ring-primary/10">
-                  <MapPin className="size-5 text-primary" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold mb-1">Head Office</h3>
-                  <p className="text-muted-foreground">
-                    Level 4, PH Tower<br />
-                    Banani, Dhaka-1213<br />
-                    Bangladesh
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-white/40 bg-white/60 p-6 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.06)] dark:border-white/10 dark:bg-white/4">
-              <div className="flex items-start gap-4">
-                <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-primary/15 to-blue-500/15 ring-1 ring-primary/10">
-                  <Mail className="size-5 text-primary" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold mb-2">Contact Details</h3>
-                  <div className="space-y-1 text-muted-foreground">
-                    <p>Email: support@Dropzo.com</p>
-                    <p>Phone: +880 1865 190471</p>
-                    <p>Hotline: 16999</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-white/40 bg-white/60 p-6 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.06)] dark:border-white/10 dark:bg-white/4">
-              <div className="flex items-start gap-4">
-                <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-primary/15 to-blue-500/15 ring-1 ring-primary/10">
-                  <Clock3 className="size-5 text-primary" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold mb-1">Business Hours</h3>
-                  <p className="text-muted-foreground">
-                    Saturday - Thursday: 9:00 AM - 8:00 PM<br />
-                    Friday: Closed
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-3xl border border-white/40 bg-white/70 p-8 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.08)] dark:border-white/10 dark:bg-white/4">
-            <h3 className="text-2xl font-bold mb-6">Send us a Message</h3>
-            <form className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label htmlFor="first-name" className="text-sm font-medium">First Name</label>
-                  <Input id="first-name" placeholder="John" />
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="last-name" className="text-sm font-medium">Last Name</label>
-                  <Input id="last-name" placeholder="Doe" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="contact-email" className="text-sm font-medium">Email Address</label>
-                <Input id="contact-email" type="email" placeholder="john@example.com" />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="contact-subject" className="text-sm font-medium">Subject</label>
-                <Input id="contact-subject" placeholder="How can we help?" />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="contact-message" className="text-sm font-medium">Message</label>
-                <textarea id="contact-message"
-                  className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring min-h-30"
-                  placeholder="Write your message here..."
-                ></textarea>
-              </div>
-              <Button className="w-full shadow-lg shadow-primary/20">Send Message</Button>
-            </form>
-          </div>
-        </div>
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold tracking-tight">
+          {ui("Manage Users")}
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          {ui(
+            "View, filter, and modify user roles and account statuses across the platform.",
+          )}{" "}
+        </p>
       </div>
+      <UserManagementTable />
     </div>
   );
 }
 ```
+
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\admin\page.tsx
+
+```tsx
+import { useUiText } from "@/i18n/use-ui-text";
+import AdminOverview from "@/components/modules/admin/admin-overview";
+
+export default function AdminDashboardPage() {
+  const ui = useUiText();
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold tracking-tight">
+          {ui("Admin Dashboard")}
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          {ui("Overview of platform statistics and recent activities.")}{" "}
+        </p>
+      </div>
+      <AdminOverview />
+    </div>
+  );
+}
+```
+
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\contact\page.tsx
+
+```tsx
+import { Link } from "@/i18n/navigation";
+import { useUiText } from "@/i18n/use-ui-text";
+import { MapPin, Mail, Clock3 } from "lucide-react";
+
+export default function ContactPage() {
+  const ui = useUiText();
+  return (
+    <div className="mx-auto max-w-5xl space-y-10 px-4 py-16 sm:px-6">
+      <header className="space-y-4 text-center">
+        <h1 className="text-4xl font-bold">{ui("Contact Us")}</h1>
+        <p className="text-muted-foreground">
+          {ui(
+            "Contact information is not configured yet. Replace the placeholders before accepting support requests.",
+          )}
+        </p>
+      </header>
+      <div className="grid gap-6 md:grid-cols-3">
+        <section className="space-y-3 rounded-3xl border bg-card p-6">
+          <MapPin aria-hidden="true" className="text-primary" />
+          <h2 className="text-xl font-semibold">{ui("Head Office")}</h2>
+          <p>[Company Name]</p>
+          <p>[Address]</p>
+        </section>
+        <section className="space-y-3 rounded-3xl border bg-card p-6">
+          <Mail aria-hidden="true" className="text-primary" />
+          <h2 className="text-xl font-semibold">{ui("Contact Details")}</h2>
+          <p>[Contact Email]</p>
+          <p>[Contact Phone]</p>
+        </section>
+        <section className="space-y-3 rounded-3xl border bg-card p-6">
+          <Clock3 aria-hidden="true" className="text-primary" />
+          <h2 className="text-xl font-semibold">{ui("Business Hours")}</h2>
+          <p>[Business Hours]</p>
+        </section>
+      </div>
+      <aside role="note" className="rounded-xl border p-6">
+        <p>
+          {ui(
+            "Contact form is not available until a verified support address is configured.",
+          )}
+        </p>
+        <div className="mt-4 flex flex-wrap gap-5">
+          <Link href="/faq" className="text-primary underline">
+            {ui("View frequently asked questions")}
+          </Link>
+          <Link href="/privacy" className="text-primary underline">
+            {ui("Read our privacy policy")}
+          </Link>
+        </div>
+      </aside>
+    </div>
+  );
+}
+```
+
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\cookies\page.tsx
+
+```tsx
+import type { Metadata } from "next";
+import LegalDocument from "@/components/layout/legal-document";
+import { getLegalDocument } from "@/content/legal";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  return {
+    title: `${getLegalDocument(locale, "cookies").title} | Dropzo`,
+    robots: { index: false, follow: true },
+  };
+}
+
+export default function Page() {
+  return <LegalDocument kind="cookies" />;
+}
+```
+
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\courier\deliveries\page.tsx
+
+```tsx
+import { useUiText } from "@/i18n/use-ui-text";
+import DeliveryTasks from "@/components/modules/courier/delivery-tasks";
+
+export default function DeliveriesPage() {
+  const ui = useUiText();
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold tracking-tight">
+          {ui("My Deliveries")}
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          {ui(
+            "Manage your assigned shipments and update delivery statuses.",
+          )}{" "}
+        </p>
+      </div>
+      <DeliveryTasks />
+    </div>
+  );
+}
+```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\courier\earnings\page.tsx
@@ -1448,6 +2786,7 @@ export default function ContactPage() {
 ```tsx
 "use client";
 
+import { useUiText, useUiFormat } from "@/i18n/use-ui-text";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useGetMe, useGetCourierHistoryAndEarnings } from "@/hooks";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -1455,13 +2794,24 @@ import { Wallet, TrendingUp, Activity } from "lucide-react";
 import QueryError from "@/components/ui/query-error";
 
 export default function EarningsPage() {
+  const ui = useUiText();
+  const display = useUiFormat();
   const { data: userData, isLoading: userLoading } = useGetMe();
   const courierId = userData?.data?.courier?.id;
 
-  const { data, isLoading, error, refetch } = useGetCourierHistoryAndEarnings(courierId || "");
+  const { data, isLoading, error, refetch } = useGetCourierHistoryAndEarnings(
+    courierId || "",
+  );
   const stats = data?.data;
 
-  if (error) return <QueryError retry={() => { void refetch(); }} />;
+  if (error)
+    return (
+      <QueryError
+        retry={() => {
+          void refetch();
+        }}
+      />
+    );
 
   if (userLoading || isLoading) {
     return (
@@ -1476,43 +2826,55 @@ export default function EarningsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold tracking-tight">Earnings & History</h1>
+        <h1 className="text-2xl font-bold tracking-tight">
+          {ui("Earnings & History")}
+        </h1>
         <p className="text-sm text-muted-foreground">
-          View your total earnings and delivery performance over time.
+          {ui(
+            "View your total earnings and delivery performance over time.",
+          )}{" "}
         </p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="border-muted/20 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Total Earnings</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {ui("Total Earnings")}
+            </CardTitle>
             <Wallet className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-              {stats?.totalEarnings == null ? "Compensation needs configuration" : `৳ ${stats.totalEarnings.toLocaleString()}`}
+              {stats?.totalEarnings == null
+                ? ui("Compensation needs configuration")
+                : `৳ ${display.money(stats.totalEarnings)}`}
             </div>
           </CardContent>
         </Card>
         <Card className="border-muted/20 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Completed Deliveries</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {ui("Completed Deliveries")}
+            </CardTitle>
             <Activity className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {stats?.completedDeliveries || 0}
+              {ui(stats?.completedDeliveries || 0)}
             </div>
           </CardContent>
         </Card>
         <Card className="border-muted/20 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Performance Rate</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {ui("Performance Rate")}
+            </CardTitle>
             <TrendingUp className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {stats?.performanceRate ?? 0}%
+              {ui(stats?.performanceRate ?? 0)}%
             </div>
           </CardContent>
         </Card>
@@ -1521,6 +2883,7 @@ export default function EarningsPage() {
   );
 }
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\courier\layout.tsx
@@ -1540,6 +2903,167 @@ export default function CourierLayout({ children }: { children: ReactNode }) {
 ```
 
 
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\courier\loading.tsx
+
+```tsx
+import { useUiText } from "@/i18n/use-ui-text";
+import { Spinner } from "@/components/ui/spinner";
+
+export default function CourierLoading() {
+  const ui = useUiText();
+  return (
+    <div className="flex h-[calc(100vh-4rem)] w-full flex-col items-center justify-center gap-4">
+      <Spinner className="size-8 text-primary" />
+      <p className="text-sm font-medium text-muted-foreground animate-pulse">
+        {ui("Loading courier dashboard...")}{" "}
+      </p>
+    </div>
+  );
+}
+```
+
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\courier\page.tsx
+
+```tsx
+import { useUiText } from "@/i18n/use-ui-text";
+import CourierOverview from "@/components/modules/courier/courier-overview";
+
+export default function CourierDashboardPage() {
+  const ui = useUiText();
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold tracking-tight">
+          {ui("Courier Dashboard")}
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          {ui("Overview of your deliveries and earnings.")}{" "}
+        </p>
+      </div>
+      <CourierOverview />
+    </div>
+  );
+}
+```
+
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\courier\profile\page.tsx
+
+```tsx
+"use client";
+
+import { useUiText } from "@/i18n/use-ui-text";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Spinner } from "@/components/ui/spinner";
+import { toast } from "@/components/ui/toast";
+import { useGetMe, useUpdateMyProfile } from "@/hooks";
+import { useEffect, useState } from "react";
+
+export default function CourierProfilePage() {
+  const ui = useUiText();
+  const { data, isLoading } = useGetMe();
+  const { mutate: updateProfile, isPending } = useUpdateMyProfile();
+
+  const [name, setName] = useState("");
+  const [contactNumber, setContactNumber] = useState("");
+
+  useEffect(() => {
+    if (data?.data) {
+      setName(data.data.name || "");
+      setContactNumber(data.data.contactNumber || "");
+    }
+  }, [data]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateProfile(
+      { name, contactNumber },
+      {
+        onSuccess: () =>
+          toast.add({ title: "Profile Updated", type: "success" }),
+        onError: (err) =>
+          toast.add({
+            title: "Update Failed",
+            description: err.message,
+            type: "error",
+          }),
+      },
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Spinner className="size-8" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold tracking-tight">
+          {ui("My Profile")}
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          {ui("Manage your personal courier profile and settings.")}
+        </p>
+      </div>
+      <Card className="max-w-xl shadow-sm border-muted/20">
+        <CardHeader>
+          <CardTitle>{ui("Profile Details")}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Field>
+              <FieldLabel>{ui("Full Name")}</FieldLabel>
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </Field>
+            <Field>
+              <FieldLabel>{ui("Email Address")}</FieldLabel>
+              <Input
+                value={data?.data?.email || ""}
+                disabled
+                className="bg-muted/50 cursor-not-allowed"
+              />
+            </Field>
+            <Field>
+              <FieldLabel>{ui("Contact Number")}</FieldLabel>
+              <Input
+                value={contactNumber}
+                onChange={(e) => setContactNumber(e.target.value)}
+                required
+              />
+            </Field>
+            <Button
+              type="submit"
+              disabled={isPending}
+              className="mt-4 w-full sm:w-auto"
+            >
+              {isPending ? <Spinner className="mr-2" /> : null}
+              {ui("Save Changes")}{" "}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+```
+
+
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\dashboard\layout.tsx
 
 ```tsx
@@ -1557,11 +3081,13 @@ export default function CustomerLayout({ children }: { children: ReactNode }) {
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\dashboard\my-shipments\[id]\page.tsx
 
 ```tsx
 "use client";
 
+import { useUiText } from "@/i18n/use-ui-text";
 import { useParams } from "next/navigation";
 import { useGetSingleShipment } from "@/hooks";
 import { Spinner } from "@/components/ui/spinner";
@@ -1569,35 +3095,107 @@ import QueryError from "@/components/ui/query-error";
 import TrackingTimeline from "@/components/modules/shipment-tracking/tracking-timeline";
 
 export default function ShipmentDetailsPage() {
+  const ui = useUiText();
   const { id } = useParams<{ id: string }>();
   const result = useGetSingleShipment(id);
   if (result.isPending) return <Spinner />;
-  if (result.isError) return <QueryError retry={() => { void result.refetch(); }} />;
+  if (result.isError)
+    return (
+      <QueryError
+        retry={() => {
+          void result.refetch();
+        }}
+      />
+    );
   const shipment = result.data.data;
-  return <div className="space-y-6">
-    <h1 className="text-2xl font-bold">{shipment.trackingId}</h1>
-    <p>{shipment.status.replace(/_/g, " ")} · {shipment.paymentStatus}</p>
-    <p>{shipment.receiverName} · {shipment.receiverAddress}</p>
-    <TrackingTimeline trackings={shipment.trackings || []} />
-  </div>;
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold">{shipment.trackingId}</h1>
+      <p>
+        {ui(shipment.status.replace(/_/g, " "))} · {ui(shipment.paymentStatus)}
+      </p>
+      <p>
+        {shipment.receiverName} · {shipment.receiverAddress}
+      </p>
+      <TrackingTimeline trackings={shipment.trackings || []} />
+    </div>
+  );
 }
 ```
+
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\dashboard\my-shipments\page.tsx
+
+```tsx
+import { useUiText } from "@/i18n/use-ui-text";
+import ShipmentHistory from "@/components/modules/customer/shipment-history";
+
+export default function MyShipmentsPage() {
+  const ui = useUiText();
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold tracking-tight">
+          {ui("My Shipments")}
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          {ui("View and track all your active and past shipments.")}{" "}
+        </p>
+      </div>
+      <ShipmentHistory />
+    </div>
+  );
+}
+```
+
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\dashboard\new-shipment\page.tsx
+
+```tsx
+import { useUiText } from "@/i18n/use-ui-text";
+import CreateShipmentForm from "@/components/form/create-shipment-form";
+
+export default function NewShipmentPage() {
+  const ui = useUiText();
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold tracking-tight">
+          {ui("New Shipment")}
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          {ui(
+            "Fill in the details below to create a new delivery request.",
+          )}{" "}
+        </p>
+      </div>
+      <CreateShipmentForm />
+    </div>
+  );
+}
+```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\dashboard\page.tsx
 
 ```tsx
+import { useUiText } from "@/i18n/use-ui-text";
 import CustomerOverview from "@/components/modules/customer/customer-overview";
 
 export default function DashboardPage() {
+  const ui = useUiText();
   return (
     <div className="flex flex-col gap-4 p-6">
-      <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+      <h1 className="text-2xl font-bold tracking-tight">{ui("Dashboard")}</h1>
       <CustomerOverview />
     </div>
-  )
+  );
 }
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\dashboard\payments\page.tsx
@@ -1605,14 +3203,23 @@ export default function DashboardPage() {
 ```tsx
 "use client";
 
+import { useUiText, useUiFormat } from "@/i18n/use-ui-text";
 import { useState } from "react";
 import { useGetPayments } from "@/hooks";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import TablePagination from "@/components/ui/table-pagination";
-import { format } from "date-fns";
 
 export default function PaymentsPage() {
+  const ui = useUiText();
+  const display = useUiFormat();
   const [page, setPage] = useState(1);
   const { data, isLoading } = useGetPayments({ page, limit: 10 });
   const payments = data?.data || [];
@@ -1621,9 +3228,11 @@ export default function PaymentsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold tracking-tight">Payment History</h1>
+        <h1 className="text-2xl font-bold tracking-tight">
+          {ui("Payment History")}
+        </h1>
         <p className="text-sm text-muted-foreground">
-          View your transaction records and payment statuses.
+          {ui("View your transaction records and payment statuses.")}{" "}
         </p>
       </div>
 
@@ -1631,40 +3240,67 @@ export default function PaymentsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Transaction ID</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Amount</TableHead>
-              <TableHead>Gateway</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>{ui("Transaction ID")}</TableHead>
+              <TableHead>{ui("Date")}</TableHead>
+              <TableHead>{ui("Amount")}</TableHead>
+              <TableHead>{ui("Gateway")}</TableHead>
+              <TableHead>{ui("Status")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              ["placeholder-a", "placeholder-b", "placeholder-c", "placeholder-d", "placeholder-e"].map(key => (
+              [
+                "placeholder-a",
+                "placeholder-b",
+                "placeholder-c",
+                "placeholder-d",
+                "placeholder-e",
+              ].map((key) => (
                 <TableRow key={key}>
-                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-32" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-24" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-16" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-20" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-24" />
+                  </TableCell>
                 </TableRow>
               ))
             ) : payments.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                  No payment records found.
+                <TableCell
+                  colSpan={5}
+                  className="h-24 text-center text-muted-foreground"
+                >
+                  {ui("No payment records found.")}{" "}
                 </TableCell>
               </TableRow>
             ) : (
               payments.map((payment) => (
                 <TableRow key={payment.id}>
-                  <TableCell className="font-mono text-xs">{payment.transactionId || "N/A"}</TableCell>
-                  <TableCell>{format(new Date(payment.createdAt), "PP")}</TableCell>
-                  <TableCell className="font-medium text-foreground">৳{payment.amount}</TableCell>
-                  <TableCell>{payment.paymentGateway}</TableCell>
+                  <TableCell className="font-mono text-xs">
+                    {payment.transactionId || ui("N/A")}
+                  </TableCell>
                   <TableCell>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${payment.status === 'PAID' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : payment.status === 'FAILED' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'}`}>
-                      {payment.status}
+                    {display.date(new Date(payment.createdAt))}
+                  </TableCell>
+                  <TableCell className="font-medium text-foreground">
+                    ৳{display.money(payment.amount)}
+                  </TableCell>
+                  <TableCell>{ui(payment.paymentGateway)}</TableCell>
+                  <TableCell>
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${payment.status === "PAID" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : payment.status === "FAILED" ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"}`}
+                    >
+                      {ui(payment.status)}
                     </span>
                   </TableCell>
                 </TableRow>
@@ -1675,12 +3311,305 @@ export default function PaymentsPage() {
       </div>
 
       {meta && meta.totalPages > 1 && (
-        <TablePagination page={page} totalPages={meta.totalPages} handlePageChange={setPage} />
+        <TablePagination
+          page={page}
+          totalPages={meta.totalPages}
+          handlePageChange={setPage}
+        />
       )}
     </div>
   );
 }
 ```
+
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\dashboard\profile\page.tsx
+
+```tsx
+"use client";
+
+import { useUiText } from "@/i18n/use-ui-text";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Spinner } from "@/components/ui/spinner";
+import { toast } from "@/components/ui/toast";
+import { useGetMe, useUpdateMyProfile } from "@/hooks";
+import { useEffect, useState } from "react";
+
+export default function CustomerProfilePage() {
+  const ui = useUiText();
+  const { data, isLoading } = useGetMe();
+  const { mutate: updateProfile, isPending } = useUpdateMyProfile();
+
+  const [name, setName] = useState("");
+  const [contactNumber, setContactNumber] = useState("");
+  const [address, setAddress] = useState("");
+
+  useEffect(() => {
+    if (data?.data) {
+      setName(data.data.name || "");
+      setContactNumber(data.data.contactNumber || "");
+      setAddress(data.data.customer?.address || "");
+    }
+  }, [data]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateProfile(
+      { name, contactNumber, address },
+      {
+        onSuccess: () =>
+          toast.add({ title: "Profile Updated", type: "success" }),
+        onError: (err) =>
+          toast.add({
+            title: "Update Failed",
+            description: err.message,
+            type: "error",
+          }),
+      },
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Spinner className="size-8" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold tracking-tight">
+          {ui("My Profile")}
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          {ui("Manage your personal information and settings.")}
+        </p>
+      </div>
+      <Card className="max-w-xl shadow-sm border-muted/20">
+        <CardHeader>
+          <CardTitle>{ui("Profile Details")}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Field>
+              <FieldLabel>{ui("Full Name")}</FieldLabel>
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </Field>
+            <Field>
+              <FieldLabel>{ui("Email Address")}</FieldLabel>
+              <Input
+                value={data?.data?.email || ""}
+                disabled
+                className="bg-muted/50 cursor-not-allowed"
+              />
+            </Field>
+            <Field>
+              <FieldLabel>{ui("Contact Number")}</FieldLabel>
+              <Input
+                value={contactNumber}
+                onChange={(e) => setContactNumber(e.target.value)}
+                required
+              />
+            </Field>
+            <Field>
+              <FieldLabel>{ui("Default Address")}</FieldLabel>
+              <Input
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder={ui("House, Street, City")}
+              />
+            </Field>
+            <Button
+              type="submit"
+              disabled={isPending}
+              className="mt-4 w-full sm:w-auto"
+            >
+              {isPending ? <Spinner className="mr-2" /> : null}
+              {ui("Save Changes")}{" "}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+```
+
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\error.tsx
+
+```tsx
+"use client";
+
+import { useUiText } from "@/i18n/use-ui-text";
+import { Button } from "@/components/ui/button";
+import { TriangleAlertIcon } from "lucide-react";
+import { useEffect } from "react";
+
+export default function ErrorPage({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  const ui = useUiText();
+  useEffect(() => {
+    console.error(error);
+  }, [error]);
+
+  return (
+    <div className="flex h-screen w-full flex-col items-center justify-center bg-background p-4 text-center">
+      <div className="flex max-w-md flex-col items-center gap-6">
+        <div className="rounded-full bg-destructive/10 p-6 ring-1 ring-destructive/20">
+          <TriangleAlertIcon className="size-12 text-destructive" />
+        </div>
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
+            {ui("Something went wrong!")}{" "}
+          </h1>
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            {ui(
+              "We encountered an unexpected error while processing your request. Our team has been notified.",
+            )}{" "}
+          </p>
+        </div>
+        <div className="flex gap-4 mt-4">
+          <Button onClick={() => reset()} variant="default" size="lg">
+            {ui("Try again")}{" "}
+          </Button>
+          <Button
+            onClick={() => (window.location.href = "/")}
+            variant="outline"
+            size="lg"
+          >
+            {ui("Go to Homepage")}{" "}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\faq\page.tsx
+
+```tsx
+import type { Metadata } from "next";
+import { useLocale } from "next-intl";
+import { Link } from "@/i18n/navigation";
+import { useUiText } from "@/i18n/use-ui-text";
+
+const questions = {
+  en: [
+    [
+      "How do I track a parcel?",
+      "Use the tracking ID on the Track Shipment page. Public tracking shows the status and timeline, not recipient contact details.",
+    ],
+    [
+      "How is payment confirmed?",
+      "A payment becomes confirmed only after the server verifies it with the provider. A success URL alone is not proof of payment. Use Check Payment to view or recheck the recorded status.",
+    ],
+    [
+      "Can I cancel a shipment?",
+      "The customer dashboard offers cancellation only while a shipment is pending and unpaid. Refund and cancellation terms must be completed in [Payment and Refund Policy].",
+    ],
+    [
+      "How do I reset my password?",
+      "Use Forgot Password, enter your registered email and follow the verification-code instructions. Never share the code or your password with anyone.",
+    ],
+    [
+      "What are the delivery time and support hours?",
+      "Service areas, delivery estimates, restricted goods and support hours are not finalized here. Confirm [Delivery Terms] and [Business Hours] with [Company Name] before booking.",
+    ],
+    [
+      "How do I contact support?",
+      "The operator must replace [Contact Email], [Contact Phone] and [Address] on the Contact page. Until then, support messages cannot be submitted through this site.",
+    ],
+  ],
+  bn: [
+    [
+      "পার্সেল কীভাবে খুঁজব?",
+      "পার্সেল অনুসরণের পাতায় অনুসন্ধানসংখ্যা দিন। প্রকাশ্য অনুসরণে অবস্থা ও পথের ইতিহাস দেখা যায়, প্রাপকের যোগাযোগের তথ্য নয়।",
+    ],
+    [
+      "অর্থপ্রদান কীভাবে নিশ্চিত হয়?",
+      "সার্ভারে অর্থপ্রদানকারী প্রতিষ্ঠানের সঙ্গে যাচাইয়ের পর অর্থপ্রদান নিশ্চিত হয়। শুধু সফলতার পাতায় যাওয়া প্রমাণ নয়। নথিভুক্ত অবস্থা দেখতে বা আবার যাচাই করতে অর্থপ্রদান যাচাইয়ের বোতাম ব্যবহার করুন।",
+    ],
+    [
+      "পার্সেলের অনুরোধ বাতিল করতে পারব?",
+      "পার্সেল অপেক্ষমাণ ও অপরিশোধিত থাকলে গ্রাহকের ড্যাশবোর্ডে বাতিলের সুযোগ থাকে। ফেরত ও বাতিলের শর্ত [Payment and Refund Policy] অংশে পূরণ করতে হবে।",
+    ],
+    [
+      "পাসওয়ার্ড কীভাবে বদলাব?",
+      "পাসওয়ার্ড ভুলে যাওয়ার পাতায় নিবন্ধিত ইমেইল দিন এবং যাচাইয়ের সংকেতের নির্দেশনা অনুসরণ করুন। সংকেত বা পাসওয়ার্ড কারও সঙ্গে ভাগ করবেন না।",
+    ],
+    [
+      "সরবরাহের সময় ও সহায়তার সময় কত?",
+      "সেবার আওতা, সম্ভাব্য সরবরাহের সময়, নিষিদ্ধ পণ্য ও সহায়তার সময় এখানে চূড়ান্ত নয়। বুকিংয়ের আগে [Company Name] থেকে [Delivery Terms] ও [Business Hours] নিশ্চিত করুন।",
+    ],
+    [
+      "সহায়তার জন্য কীভাবে যোগাযোগ করব?",
+      "প্রতিষ্ঠানকে যোগাযোগের পাতায় [Contact Email], [Contact Phone] ও [Address] পূরণ করতে হবে। এর আগে এই সাইট দিয়ে সহায়তার বার্তা পাঠানো যাবে না।",
+    ],
+  ],
+};
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  return {
+    title:
+      locale === "bn"
+        ? "সচরাচর প্রশ্ন | Dropzo"
+        : "Frequently Asked Questions | Dropzo",
+  };
+}
+
+export default function FaqPage() {
+  const locale = useLocale();
+  const ui = useUiText();
+  return (
+    <article className="mx-auto max-w-4xl space-y-8 px-4 py-16 sm:px-6">
+      <h1 className="text-4xl font-bold">{ui("FAQ")}</h1>
+      {questions[locale === "bn" ? "bn" : "en"].map(([question, answer]) => (
+        <section key={question} className="space-y-3 rounded-xl border p-6">
+          <h2 className="text-xl font-semibold">{question}</h2>
+          <p className="leading-8 text-muted-foreground">{answer}</p>
+        </section>
+      ))}
+      <nav className="flex flex-wrap gap-5">
+        <Link href="/track-shipment" className="underline">
+          {ui("Shipment Tracking")}
+        </Link>
+        <Link href="/contact" className="underline">
+          {ui("Contact")}
+        </Link>
+        <Link href="/terms" className="underline">
+          {ui("Terms of Service")}
+        </Link>
+      </nav>
+    </article>
+  );
+}
+```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\layout.tsx
@@ -1694,19 +3623,29 @@ import Providers from "@/providers";
 import { Toaster } from "@/components/ui/toast";
 import Header from "@/components/layout/public/Header";
 import Footer from "@/components/layout/public/Footer";
-import { NextIntlClientProvider } from 'next-intl';
-import { getMessages } from 'next-intl/server';
+import { NextIntlClientProvider } from "next-intl";
+import { getMessages } from "next-intl/server";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
-export const metadata: Metadata = {
-  title: "Dropzo",
-  description: "Fast and reliable courier service platform.",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  return {
+    title: locale === "bn" ? "Dropzo" : "Dropzo",
+    description:
+      locale === "bn"
+        ? "দ্রুত ও নির্ভরযোগ্য পার্সেল পরিবহনের ব্যবস্থা।"
+        : "Fast and reliable courier service platform.",
+  };
+}
 
 export default async function RootLayout({
   children,
-  params
+  params,
 }: Readonly<{
   children: React.ReactNode;
   params: Promise<{ locale: string }>;
@@ -1715,17 +3654,18 @@ export default async function RootLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale} className={cn("h-full antialiased font-sans", inter.variable)}>
+    <html
+      lang={locale}
+      className={cn("h-full antialiased font-sans", inter.variable)}
+    >
       <body className="min-h-full flex flex-col">
         <NextIntlClientProvider messages={messages}>
-            <Providers>
-              <Header />
-              <main className="flex-1">
-                {children}
-              </main>
-              <Footer />
-              <Toaster />
-            </Providers>
+          <Providers>
+            <Header />
+            <main className="flex-1">{children}</main>
+            <Footer />
+            <Toaster />
+          </Providers>
         </NextIntlClientProvider>
       </body>
     </html>
@@ -1734,15 +3674,18 @@ export default async function RootLayout({
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\not-found.tsx
 
 ```tsx
+import { useUiText } from "@/i18n/use-ui-text";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { cn } from "@/lib/utils";
 import { SearchXIcon } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 
 export default function NotFound() {
+  const ui = useUiText();
   return (
     <div className="flex h-screen w-full flex-col items-center justify-center bg-background p-4 text-center">
       <div className="flex max-w-md flex-col items-center gap-6">
@@ -1751,20 +3694,29 @@ export default function NotFound() {
         </div>
         <div className="space-y-2">
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Page Not Found
+            {ui("Page Not Found")}{" "}
           </h1>
           <p className="text-sm leading-relaxed text-muted-foreground">
-            The page you are looking for doesn't exist or has been moved. Please check the URL or return to the homepage.
+            {ui(
+              "The page you are looking for doesn't exist or has been moved. Please check the URL or return to the homepage.",
+            )}{" "}
           </p>
         </div>
-        <Link href="/" className={cn(buttonVariants({ variant: "default", size: "lg" }), "mt-4")}>
-          Return to Homepage
+        <Link
+          href="/"
+          className={cn(
+            buttonVariants({ variant: "default", size: "lg" }),
+            "mt-4",
+          )}
+        >
+          {ui("Return to Homepage")}{" "}
         </Link>
       </div>
     </div>
   );
 }
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\page.tsx
@@ -1806,15 +3758,18 @@ export default async function HomePage() {
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\payment\cancel\page.tsx
 
 ```tsx
+import { useUiText } from "@/i18n/use-ui-text";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { cn } from "@/lib/utils";
 import { XCircle } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 
 export default function PaymentCancelPage() {
+  const ui = useUiText();
   return (
     <div className="flex h-screen w-full flex-col items-center justify-center bg-background p-4 text-center">
       <div className="flex max-w-md flex-col items-center gap-6 p-8 rounded-2xl bg-card shadow-xl ring-1 ring-border/50">
@@ -1823,14 +3778,19 @@ export default function PaymentCancelPage() {
         </div>
         <div className="space-y-2">
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Payment Cancelled
+            {ui("Payment Cancelled")}{" "}
           </h1>
           <p className="text-sm leading-relaxed text-muted-foreground">
-            You have cancelled the payment process. Your shipment will remain in unpaid status.
+            {ui(
+              "You have cancelled the payment process. Your shipment will remain in unpaid status.",
+            )}{" "}
           </p>
         </div>
-        <Link href="/dashboard/payments" className={cn(buttonVariants({ size: "lg" }), "mt-4 w-full")}>
-          Go to Payments
+        <Link
+          href="/dashboard/payments"
+          className={cn(buttonVariants({ size: "lg" }), "mt-4 w-full")}
+        >
+          {ui("Go to Payments")}{" "}
         </Link>
       </div>
     </div>
@@ -1839,14 +3799,17 @@ export default function PaymentCancelPage() {
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\payment\failure\page.tsx
 
 ```tsx
+import { useUiText } from "@/i18n/use-ui-text";
 import { Button } from "@/components/ui/button";
 import { AlertOctagon } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 
 export default function PaymentFailurePage() {
+  const ui = useUiText();
   return (
     <div className="flex h-screen w-full flex-col items-center justify-center bg-background p-4 text-center">
       <div className="flex max-w-md flex-col items-center gap-6 p-8 rounded-2xl bg-card shadow-xl ring-1 ring-border/50">
@@ -1855,18 +3818,29 @@ export default function PaymentFailurePage() {
         </div>
         <div className="space-y-2">
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Payment Failed
+            {ui("Payment Failed")}{" "}
           </h1>
           <p className="text-sm leading-relaxed text-muted-foreground">
-            We were unable to process your payment at this time. Please check your credentials or try again with a different payment method.
+            {ui(
+              "We were unable to process your payment at this time. Please check your credentials or try again with a different payment method.",
+            )}{" "}
           </p>
         </div>
         <div className="flex gap-3 w-full mt-4">
-          <Button render={<Link href="/dashboard/payments" />} nativeButton={false} variant="outline" className="w-full">
-            Back
+          <Button
+            render={<Link href="/dashboard/payments" />}
+            nativeButton={false}
+            variant="outline"
+            className="w-full"
+          >
+            {ui("Back")}{" "}
           </Button>
-          <Button render={<Link href="/dashboard/payments" />} nativeButton={false} className="w-full">
-            Try Again
+          <Button
+            render={<Link href="/dashboard/payments" />}
+            nativeButton={false}
+            className="w-full"
+          >
+            {ui("Try Again")}{" "}
           </Button>
         </div>
       </div>
@@ -1874,6 +3848,7 @@ export default function PaymentFailurePage() {
   );
 }
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\payment\success\page.tsx
@@ -1891,46 +3866,97 @@ export default async function PaymentSuccessPage({ searchParams }: { searchParam
 ```
 
 
-## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\services\page.tsx
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\privacy\page.tsx
 
 ```tsx
 import type { Metadata } from "next";
+import LegalDocument from "@/components/layout/legal-document";
+import { getLegalDocument } from "@/content/legal";
 
-export const metadata: Metadata = {
-  title: "Our Services | Dropzo",
-  description: "Explore the comprehensive range of delivery and logistics services offered by Dropzo.",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  return {
+    title: `${getLegalDocument(locale, "privacy").title} | Dropzo`,
+    robots: { index: false, follow: true },
+  };
+}
+
+export default function Page() {
+  return <LegalDocument kind="privacy" />;
+}
+```
+
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\services\page.tsx
+
+```tsx
+import { useUiText } from "@/i18n/use-ui-text";
+import type { Metadata } from "next";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  return {
+    title: locale === "bn" ? "আমাদের সেবাসমূহ | Dropzo" : "Our Services | Dropzo",
+    description:
+      locale === "bn"
+        ? "ড্রপজোর পণ্য পরিবহন ও সরবরাহের সেবা সম্পর্কে জানুন।"
+        : "Explore delivery and logistics services offered by Dropzo.",
+  };
+}
 
 export default function ServicesPage() {
+  const ui = useUiText();
   const services = [
     {
+      id: "standard-delivery",
       title: "Standard Delivery",
-      description: "Reliable and cost-effective delivery for your everyday parcels. Expected delivery within 2-3 business days across major cities.",
+      description:
+        "Reliable and cost-effective delivery for your everyday parcels. Expected delivery within 2-3 business days across major cities.",
       icon: "📦",
     },
     {
+      id: "express-delivery",
       title: "Express Delivery",
-      description: "Urgent shipments require priority handling. Our express service guarantees next-day delivery for time-sensitive documents and goods.",
+      description:
+        "Urgent shipments require priority handling. Our express service guarantees next-day delivery for time-sensitive documents and goods.",
       icon: "⚡",
     },
     {
+      id: "corporate-logistics",
       title: "Corporate Logistics",
-      description: "Tailored B2B logistics solutions for businesses of all sizes. Manage bulk shipments easily with our dedicated corporate dashboard.",
+      description:
+        "Tailored B2B logistics solutions for businesses of all sizes. Manage bulk shipments easily with our dedicated corporate dashboard.",
       icon: "🏢",
     },
     {
+      id: "fragile-handling",
       title: "Fragile Handling",
-      description: "Specialized care and secure packaging for delicate items. We ensure your fragile goods arrive in pristine condition.",
+      description:
+        "Specialized care and secure packaging for delicate items. We ensure your fragile goods arrive in pristine condition.",
       icon: "🛡️",
     },
     {
+      id: "cash-on-delivery",
       title: "Cash on Delivery (COD)",
-      description: "Empower your e-commerce business with our seamless COD service. Fast remittance and transparent payment tracking.",
+      description:
+        "Empower your e-commerce business with our seamless COD service. Fast remittance and transparent payment tracking.",
       icon: "💵",
     },
     {
+      id: "ecommerce-fulfillment",
       title: "E-commerce Fulfillment",
-      description: "From warehouse storage to last-mile delivery, we handle the entire supply chain so you can focus on growing your business.",
+      description:
+        "From warehouse storage to last-mile delivery, we handle the entire supply chain so you can focus on growing your business.",
       icon: "🛒",
     },
   ];
@@ -1942,24 +3968,37 @@ export default function ServicesPage() {
 
       <div className="relative max-w-7xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl mb-4">Our Services</h1>
+          <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl mb-4">
+            {ui("Our Services")}
+          </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Comprehensive logistics solutions designed to meet the unique needs of individuals and modern businesses.
+            {ui(
+              "Comprehensive logistics solutions designed to meet the unique needs of individuals and modern businesses.",
+            )}{" "}
           </p>
         </div>
 
+        <p
+          role="note"
+          className="mb-8 rounded-xl border p-4 text-muted-foreground"
+        >
+          {ui(
+            "Service availability and delivery terms must be confirmed before booking.",
+          )}
+        </p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {services.map((service) => (
             <div
               key={service.title}
+              id={service.id}
               className="group flex flex-col p-8 rounded-3xl border border-white/40 bg-white/60 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.06)] transition-all hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(0,0,0,0.1)] dark:border-white/10 dark:bg-white/4"
             >
               <div className="mb-5 flex size-14 items-center justify-center rounded-2xl bg-linear-to-br from-primary/15 to-blue-500/15 text-3xl ring-1 ring-primary/10 transition-transform group-hover:scale-110">
                 {service.icon}
               </div>
-              <h3 className="text-xl font-bold mb-3">{service.title}</h3>
+              <h3 className="text-xl font-bold mb-3">{ui(service.title)}</h3>
               <p className="text-muted-foreground leading-relaxed grow">
-                {service.description}
+                {ui(service.description)}
               </p>
             </div>
           ))}
@@ -1971,25 +4010,79 @@ export default function ServicesPage() {
 ```
 
 
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\terms\page.tsx
+
+```tsx
+import type { Metadata } from "next";
+import LegalDocument from "@/components/layout/legal-document";
+import { getLegalDocument } from "@/content/legal";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  return {
+    title: `${getLegalDocument(locale, "terms").title} | Dropzo`,
+    robots: { index: false, follow: true },
+  };
+}
+
+export default function Page() {
+  return <LegalDocument kind="terms" />;
+}
+```
+
+
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\track-shipment\page.tsx
 
 ```tsx
+import { translateUi } from "@/i18n/ui";
 import type { Metadata } from "next";
 import { getLocale } from "next-intl/server";
 import TrackForm from "@/components/modules/shipment-tracking/track-form";
 
-export const metadata: Metadata = { title: "Track Shipment | Dropzo", description: "Track your parcel using its tracking ID" };
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  return {
+    title: locale === "bn" ? "পার্সেল অনুসরণ | Dropzo" : "Track Shipment | Dropzo",
+    description:
+      locale === "bn"
+        ? "অনুসন্ধানসংখ্যা দিয়ে পার্সেলের সর্বশেষ অবস্থা দেখুন।"
+        : "Track your parcel using its tracking ID.",
+  };
+}
 export default async function TrackShipmentPage() {
-  const bn = await getLocale() === "bn";
-  return <div className="min-h-[80vh] flex flex-col items-center justify-center py-12 px-4 bg-muted/20">
-    <div className="text-center mb-10 max-w-2xl">
-      <h1 className="text-4xl font-bold mb-4">{bn ? "আপনার পার্সেল খুঁজুন" : "Track Your Parcel"}</h1>
-      <p className="text-muted-foreground">{bn ? "পার্সেলের বর্তমান অবস্থা জানতে অনুসন্ধানসংখ্যা লিখুন।" : "Enter your tracking ID to view the latest shipment updates."}</p>
+  const locale = await getLocale();
+  const ui = (text: string) => translateUi(locale, text);
+  const bn = locale === "bn";
+  return (
+    <div className="min-h-[80vh] flex flex-col items-center justify-center py-12 px-4 bg-muted/20">
+      <div className="text-center mb-10 max-w-2xl">
+        <h1 className="text-4xl font-bold mb-4">
+          {bn ? "আপনার পার্সেল খুঁজুন" : ui("Track Your Parcel")}
+        </h1>
+        <p className="text-muted-foreground">
+          {bn
+            ? "পার্সেলের বর্তমান অবস্থা জানতে অনুসন্ধানসংখ্যা লিখুন।"
+            : ui("Enter your tracking ID to view the latest shipment updates.")}
+        </p>
+      </div>
+      <div className="w-full max-w-xl bg-card border rounded-2xl p-6 shadow-lg">
+        <TrackForm />
+      </div>
     </div>
-    <div className="w-full max-w-xl bg-card border rounded-2xl p-6 shadow-lg"><TrackForm /></div>
-  </div>;
+  );
 }
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\globals.css
@@ -2074,6 +4167,7 @@ export default async function TrackShipmentPage() {
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\assets\svg\EmptyState.tsx
 
 ```tsx
@@ -2106,6 +4200,7 @@ export default function EmptyState(props: React.SVGProps<SVGSVGElement>) {
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\assets\svg\ErrorIllustration.tsx
 
 ```tsx
@@ -2132,6 +4227,7 @@ export default function ErrorIllustration(props: React.SVGProps<SVGSVGElement>) 
   );
 }
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\assets\svg\Logo.tsx
@@ -2192,14 +4288,17 @@ export default function Logo(props: React.SVGProps<SVGSVGElement>) {
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\auth\access-denied.tsx
 
 ```tsx
+import { useUiText } from "@/i18n/use-ui-text";
 import { ShieldAlert } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 
 export default function AccessDenied() {
+  const ui = useUiText();
   return (
     <div className="flex h-screen w-full flex-col items-center justify-center bg-background p-4 text-center">
       <div className="flex flex-col items-center gap-6 max-w-md">
@@ -2208,20 +4307,29 @@ export default function AccessDenied() {
         </div>
         <div className="space-y-2">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            Access Denied
+            {ui("Access Denied")}{" "}
           </h1>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            You do not have the required permissions to view this page. If you believe this is a mistake, please contact your administrator.
+            {ui(
+              "You do not have the required permissions to view this page. If you believe this is a mistake, please contact your administrator.",
+            )}{" "}
           </p>
         </div>
-        <Button render={<Link href="/" />} nativeButton={false} variant="default" size="lg" className="mt-4 w-full sm:w-auto">
-          Return to Homepage
+        <Button
+          render={<Link href="/" />}
+          nativeButton={false}
+          variant="default"
+          size="lg"
+          className="mt-4 w-full sm:w-auto"
+        >
+          {ui("Return to Homepage")}{" "}
         </Button>
       </div>
     </div>
   );
 }
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\auth\auth-guard.tsx
@@ -2253,6 +4361,32 @@ export default function AuthGuard({ children }: { children: ReactNode }) {
 ```
 
 
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\auth\auth-loading.tsx
+
+```tsx
+import { useUiText } from "@/i18n/use-ui-text";
+import { LoaderIcon } from "lucide-react";
+
+export default function AuthLoading({
+  label = "Authenticating...",
+}: {
+  label?: string;
+}) {
+  const ui = useUiText();
+  return (
+    <div className="flex h-screen w-full items-center justify-center bg-background/50 backdrop-blur-sm">
+      <div className="flex items-center gap-3 rounded-lg bg-card px-6 py-4 text-card-foreground shadow-lg ring-1 ring-border">
+        <LoaderIcon className="size-5 animate-spin text-primary" />
+        <span className="font-medium tracking-tight">{ui(label)}</span>
+      </div>
+    </div>
+  );
+}
+```
+
+
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\auth\role-guard.tsx
 
 ```tsx
@@ -2269,6 +4403,7 @@ export default function RoleGuard({ children, roles }: { children: ReactNode; ro
   return <AuthGuard>{data?.data && roles.includes(data.data.role) ? children : <AccessDenied />}</AuthGuard>;
 }
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\dashboard\dashboard-shell.tsx
@@ -2305,11 +4440,13 @@ export default function DashboardShell({
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\dashboard\dashboard-sidebar.tsx
 
 ```tsx
 "use client";
 
+import { useUiText } from "@/i18n/use-ui-text";
 import {
   Sidebar,
   SidebarContent,
@@ -2328,13 +4465,13 @@ import { adminRoutes, courierRoutes, customerRoutes } from "@/routes";
 import { Link, usePathname } from "@/i18n/navigation";
 
 const sidebarRoutes: Record<UserRole, SidebarItems> = {
-  
   ADMIN: adminRoutes,
   COURIER: courierRoutes,
   CUSTOMER: customerRoutes,
 };
 
 export function DashboardSidebar({ userRole }: { userRole: UserRole }) {
+  const ui = useUiText();
   const pathname = usePathname();
   const routes: SidebarItems = sidebarRoutes[userRole] || [];
 
@@ -2352,7 +4489,7 @@ export function DashboardSidebar({ userRole }: { userRole: UserRole }) {
         {routes.map((group) => (
           <SidebarGroup key={group.title}>
             <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
-              {group.title}
+              {ui(group.title)}
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
@@ -2362,7 +4499,7 @@ export function DashboardSidebar({ userRole }: { userRole: UserRole }) {
                       render={<Link href={item.url} />}
                       isActive={pathname === item.url}
                     >
-                      {item.title}
+                      {ui(item.title)}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
@@ -2378,11 +4515,13 @@ export function DashboardSidebar({ userRole }: { userRole: UserRole }) {
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\form\create-shipment-form.tsx
 
 ```tsx
 "use client";
 
+import { useUiText } from "@/i18n/use-ui-text";
 import { useForm } from "@tanstack/react-form";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
@@ -2392,7 +4531,13 @@ import { useCreateShipment, useGetAllHubs } from "@/hooks";
 import { useRouter } from "@/i18n/navigation";
 import { toast } from "../ui/toast";
 import { Spinner } from "../ui/spinner";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../ui/card";
 
 interface Hub {
   id: string;
@@ -2402,9 +4547,12 @@ interface Hub {
 }
 
 export default function CreateShipmentForm() {
+  const ui = useUiText();
   const router = useRouter();
   const { mutate: createShipment, isPending } = useCreateShipment();
-  const { data: hubsData, isLoading: hubsLoading } = useGetAllHubs({ limit: 100 });
+  const { data: hubsData, isLoading: hubsLoading } = useGetAllHubs({
+    limit: 100,
+  });
   const hubs = hubsData?.data || [];
 
   const form = useForm({
@@ -2443,8 +4591,12 @@ export default function CreateShipmentForm() {
   return (
     <Card className="max-w-2xl mx-auto shadow-sm">
       <CardHeader>
-        <CardTitle className="text-2xl">Create New Shipment</CardTitle>
-        <CardDescription>Enter receiver details and select origin/destination hubs to generate a shipment.</CardDescription>
+        <CardTitle className="text-2xl">{ui("Create New Shipment")}</CardTitle>
+        <CardDescription>
+          {ui(
+            "Enter receiver details and select origin/destination hubs to generate a shipment.",
+          )}
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form
@@ -2457,19 +4609,24 @@ export default function CreateShipmentForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <form.Field name="receiverName">
                 {(field) => {
-                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid;
                   return (
                     <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Receiver Name</FieldLabel>
+                      <FieldLabel htmlFor={field.name}>
+                        {ui("Receiver Name")}
+                      </FieldLabel>
                       <Input
                         id={field.name}
                         value={field.state.value}
                         onBlur={field.handleBlur}
                         onChange={(e) => field.handleChange(e.target.value)}
-                        placeholder="Alice Smith"
+                        placeholder={ui("Alice Smith")}
                         aria-invalid={isInvalid}
                       />
-                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
                     </Field>
                   );
                 }}
@@ -2477,10 +4634,13 @@ export default function CreateShipmentForm() {
 
               <form.Field name="receiverPhone">
                 {(field) => {
-                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid;
                   return (
                     <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Receiver Phone</FieldLabel>
+                      <FieldLabel htmlFor={field.name}>
+                        {ui("Receiver Phone")}
+                      </FieldLabel>
                       <Input
                         id={field.name}
                         value={field.state.value}
@@ -2489,7 +4649,9 @@ export default function CreateShipmentForm() {
                         placeholder="01XXXXXXXXX"
                         aria-invalid={isInvalid}
                       />
-                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
                     </Field>
                   );
                 }}
@@ -2498,19 +4660,24 @@ export default function CreateShipmentForm() {
 
             <form.Field name="receiverAddress">
               {(field) => {
-                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid;
                 return (
                   <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Detailed Address</FieldLabel>
+                    <FieldLabel htmlFor={field.name}>
+                      {ui("Detailed Address")}
+                    </FieldLabel>
                     <Input
                       id={field.name}
                       value={field.state.value}
                       onBlur={field.handleBlur}
                       onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder="House, Road, Area, City"
+                      placeholder={ui("House, Road, Area, City")}
                       aria-invalid={isInvalid}
                     />
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
                   </Field>
                 );
               }}
@@ -2518,10 +4685,13 @@ export default function CreateShipmentForm() {
 
             <form.Field name="weight">
               {(field) => {
-                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid;
                 return (
                   <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Weight (kg)</FieldLabel>
+                    <FieldLabel htmlFor={field.name}>
+                      {ui("Weight (kg)")}
+                    </FieldLabel>
                     <Input
                       id={field.name}
                       type="number"
@@ -2530,10 +4700,14 @@ export default function CreateShipmentForm() {
                       max="100"
                       value={field.state.value}
                       onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(parseFloat(e.target.value) || 0)}
+                      onChange={(e) =>
+                        field.handleChange(parseFloat(e.target.value) || 0)
+                      }
                       aria-invalid={isInvalid}
                     />
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
                   </Field>
                 );
               }}
@@ -2542,10 +4716,13 @@ export default function CreateShipmentForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <form.Field name="originHubId">
                 {(field) => {
-                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid;
                   return (
                     <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Origin Hub</FieldLabel>
+                      <FieldLabel htmlFor={field.name}>
+                        {ui("Origin Hub")}
+                      </FieldLabel>
                       <select
                         id={field.name}
                         value={field.state.value}
@@ -2554,14 +4731,18 @@ export default function CreateShipmentForm() {
                         className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         disabled={hubsLoading}
                       >
-                        <option value="" disabled>Select origin hub</option>
+                        <option value="" disabled>
+                          {ui("Select origin hub")}
+                        </option>
                         {hubs.map((hub: Hub) => (
                           <option key={hub.id} value={hub.id}>
                             {hub.name} ({hub.location})
                           </option>
                         ))}
                       </select>
-                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
                     </Field>
                   );
                 }}
@@ -2569,10 +4750,13 @@ export default function CreateShipmentForm() {
 
               <form.Field name="destinationHubId">
                 {(field) => {
-                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid;
                   return (
                     <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Destination Hub</FieldLabel>
+                      <FieldLabel htmlFor={field.name}>
+                        {ui("Destination Hub")}
+                      </FieldLabel>
                       <select
                         id={field.name}
                         value={field.state.value}
@@ -2581,14 +4765,18 @@ export default function CreateShipmentForm() {
                         className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         disabled={hubsLoading}
                       >
-                        <option value="" disabled>Select destination hub</option>
+                        <option value="" disabled>
+                          {ui("Select destination hub")}
+                        </option>
                         {hubs.map((hub: Hub) => (
                           <option key={hub.id} value={hub.id}>
                             {hub.name} ({hub.location})
                           </option>
                         ))}
                       </select>
-                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
                     </Field>
                   );
                 }}
@@ -2597,7 +4785,7 @@ export default function CreateShipmentForm() {
 
             <Button type="submit" disabled={isPending} className="w-full mt-4">
               {isPending ? <Spinner className="mr-2" /> : null}
-              {isPending ? "Creating..." : "Create Shipment"}
+              {isPending ? ui("Creating...") : ui("Create Shipment")}
             </Button>
           </FieldGroup>
         </form>
@@ -2608,19 +4796,35 @@ export default function CreateShipmentForm() {
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\form\login-form.tsx
 
 ```tsx
 "use client";
 
+import { useUiText } from "@/i18n/use-ui-text";
 import { useForm } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
-import { Field, FieldError, FieldGroup, FieldLabel, FieldSeparator } from "../ui/field";
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldSeparator,
+} from "../ui/field";
 import { LoginZodSchema } from "@/validation";
 import { useState } from "react";
-import { Eye, EyeClosed, Mail, Lock, ShieldCheck, Truck, UserRound } from "lucide-react";
+import {
+  Eye,
+  EyeClosed,
+  Mail,
+  Lock,
+  ShieldCheck,
+  Truck,
+  UserRound,
+} from "lucide-react";
 import { useLogin } from "@/hooks";
 import { useRouter } from "@/i18n/navigation";
 import { toast } from "../ui/toast";
@@ -2629,6 +4833,7 @@ import { Link } from "@/i18n/navigation";
 import GoogleLoginComponent from "../modules/google-login/GoogleLogin";
 
 export default function LoginForm() {
+  const ui = useUiText();
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -2673,8 +4878,12 @@ export default function LoginForm() {
         <div className="flex size-14 items-center justify-center rounded-2xl bg-linear-to-br from-primary to-blue-600 shadow-lg shadow-primary/30">
           <Lock className="size-6 text-white" />
         </div>
-        <h1 className="text-3xl font-bold tracking-tight">Welcome Back 👋</h1>
-        <p className="text-sm text-muted-foreground">Login to your account to continue</p>
+        <h1 className="text-3xl font-bold tracking-tight">
+          {ui("Welcome Back 👋")}
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          {ui("Login to your account to continue")}
+        </p>
       </div>
 
       <form
@@ -2687,10 +4896,13 @@ export default function LoginForm() {
         <FieldGroup>
           <form.Field name="email">
             {(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid;
               return (
                 <Field data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>Email Address</FieldLabel>
+                  <FieldLabel htmlFor={field.name}>
+                    {ui("Email Address")}
+                  </FieldLabel>
                   <div className="relative">
                     <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
@@ -2714,13 +4926,19 @@ export default function LoginForm() {
 
           <form.Field name="password">
             {(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid;
               return (
                 <Field data-invalid={isInvalid}>
                   <div className="flex items-center justify-between">
-                    <FieldLabel htmlFor={field.name}>Password</FieldLabel>
-                    <Link href="/forgot-password" className="text-xs font-medium text-primary hover:underline">
-                      Forgot Password?
+                    <FieldLabel htmlFor={field.name}>
+                      {ui("Password")}
+                    </FieldLabel>
+                    <Link
+                      href="/forgot-password"
+                      className="text-xs font-medium text-primary hover:underline"
+                    >
+                      {ui("Forgot Password?")}{" "}
                     </Link>
                   </div>
                   <div className="relative">
@@ -2741,8 +4959,15 @@ export default function LoginForm() {
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                       type="button"
                       onClick={() => setShowPassword((prev) => !prev)}
+                      aria-label={ui(
+                        showPassword ? "Hide password" : "Show password",
+                      )}
                     >
-                      {showPassword ? <EyeClosed className="size-4" /> : <Eye className="size-4" />}
+                      {showPassword ? (
+                        <EyeClosed className="size-4" />
+                      ) : (
+                        <Eye className="size-4" />
+                      )}
                     </button>
                   </div>
                   {isInvalid && <FieldError errors={field.state.meta.errors} />}
@@ -2751,69 +4976,82 @@ export default function LoginForm() {
             }}
           </form.Field>
 
-          <Button disabled={loginPending} type="submit" className="w-full shadow-lg shadow-primary/20">
+          <Button
+            disabled={loginPending}
+            type="submit"
+            className="w-full shadow-lg shadow-primary/20"
+          >
             {loginPending ? (
               <>
-                <Spinner className="mr-2" /> Authenticating...
+                <Spinner className="mr-2" /> {ui("Authenticating...")}{" "}
               </>
             ) : (
-              "Login"
+              ui("Login")
             )}
           </Button>
 
-          {process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === "true" && <div className="flex flex-col gap-3 pt-2">
-            <div className="text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              One-Click Demo Login
+          {process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === "true" && (
+            <div className="flex flex-col gap-3 pt-2">
+              <div className="text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                {ui("One-Click Demo Login")}{" "}
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    form.setFieldValue("email", "admin@courier.com");
+                    form.setFieldValue("password", "Admin@12345");
+                  }}
+                  className="h-auto flex-col gap-1.5 border-border/60 bg-white/40 py-3 backdrop-blur-sm hover:border-primary/40 hover:bg-primary/5 dark:bg-white/3"
+                >
+                  <ShieldCheck className="size-4 text-primary" /> {ui(
+                    "Admin",
+                  )}{" "}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    form.setFieldValue("email", "courier@courier.com");
+                    form.setFieldValue("password", "Courier@1234");
+                  }}
+                  className="h-auto flex-col gap-1.5 border-border/60 bg-white/40 py-3 backdrop-blur-sm hover:border-primary/40 hover:bg-primary/5 dark:bg-white/3"
+                >
+                  <Truck className="size-4 text-primary" /> {ui("Courier")}{" "}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    form.setFieldValue("email", "customer@courier.com");
+                    form.setFieldValue("password", "Customer@1234");
+                  }}
+                  className="h-auto flex-col gap-1.5 border-border/60 bg-white/40 py-3 backdrop-blur-sm hover:border-primary/40 hover:bg-primary/5 dark:bg-white/3"
+                >
+                  <UserRound className="size-4 text-primary" /> {ui(
+                    "User",
+                  )}{" "}
+                </Button>
+              </div>
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  form.setFieldValue("email", "admin@courier.com");
-                  form.setFieldValue("password", "Admin@12345");
-                }}
-                className="h-auto flex-col gap-1.5 border-border/60 bg-white/40 py-3 backdrop-blur-sm hover:border-primary/40 hover:bg-primary/5 dark:bg-white/3"
-              >
-                <ShieldCheck className="size-4 text-primary" /> Admin
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  form.setFieldValue("email", "courier@courier.com");
-                  form.setFieldValue("password", "Courier@1234");
-                }}
-                className="h-auto flex-col gap-1.5 border-border/60 bg-white/40 py-3 backdrop-blur-sm hover:border-primary/40 hover:bg-primary/5 dark:bg-white/3"
-              >
-                <Truck className="size-4 text-primary" /> Courier
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  form.setFieldValue("email", "customer@courier.com");
-                  form.setFieldValue("password", "Customer@1234");
-                }}
-                className="h-auto flex-col gap-1.5 border-border/60 bg-white/40 py-3 backdrop-blur-sm hover:border-primary/40 hover:bg-primary/5 dark:bg-white/3"
-              >
-                <UserRound className="size-4 text-primary" /> User
-              </Button>
-            </div>
-          </div>}
+          )}
         </FieldGroup>
       </form>
 
-      <FieldSeparator>Or continue with</FieldSeparator>
+      <FieldSeparator>{ui("Or continue with")}</FieldSeparator>
 
       <div className="flex justify-center">
         <GoogleLoginComponent />
       </div>
 
       <div className="text-center text-sm text-muted-foreground mt-2">
-        Don&apos;t have an account?{" "}
-        <Link href="/register" className="font-semibold text-primary hover:underline underline-offset-4">
-          Create Account
+        {ui("Don't have an account?")}{" "}
+        <Link
+          href="/register"
+          className="font-semibold text-primary hover:underline underline-offset-4"
+        >
+          {ui("Create Account")}{" "}
         </Link>
       </div>
     </div>
@@ -2822,18 +5060,34 @@ export default function LoginForm() {
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\form\register-form.tsx
 
 ```tsx
 "use client";
 
+import { useUiText } from "@/i18n/use-ui-text";
 import { useForm } from "@tanstack/react-form";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
-import { Field, FieldError, FieldGroup, FieldLabel, FieldSeparator } from "../ui/field";
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldSeparator,
+} from "../ui/field";
 import { RegisterCustomerZodSchema } from "@/validation";
 import { useState } from "react";
-import { Eye, EyeClosed, User, Mail, Phone, Lock, UserPlus } from "lucide-react";
+import {
+  Eye,
+  EyeClosed,
+  User,
+  Mail,
+  Phone,
+  Lock,
+  UserPlus,
+} from "lucide-react";
 import { useRegistration } from "@/hooks";
 import { useRouter } from "@/i18n/navigation";
 import { toast } from "../ui/toast";
@@ -2848,6 +5102,7 @@ interface IRegisterError {
 }
 
 export default function RegisterForm() {
+  const ui = useUiText();
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
   const { mutate: register, isPending: registerPending } = useRegistration();
@@ -2865,7 +5120,11 @@ export default function RegisterForm() {
     },
     onSubmit: ({ value }) => {
       if (value.password !== value.confirmPassword) {
-        toast.add({ title: "Validation Error", description: "Passwords do not match", type: "error" });
+        toast.add({
+          title: "Validation Error",
+          description: "Passwords do not match",
+          type: "error",
+        });
         return;
       }
 
@@ -2887,7 +5146,11 @@ export default function RegisterForm() {
           router.push(`/verify-account?${params.toString()}`);
         },
         onError: (err: IRegisterError) => {
-          const errorMessage = err?.data?.message || err?.response?._data?.message || err?.message || "Something went wrong.";
+          const errorMessage =
+            err?.data?.message ||
+            err?.response?._data?.message ||
+            err?.message ||
+            "Something went wrong.";
           toast.add({
             title: "Registration Failed",
             description: errorMessage,
@@ -2904,8 +5167,12 @@ export default function RegisterForm() {
         <div className="flex size-14 items-center justify-center rounded-2xl bg-linear-to-br from-primary to-blue-600 shadow-lg shadow-primary/30">
           <UserPlus className="size-6 text-white" />
         </div>
-        <h1 className="text-3xl font-bold tracking-tight">Create an Account</h1>
-        <p className="text-sm text-muted-foreground">Enter your details to get started</p>
+        <h1 className="text-3xl font-bold tracking-tight">
+          {ui("Create an Account")}
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          {ui("Enter your details to get started")}
+        </p>
       </div>
 
       <form
@@ -2918,17 +5185,20 @@ export default function RegisterForm() {
         <FieldGroup>
           <form.Field name="name">
             {(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid;
               return (
                 <Field data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>Full Name</FieldLabel>
+                  <FieldLabel htmlFor={field.name}>
+                    {ui("Full Name")}
+                  </FieldLabel>
                   <div className="relative">
                     <User className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
                       id={field.name}
                       name={field.name}
                       type="text"
-                      placeholder="John Doe"
+                      placeholder={ui("John Doe")}
                       onChange={(e) => field.handleChange(e.target.value)}
                       onBlur={field.handleBlur}
                       value={field.state.value}
@@ -2944,10 +5214,13 @@ export default function RegisterForm() {
 
           <form.Field name="email">
             {(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid;
               return (
                 <Field data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>Email Address</FieldLabel>
+                  <FieldLabel htmlFor={field.name}>
+                    {ui("Email Address")}
+                  </FieldLabel>
                   <div className="relative">
                     <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
@@ -2970,10 +5243,13 @@ export default function RegisterForm() {
 
           <form.Field name="contactNumber">
             {(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid;
               return (
                 <Field data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>Phone Number</FieldLabel>
+                  <FieldLabel htmlFor={field.name}>
+                    {ui("Phone Number")}
+                  </FieldLabel>
                   <div className="relative">
                     <Phone className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
@@ -2997,10 +5273,13 @@ export default function RegisterForm() {
           <div className="grid grid-cols-2 gap-4">
             <form.Field name="password">
               {(field) => {
-                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid;
                 return (
                   <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Password</FieldLabel>
+                    <FieldLabel htmlFor={field.name}>
+                      {ui("Password")}
+                    </FieldLabel>
                     <div className="relative">
                       <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
@@ -3018,11 +5297,20 @@ export default function RegisterForm() {
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                         type="button"
                         onClick={() => setShowPassword((prev) => !prev)}
+                        aria-label={ui(
+                          showPassword ? "Hide password" : "Show password",
+                        )}
                       >
-                        {showPassword ? <EyeClosed className="size-4" /> : <Eye className="size-4" />}
+                        {showPassword ? (
+                          <EyeClosed className="size-4" />
+                        ) : (
+                          <Eye className="size-4" />
+                        )}
                       </button>
                     </div>
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
                   </Field>
                 );
               }}
@@ -3030,10 +5318,13 @@ export default function RegisterForm() {
 
             <form.Field name="confirmPassword">
               {(field) => {
-                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid;
                 return (
                   <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Confirm</FieldLabel>
+                    <FieldLabel htmlFor={field.name}>
+                      {ui("Confirm")}
+                    </FieldLabel>
                     <div className="relative">
                       <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
@@ -3048,35 +5339,44 @@ export default function RegisterForm() {
                         className="pl-10"
                       />
                     </div>
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
                   </Field>
                 );
               }}
             </form.Field>
           </div>
 
-          <Button disabled={registerPending} type="submit" className="w-full shadow-lg shadow-primary/20">
+          <Button
+            disabled={registerPending}
+            type="submit"
+            className="w-full shadow-lg shadow-primary/20"
+          >
             {registerPending ? (
               <>
-                <Spinner className="mr-2" /> Creating...
+                <Spinner className="mr-2" /> {ui("Creating...")}{" "}
               </>
             ) : (
-              "Sign Up"
+              ui("Sign Up")
             )}
           </Button>
         </FieldGroup>
       </form>
 
-      <FieldSeparator>Or continue with</FieldSeparator>
+      <FieldSeparator>{ui("Or continue with")}</FieldSeparator>
 
       <div className="flex justify-center">
         <GoogleLoginComponent />
       </div>
 
       <div className="text-center text-sm text-muted-foreground mt-2">
-        Already have an account?{" "}
-        <Link href="/login" className="font-semibold text-primary hover:underline underline-offset-4">
-          Login here
+        {ui("Already have an account?")}{" "}
+        <Link
+          href="/login"
+          className="font-semibold text-primary hover:underline underline-offset-4"
+        >
+          {ui("Login here")}{" "}
         </Link>
       </div>
     </div>
@@ -3085,14 +5385,23 @@ export default function RegisterForm() {
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\form\verify-account-form.tsx
 
 ```tsx
 "use client";
 
+import { useUiText } from "@/i18n/use-ui-text";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "../ui/card";
 import { Button } from "../ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "../ui/input-otp";
 import { Field, FieldDescription, FieldError, FieldLabel } from "../ui/field";
@@ -3103,6 +5412,7 @@ import { toast } from "../ui/toast";
 import { Spinner } from "../ui/spinner";
 
 export default function VerifyAccountForm() {
+  const ui = useUiText();
   const searchParams = useSearchParams();
   const router = useRouter();
   const email = searchParams.get("email") || "";
@@ -3141,7 +5451,7 @@ export default function VerifyAccountForm() {
             type: "error",
           });
         },
-      }
+      },
     );
   };
 
@@ -3150,9 +5460,10 @@ export default function VerifyAccountForm() {
   return (
     <Card className="w-full shadow-lg border-muted/20">
       <CardHeader className="text-center space-y-2">
-        <CardTitle className="text-2xl">Verify your email</CardTitle>
+        <CardTitle className="text-2xl">{ui("Verify your email")}</CardTitle>
         <CardDescription>
-          We sent a 6-digit code to <span className="font-semibold text-foreground">{email}</span>
+          {ui("We sent a 6-digit code to")}{" "}
+          <span className="font-semibold text-foreground">{email}</span>
         </CardDescription>
       </CardHeader>
       <CardContent className="flex justify-center py-6">
@@ -3164,8 +5475,13 @@ export default function VerifyAccountForm() {
             handleVerify();
           }}
         >
-          <Field data-invalid={isInvalid} className="flex flex-col items-center gap-4">
-            <FieldLabel htmlFor="otp" className="sr-only">OTP Code</FieldLabel>
+          <Field
+            data-invalid={isInvalid}
+            className="flex flex-col items-center gap-4"
+          >
+            <FieldLabel htmlFor="otp" className="sr-only">
+              {ui("OTP Code")}
+            </FieldLabel>
             <InputOTP
               maxLength={6}
               value={otp}
@@ -3178,25 +5494,50 @@ export default function VerifyAccountForm() {
               disabled={isPending}
             >
               <InputOTPGroup className="gap-2">
-                <InputOTPSlot index={0} className="rounded-md border h-12 w-10 text-lg" />
-                <InputOTPSlot index={1} className="rounded-md border h-12 w-10 text-lg" />
-                <InputOTPSlot index={2} className="rounded-md border h-12 w-10 text-lg" />
-                <InputOTPSlot index={3} className="rounded-md border h-12 w-10 text-lg" />
-                <InputOTPSlot index={4} className="rounded-md border h-12 w-10 text-lg" />
-                <InputOTPSlot index={5} className="rounded-md border h-12 w-10 text-lg" />
+                <InputOTPSlot
+                  index={0}
+                  className="rounded-md border h-12 w-10 text-lg"
+                />
+                <InputOTPSlot
+                  index={1}
+                  className="rounded-md border h-12 w-10 text-lg"
+                />
+                <InputOTPSlot
+                  index={2}
+                  className="rounded-md border h-12 w-10 text-lg"
+                />
+                <InputOTPSlot
+                  index={3}
+                  className="rounded-md border h-12 w-10 text-lg"
+                />
+                <InputOTPSlot
+                  index={4}
+                  className="rounded-md border h-12 w-10 text-lg"
+                />
+                <InputOTPSlot
+                  index={5}
+                  className="rounded-md border h-12 w-10 text-lg"
+                />
               </InputOTPGroup>
             </InputOTP>
-            {isInvalid && <FieldError errors={[{ message: "Invalid or expired code" }]} />}
+            {isInvalid && (
+              <FieldError errors={[{ message: "Invalid or expired code" }]} />
+            )}
             <FieldDescription className="text-center mt-2">
-              Please enter the code to complete registration
+              {ui("Please enter the code to complete registration")}{" "}
             </FieldDescription>
           </Field>
         </form>
       </CardContent>
       <CardFooter>
-        <Button form="otp-form" type="submit" className="w-full" disabled={isPending || otp.length !== 6}>
+        <Button
+          form="otp-form"
+          type="submit"
+          className="w-full"
+          disabled={isPending || otp.length !== 6}
+        >
           {isPending ? <Spinner className="mr-2" /> : null}
-          {isPending ? "Verifying..." : "Verify Account"}
+          {isPending ? ui("Verifying...") : ui("Verify Account")}
         </Button>
       </CardFooter>
     </Card>
@@ -3205,44 +5546,55 @@ export default function VerifyAccountForm() {
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\home\features-section.tsx
 
 ```tsx
+import { useUiText } from "@/i18n/use-ui-text";
 import { Truck, ShieldCheck, Clock, MapPin } from "lucide-react";
 
 const features = [
   {
     icon: <Truck className="size-8 text-primary" />,
     title: "Fast Delivery",
-    description: "We ensure your packages reach their destination in the shortest time possible."
+    description:
+      "We ensure your packages reach their destination in the shortest time possible.",
   },
   {
     icon: <ShieldCheck className="size-8 text-primary" />,
     title: "Secure Handling",
-    description: "Your packages are handled with the utmost care and security at every step."
+    description:
+      "Your packages are handled with the utmost care and security at every step.",
   },
   {
     icon: <MapPin className="size-8 text-primary" />,
     title: "Live Tracking",
-    description: "Track your shipments in real-time from our hubs directly to your doorstep."
+    description:
+      "Track your shipments in real-time from our hubs directly to your doorstep.",
   },
   {
     icon: <Clock className="size-8 text-primary" />,
     title: "24/7 Support",
-    description: "Our dedicated support team is available around the clock to assist you."
-  }
+    description:
+      "Our dedicated support team is available around the clock to assist you.",
+  },
 ];
 
 export default function FeaturesSection() {
+  const ui = useUiText();
   return (
     <section className="relative overflow-hidden py-20">
       <div className="pointer-events-none absolute top-0 left-1/4 size-72 rounded-full bg-primary/10 blur-3xl" />
       <div className="pointer-events-none absolute bottom-0 right-1/4 size-72 rounded-full bg-blue-500/10 blur-3xl" />
       <div className="container relative mx-auto px-4 md:px-6">
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Why Choose Dropzo?</h2>
+          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+            {ui("Why Choose Dropzo?")}
+          </h2>
           <p className="mt-4 text-muted-foreground text-lg">
-            We provide top-notch logistics solutions designed for businesses and individuals alike.
+            {ui(
+              "We provide top-notch logistics solutions designed for businesses and individuals alike.",
+            )}{" "}
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -3254,8 +5606,12 @@ export default function FeaturesSection() {
               <div className="mb-6 flex size-16 items-center justify-center rounded-2xl bg-linear-to-br from-primary/15 to-blue-500/15 ring-1 ring-primary/10 transition-transform group-hover:scale-110">
                 {feature.icon}
               </div>
-              <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
-              <p className="text-muted-foreground leading-relaxed">{feature.description}</p>
+              <h3 className="text-xl font-semibold mb-3">
+                {ui(feature.title)}
+              </h3>
+              <p className="text-muted-foreground leading-relaxed">
+                {ui(feature.description)}
+              </p>
             </div>
           ))}
         </div>
@@ -3266,56 +5622,66 @@ export default function FeaturesSection() {
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\home\how-it-works-section.tsx
 
 ```tsx
+import { useUiText } from "@/i18n/use-ui-text";
 import { PackagePlus, Truck, Map as MapIcon, CheckCircle2 } from "lucide-react";
 
 const steps = [
   {
     icon: <PackagePlus className="size-7 text-primary" />,
     title: "Create Shipment",
-    description: "Enter package details and destination."
+    description: "Enter package details and destination.",
   },
   {
     icon: <MapIcon className="size-7 text-primary" />,
     title: "Hub Assignment",
-    description: "Package is routed through our network."
+    description: "Package is routed through our network.",
   },
   {
     icon: <Truck className="size-7 text-primary" />,
     title: "In Transit",
-    description: "Assigned to a courier for delivery."
+    description: "Assigned to a courier for delivery.",
   },
   {
     icon: <CheckCircle2 className="size-7 text-primary" />,
     title: "Delivered",
-    description: "Successfully handed over to receiver."
-  }
+    description: "Successfully handed over to receiver.",
+  },
 ];
 
 export default function HowItWorksSection() {
+  const ui = useUiText();
   return (
     <section className="py-20 bg-muted/20">
       <div className="container mx-auto px-4 md:px-6">
         <div className="text-center max-w-3xl mx-auto mb-20">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">How It Works</h2>
+          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+            {ui("How It Works")}
+          </h2>
           <p className="mt-4 text-muted-foreground text-lg">
-            A simple, streamlined process to get your package from A to B.
+            {ui(
+              "A simple, streamlined process to get your package from A to B.",
+            )}{" "}
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10 relative">
           <div className="hidden md:block absolute top-10 left-[10%] w-[80%] h-px bg-linear-to-r from-transparent via-border to-transparent -z-10" />
           {steps.map((step, index) => (
-            <div key={step.title} className="flex flex-col items-center text-center">
+            <div
+              key={step.title}
+              className="flex flex-col items-center text-center"
+            >
               <div className="relative flex items-center justify-center size-20 rounded-2xl border border-white/40 bg-white/70 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.08)] mb-6 dark:border-white/10 dark:bg-white/4">
                 {step.icon}
                 <span className="absolute -top-2 -right-2 flex size-6 items-center justify-center rounded-full bg-linear-to-br from-primary to-blue-600 text-xs font-bold text-white shadow-md">
                   {index + 1}
                 </span>
               </div>
-              <h3 className="text-xl font-semibold mb-2">{step.title}</h3>
-              <p className="text-muted-foreground">{step.description}</p>
+              <h3 className="text-xl font-semibold mb-2">{ui(step.title)}</h3>
+              <p className="text-muted-foreground">{ui(step.description)}</p>
             </div>
           ))}
         </div>
@@ -3326,10 +5692,13 @@ export default function HowItWorksSection() {
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\home\stats-section.tsx
 
 ```tsx
+import { useUiText } from "@/i18n/use-ui-text";
 export default function StatsSection() {
+  const ui = useUiText();
   const stats = [
     { value: "50+", label: "Cities Covered" },
     { value: "10K+", label: "Happy Customers" },
@@ -3348,8 +5717,12 @@ export default function StatsSection() {
               key={stat.label}
               className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 p-6 backdrop-blur-xl"
             >
-              <h4 className="text-4xl md:text-5xl font-bold tracking-tight">{stat.value}</h4>
-              <p className="text-primary-foreground/80 font-medium text-lg">{stat.label}</p>
+              <h4 className="text-4xl md:text-5xl font-bold tracking-tight">
+                {stat.value}
+              </h4>
+              <p className="text-primary-foreground/80 font-medium text-lg">
+                {ui(stat.label)}
+              </p>
             </div>
           ))}
         </div>
@@ -3360,98 +5733,175 @@ export default function StatsSection() {
 ```
 
 
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\layout\legal-document.tsx
+
+```tsx
+import { useLocale } from "next-intl";
+import { Link } from "@/i18n/navigation";
+import { useUiText } from "@/i18n/use-ui-text";
+import { getLegalDocument, type LegalKind } from "@/content/legal";
+
+export default function LegalDocument({ kind }: { kind: LegalKind }) {
+  const locale = useLocale();
+  const ui = useUiText();
+  const document = getLegalDocument(locale, kind);
+  return (
+    <article className="mx-auto max-w-4xl space-y-8 px-4 py-16 sm:px-6">
+      <header className="space-y-4">
+        <h1 className="text-3xl font-bold sm:text-4xl">{document.title}</h1>
+        <aside
+          role="note"
+          className="rounded-xl border border-amber-400 bg-amber-50 p-5 text-amber-950"
+        >
+          <h2 className="font-semibold">
+            {ui("Draft — not a final legal document")}
+          </h2>
+          <p className="mt-2">
+            {ui(
+              "Fill in every placeholder and obtain legal review before publishing this as your final policy.",
+            )}
+          </p>
+        </aside>
+        <dl className="grid gap-2 text-sm sm:grid-cols-2">
+          <div>
+            <dt className="font-semibold">{ui("Company")}</dt>
+            <dd>[Company Name]</dd>
+          </div>
+          <div>
+            <dt className="font-semibold">{ui("Effective date")}</dt>
+            <dd>[Effective Date]</dd>
+          </div>
+          <div>
+            <dt className="font-semibold">{ui("Legal address")}</dt>
+            <dd>[Address]</dd>
+          </div>
+          <div>
+            <dt className="font-semibold">{ui("Contact")}</dt>
+            <dd>[Contact Email]</dd>
+          </div>
+        </dl>
+      </header>
+      {document.sections.map((section) => (
+        <section key={section.title} className="space-y-3">
+          <h2 className="text-xl font-semibold">{section.title}</h2>
+          {section.paragraphs.map((paragraph) => (
+            <p key={paragraph} className="leading-8 text-muted-foreground">
+              {paragraph}
+            </p>
+          ))}
+        </section>
+      ))}
+      <nav
+        aria-label={ui("Legal & Support")}
+        className="flex flex-wrap gap-5 border-t pt-6"
+      >
+        <Link href="/terms" className="underline">
+          {ui("Terms of Service")}
+        </Link>
+        <Link href="/privacy" className="underline">
+          {ui("Privacy Policy")}
+        </Link>
+        <Link href="/cookies" className="underline">
+          {ui("Cookie Policy")}
+        </Link>
+        <Link href="/contact" className="underline">
+          {ui("Contact")}
+        </Link>
+      </nav>
+    </article>
+  );
+}
+```
+
+
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\layout\public\Footer.tsx
 
 ```tsx
 import { Link } from "@/i18n/navigation";
+import { useUiText } from "@/i18n/use-ui-text";
 import Logo from "@/assets/svg/Logo";
 
-const FacebookIcon = ({ className }: { className?: string }) => (
-  <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
-);
-
-const TwitterIcon = ({ className }: { className?: string }) => (
-  <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg>
-);
-
-const InstagramIcon = ({ className }: { className?: string }) => (
-  <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
-);
-
-const LinkedinIcon = ({ className }: { className?: string }) => (
-  <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>
-);
+const groups = [
+  {
+    title: "Quick Links",
+    links: [
+      { href: "/", label: "Home" },
+      { href: "/about", label: "About Us" },
+      { href: "/services", label: "Services" },
+      { href: "/contact", label: "Contact" },
+    ],
+  },
+  {
+    title: "Our Services",
+    links: [
+      { href: "/services#standard-delivery", label: "Standard Delivery" },
+      { href: "/services#express-delivery", label: "Express Courier" },
+      {
+        href: "/services#ecommerce-fulfillment",
+        label: "E-commerce Logistics",
+      },
+      { href: "/contact", label: "Contact and delivery information" },
+    ],
+  },
+  {
+    title: "Legal & Support",
+    links: [
+      { href: "/privacy", label: "Privacy Policy" },
+      { href: "/terms", label: "Terms of Service" },
+      { href: "/cookies", label: "Cookie Policy" },
+      { href: "/faq", label: "FAQ" },
+    ],
+  },
+];
 
 export default function Footer() {
-  const currentYear = new Date().getFullYear();
-
+  const ui = useUiText();
   return (
-    <footer className="w-full border-t bg-background text-foreground mt-auto">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+    <footer className="mt-auto w-full border-t bg-background text-foreground">
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
+        <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-4">
           <div className="flex flex-col gap-4">
-            <Link className="flex items-center gap-2 grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all" href="/">
-              <Logo className="size-6"/>
-              <span className="font-bold tracking-tight text-xl">Dropzo</span>
+            <Link href="/" className="flex items-center gap-2">
+              <Logo className="size-6" />
+              <span className="text-xl font-bold">Dropzo</span>
             </Link>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Fast, secure, and reliable parcel delivery services across the nation. We bridge the gap between businesses and their customers.
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              {ui(
+                "Fast, secure, and reliable parcel delivery services across the nation. We bridge the gap between businesses and their customers.",
+              )}
             </p>
-            <div className="flex gap-4 mt-2">
-              <Link className="text-muted-foreground hover:text-primary transition-colors" href="#">
-                <FacebookIcon className="size-5"/>
-              </Link>
-              <Link className="text-muted-foreground hover:text-primary transition-colors" href="#">
-                <TwitterIcon className="size-5"/>
-              </Link>
-              <Link className="text-muted-foreground hover:text-primary transition-colors" href="#">
-                <InstagramIcon className="size-5"/>
-              </Link>
-              <Link className="text-muted-foreground hover:text-primary transition-colors" href="#">
-                <LinkedinIcon className="size-5"/>
-              </Link>
+          </div>
+          {groups.map((group) => (
+            <div key={group.title} className="flex flex-col gap-4">
+              <h2 className="font-semibold">{ui(group.title)}</h2>
+              <nav
+                aria-label={ui(group.title)}
+                className="flex flex-col gap-3 text-sm text-muted-foreground"
+              >
+                {group.links.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="transition-colors hover:text-primary"
+                  >
+                    {ui(link.label)}
+                  </Link>
+                ))}
+              </nav>
             </div>
-          </div>
-
-          <div className="flex flex-col gap-4">
-            <h3 className="font-semibold text-foreground">Quick Links</h3>
-            <nav className="flex flex-col gap-3 text-sm text-muted-foreground">
-              <Link className="hover:text-primary transition-colors" href="/">Home</Link>
-              <Link className="hover:text-primary transition-colors" href="/about">About Us</Link>
-              <Link className="hover:text-primary transition-colors" href="/services">Services</Link>
-              <Link className="hover:text-primary transition-colors" href="/contact">Contact</Link>
-            </nav>
-          </div>
-
-          <div className="flex flex-col gap-4">
-            <h3 className="font-semibold text-foreground">Our Services</h3>
-            <nav className="flex flex-col gap-3 text-sm text-muted-foreground">
-              <Link className="hover:text-primary transition-colors" href="#">Standard Delivery</Link>
-              <Link className="hover:text-primary transition-colors" href="#">Express Courier</Link>
-              <Link className="hover:text-primary transition-colors" href="#">E-commerce Logistics</Link>
-              <Link className="hover:text-primary transition-colors" href="#">Heavy Freight</Link>
-            </nav>
-          </div>
-
-          <div className="flex flex-col gap-4">
-            <h3 className="font-semibold text-foreground">Legal & Support</h3>
-            <nav className="flex flex-col gap-3 text-sm text-muted-foreground">
-              <Link className="hover:text-primary transition-colors" href="#">Privacy Policy</Link>
-              <Link className="hover:text-primary transition-colors" href="#">Terms of Service</Link>
-              <Link className="hover:text-primary transition-colors" href="#">Cookie Policy</Link>
-              <Link className="hover:text-primary transition-colors" href="#">FAQ</Link>
-            </nav>
-          </div>
+          ))}
         </div>
       </div>
-
-      <div className="w-full py-6 border-t bg-muted/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-muted-foreground text-center md:text-left">
-            &copy; {currentYear} Dropzo. All rights reserved.
+      <div className="border-t bg-muted/20 py-6">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 sm:px-6 md:flex-row lg:px-8">
+          <p className="text-sm text-muted-foreground">
+            © {ui(new Date().getFullYear())}{" "}
+            {ui("Dropzo. All rights reserved.")}
           </p>
-          <p className="text-sm text-muted-foreground text-center md:text-right">
-            Designed for secure and fast logistics.
+          <p className="text-sm text-muted-foreground">
+            {ui("Designed for secure and fast logistics.")}
           </p>
         </div>
       </div>
@@ -3459,6 +5909,7 @@ export default function Footer() {
   );
 }
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\layout\public\Header.tsx
@@ -3475,7 +5926,13 @@ import { toast } from "@/components/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import type { UserRole } from "@/types";
 import { Search, Menu, Globe } from "lucide-react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 export default function Header() {
   const t = useTranslations("Header");
@@ -3518,14 +5975,19 @@ export default function Header() {
 
   const toggleLang = () => {
     const nextLocale = currentLocale === "en" ? "bn" : "en";
-    router.replace(pathname, { locale: nextLocale });
+    router.replace(
+      `${pathname}${window.location.search}${window.location.hash}`,
+      { locale: nextLocale },
+    );
   };
 
   return (
     <header className="w-full h-16 border-b bg-background/70 backdrop-blur-xl sticky top-0 z-50 transition-all shadow-sm">
       <div className="flex justify-between items-center h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        <Link href="/" className="flex items-center gap-3 transition-transform hover:scale-105">
+        <Link
+          href="/"
+          className="flex items-center gap-3 transition-transform hover:scale-105"
+        >
           <Logo className="size-8" />
           <span className="font-bold tracking-tight text-xl hidden sm:block bg-linear-to-r from-primary to-blue-600 bg-clip-text text-transparent">
             Dropzo
@@ -3533,37 +5995,76 @@ export default function Header() {
         </Link>
 
         <div className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
-          <Link href="/services" className="hover:text-primary transition-colors">{t("services")}</Link>
-          <Link href="/about" className="hover:text-primary transition-colors">{t("about")}</Link>
-          <Link href="/contact" className="hover:text-primary transition-colors">{t("contact")}</Link>
+          <Link
+            href="/services"
+            className="hover:text-primary transition-colors"
+          >
+            {t("services")}
+          </Link>
+          <Link href="/about" className="hover:text-primary transition-colors">
+            {t("about")}
+          </Link>
+          <Link
+            href="/contact"
+            className="hover:text-primary transition-colors"
+          >
+            {t("contact")}
+          </Link>
         </div>
 
         <nav className="hidden md:flex items-center gap-3">
-          <Button variant="outline" render={<Link href="/track-shipment" />} nativeButton={false} className="gap-2 border-primary/20 hover:bg-primary/5">
+          <Button
+            variant="outline"
+            render={<Link href="/track-shipment" />}
+            nativeButton={false}
+            className="gap-2 border-primary/20 hover:bg-primary/5"
+          >
             <Search className="size-4" /> {t("track")}
           </Button>
 
-          <Button variant="ghost" onClick={toggleLang} className="gap-1 px-2 text-muted-foreground hover:text-foreground">
-            <Globe className="size-4" /> {currentLocale.toUpperCase()}
+          <Button
+            variant="ghost"
+            onClick={toggleLang}
+            className="gap-1 px-2 text-muted-foreground hover:text-foreground"
+            aria-label={t("switchLanguage")}
+          >
+            <Globe className="size-4" />{" "}
+            {currentLocale === "bn" ? "English" : "বাংলা"}
           </Button>
 
           {!isLoading && !user && (
             <>
-              <Button variant="ghost" render={<Link href="/login" />} nativeButton={false}>
+              <Button
+                variant="ghost"
+                render={<Link href="/login" />}
+                nativeButton={false}
+              >
                 {t("login")}
               </Button>
-              <Button render={<Link href="/register" />} nativeButton={false} className="shadow-md">
+              <Button
+                render={<Link href="/register" />}
+                nativeButton={false}
+                className="shadow-md"
+              >
                 {t("register")}
               </Button>
             </>
           )}
-          
+
           {!isLoading && user && (
             <>
-              <Button variant="outline" render={<Link href={dashboardRoute[user.role as UserRole]} />} nativeButton={false}>
+              <Button
+                variant="outline"
+                render={<Link href={dashboardRoute[user.role as UserRole]} />}
+                nativeButton={false}
+              >
                 {t("dashboard")}
               </Button>
-              <Button variant="destructive" onClick={handleLogout} disabled={isPending}>
+              <Button
+                variant="destructive"
+                onClick={handleLogout}
+                disabled={isPending}
+              >
                 {isPending ? t("loggingOut") : t("logout")}
               </Button>
             </>
@@ -3571,12 +6072,26 @@ export default function Header() {
         </nav>
 
         <div className="flex md:hidden items-center gap-2">
-          <Button variant="outline" render={<Link href="/track-shipment" />} nativeButton={false} className="px-3 border-primary/20">
+          <Button
+            variant="outline"
+            render={<Link href="/track-shipment" />}
+            nativeButton={false}
+            className="px-3 border-primary/20"
+            aria-label={t("track")}
+          >
             <Search className="size-4" />
           </Button>
-          
+
           <Sheet>
-            <SheetTrigger render={<Button variant="ghost" className="px-3" />}>
+            <SheetTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  className="px-3"
+                  aria-label={t("menu")}
+                />
+              }
+            >
               <Menu className="size-5" />
             </SheetTrigger>
             <SheetContent side="right">
@@ -3584,33 +6099,75 @@ export default function Header() {
                 <SheetTitle className="text-left">{t("menu")}</SheetTitle>
               </SheetHeader>
               <div className="flex flex-col gap-4 mt-6">
-                <Link href="/services" className="text-lg font-medium hover:text-primary">{t("services")}</Link>
-                <Link href="/about" className="text-lg font-medium hover:text-primary">{t("about")}</Link>
-                <Link href="/contact" className="text-lg font-medium hover:text-primary">{t("contact")}</Link>
-                
-                <Button variant="ghost" className="justify-start px-0 text-lg font-medium" onClick={toggleLang}>
-                  <Globe className="size-5 mr-2" /> {t("language")}{currentLocale.toUpperCase()}
+                <Link
+                  href="/services"
+                  className="text-lg font-medium hover:text-primary"
+                >
+                  {t("services")}
+                </Link>
+                <Link
+                  href="/about"
+                  className="text-lg font-medium hover:text-primary"
+                >
+                  {t("about")}
+                </Link>
+                <Link
+                  href="/contact"
+                  className="text-lg font-medium hover:text-primary"
+                >
+                  {t("contact")}
+                </Link>
+
+                <Button
+                  variant="ghost"
+                  className="justify-start px-0 text-lg font-medium"
+                  onClick={toggleLang}
+                  aria-label={t("switchLanguage")}
+                >
+                  <Globe className="size-5 mr-2" /> {t("language")}
+                  {currentLocale === "bn" ? "English" : "বাংলা"}
                 </Button>
-                
+
                 <hr className="my-2 border-border" />
-                
+
                 {!isLoading && !user && (
                   <div className="flex flex-col gap-3">
-                    <Button variant="outline" render={<Link href="/login" />} nativeButton={false} className="w-full">
+                    <Button
+                      variant="outline"
+                      render={<Link href="/login" />}
+                      nativeButton={false}
+                      className="w-full"
+                    >
                       {t("login")}
                     </Button>
-                    <Button render={<Link href="/register" />} nativeButton={false} className="w-full">
+                    <Button
+                      render={<Link href="/register" />}
+                      nativeButton={false}
+                      className="w-full"
+                    >
                       {t("register")}
                     </Button>
                   </div>
                 )}
-                
+
                 {!isLoading && user && (
                   <div className="flex flex-col gap-3">
-                    <Button variant="outline" render={<Link href={dashboardRoute[user.role as UserRole]} />} nativeButton={false} className="w-full">
+                    <Button
+                      variant="outline"
+                      render={
+                        <Link href={dashboardRoute[user.role as UserRole]} />
+                      }
+                      nativeButton={false}
+                      className="w-full"
+                    >
                       {t("dashboard")}
                     </Button>
-                    <Button variant="destructive" onClick={handleLogout} disabled={isPending} className="w-full">
+                    <Button
+                      variant="destructive"
+                      onClick={handleLogout}
+                      disabled={isPending}
+                      className="w-full"
+                    >
                       {isPending ? t("loggingOut") : t("logout")}
                     </Button>
                   </div>
@@ -3626,20 +6183,130 @@ export default function Header() {
 ```
 
 
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\modules\admin\admin-overview.tsx
+
+```tsx
+"use client";
+
+import { useUiText, useUiFormat } from "@/i18n/use-ui-text";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DollarSign, Package, Truck, Users } from "lucide-react";
+import { useGetDashboardStats } from "@/hooks";
+import { Skeleton } from "@/components/ui/skeleton";
+
+export default function AdminOverview() {
+  const ui = useUiText();
+  const display = useUiFormat();
+  const { data, isLoading, isError } = useGetDashboardStats();
+  const stats = data?.data;
+
+  if (isLoading) {
+    return (
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {[1, 2, 3, 4].map((i) => (
+          <Skeleton key={i} className="h-32 w-full rounded-xl" />
+        ))}
+      </div>
+    );
+  }
+
+  if (isError || !stats) {
+    return (
+      <div className="flex h-32 items-center justify-center rounded-xl border border-destructive/20 bg-destructive/10 text-destructive">
+        {ui("Failed to load dashboard statistics.")}{" "}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="border-muted/20 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">
+              {ui("Total Revenue")}
+            </CardTitle>
+            <DollarSign className="size-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              ৳ {display.money(stats.totalRevenue)}
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-muted/20 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">
+              {ui("Total Customers")}
+            </CardTitle>
+            <Users className="size-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {display.number(stats.totalCustomers)}
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-muted/20 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">
+              {ui("Total Couriers")}
+            </CardTitle>
+            <Truck className="size-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {display.number(stats.totalCouriers)}
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-muted/20 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">
+              {ui("Total Shipments")}
+            </CardTitle>
+            <Package className="size-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {display.number(stats.totalShipments)}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+```
+
+
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\modules\admin\user-management-table.tsx
 
 ```tsx
 "use client";
 
+import { useUiText, useUiFormat } from "@/i18n/use-ui-text";
 import { useState } from "react";
-import { useGetAllUsers, useUpdateUserRole, useUpdateUserStatus } from "@/hooks";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  useGetAllUsers,
+  useUpdateUserRole,
+  useUpdateUserStatus,
+} from "@/hooks";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/toast";
 import { Input } from "@/components/ui/input";
 import TablePagination from "@/components/ui/table-pagination";
-import { format } from "date-fns";
 
 interface IUser {
   id: string;
@@ -3651,11 +6318,14 @@ interface IUser {
 }
 
 export default function UserManagementTable() {
+  const ui = useUiText();
+  const display = useUiFormat();
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
-  
+
   const { data, isLoading } = useGetAllUsers({ page, limit: 10, searchTerm });
-  const { mutate: updateStatus, isPending: isUpdatingStatus } = useUpdateUserStatus();
+  const { mutate: updateStatus, isPending: isUpdatingStatus } =
+    useUpdateUserStatus();
   const { mutate: updateRole, isPending: isUpdatingRole } = useUpdateUserRole();
 
   const users = data?.data || [];
@@ -3666,9 +6336,15 @@ export default function UserManagementTable() {
     updateStatus(
       { id, payload: { status: newStatus } },
       {
-        onSuccess: () => toast.add({ title: "Status Updated", type: "success" }),
-        onError: (err: Error) => toast.add({ title: "Update Failed", description: err.message, type: "error" }),
-      }
+        onSuccess: () =>
+          toast.add({ title: "Status Updated", type: "success" }),
+        onError: (err: Error) =>
+          toast.add({
+            title: "Update Failed",
+            description: err.message,
+            type: "error",
+          }),
+      },
     );
   };
 
@@ -3677,8 +6353,13 @@ export default function UserManagementTable() {
       { id, payload: { role: newRole } },
       {
         onSuccess: () => toast.add({ title: "Role Updated", type: "success" }),
-        onError: (err: Error) => toast.add({ title: "Update Failed", description: err.message, type: "error" }),
-      }
+        onError: (err: Error) =>
+          toast.add({
+            title: "Update Failed",
+            description: err.message,
+            type: "error",
+          }),
+      },
     );
   };
 
@@ -3686,7 +6367,7 @@ export default function UserManagementTable() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <Input
-          placeholder="Search users..."
+          placeholder={ui("Search users...")}
           value={searchTerm}
           onChange={(e) => {
             setSearchTerm(e.target.value);
@@ -3700,30 +6381,51 @@ export default function UserManagementTable() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Joined</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead>{ui("Name")}</TableHead>
+              <TableHead>{ui("Email")}</TableHead>
+              <TableHead>{ui("Role")}</TableHead>
+              <TableHead>{ui("Status")}</TableHead>
+              <TableHead>{ui("Joined")}</TableHead>
+              <TableHead className="text-right">{ui("Actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              ["placeholder-a", "placeholder-b", "placeholder-c", "placeholder-d", "placeholder-e"].map(key => (
+              [
+                "placeholder-a",
+                "placeholder-b",
+                "placeholder-c",
+                "placeholder-d",
+                "placeholder-e",
+              ].map((key) => (
                 <TableRow key={key}>
-                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-40" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                  <TableCell><Skeleton className="h-8 w-16 ml-auto" /></TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-32" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-40" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-20" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-20" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-24" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-8 w-16 ml-auto" />
+                  </TableCell>
                 </TableRow>
               ))
             ) : users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                  No users found.
+                <TableCell
+                  colSpan={6}
+                  className="h-24 text-center text-muted-foreground"
+                >
+                  {ui("No users found.")}{" "}
                 </TableCell>
               </TableRow>
             ) : (
@@ -3734,29 +6436,37 @@ export default function UserManagementTable() {
                   <TableCell>
                     <select
                       value={user.role}
-                      onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                      onChange={(e) =>
+                        handleRoleChange(user.id, e.target.value)
+                      }
                       disabled={isUpdatingRole || user.role === "SUPER_ADMIN"}
                       className="bg-transparent border border-input rounded-md text-sm p-1 focus:ring-2 focus:ring-primary"
                     >
-                      <option value="CUSTOMER">Customer</option>
-                      <option value="COURIER">Courier</option>
-                      <option value="ADMIN">Admin</option>
+                      <option value="CUSTOMER">{ui("Customer")}</option>
+                      <option value="COURIER">{ui("Courier")}</option>
+                      <option value="ADMIN">{ui("Admin")}</option>
                     </select>
                   </TableCell>
                   <TableCell>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${user.status === 'ACTIVE' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
-                      {user.status}
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${user.status === "ACTIVE" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"}`}
+                    >
+                      {ui(user.status)}
                     </span>
                   </TableCell>
-                  <TableCell>{format(new Date(user.createdAt), "MMM dd, yyyy")}</TableCell>
+                  <TableCell>
+                    {display.date(new Date(user.createdAt))}
+                  </TableCell>
                   <TableCell className="text-right">
                     <Button
-                      variant={user.status === "ACTIVE" ? "destructive" : "default"}
+                      variant={
+                        user.status === "ACTIVE" ? "destructive" : "default"
+                      }
                       size="sm"
                       onClick={() => handleStatusChange(user.id, user.status)}
                       disabled={isUpdatingStatus || user.role === "SUPER_ADMIN"}
                     >
-                      {user.status === "ACTIVE" ? "Block" : "Unblock"}
+                      {user.status === "ACTIVE" ? ui("Block") : ui("Unblock")}
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -3779,21 +6489,26 @@ export default function UserManagementTable() {
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\modules\courier\courier-overview.tsx
 
 ```tsx
 "use client";
 
+import { useUiText, useUiFormat } from "@/i18n/use-ui-text";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PackageCheck, Wallet } from "lucide-react";
 import { useGetMe, useGetCourierHistoryAndEarnings } from "@/hooks";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function CourierOverview() {
+  const ui = useUiText();
+  const display = useUiFormat();
   const { data: userData, isLoading: isUserLoading } = useGetMe();
   const courierId = userData?.data?.courier?.id;
 
-  const { data: statsData, isLoading: isStatsLoading } = useGetCourierHistoryAndEarnings(courierId || "");
+  const { data: statsData, isLoading: isStatsLoading } =
+    useGetCourierHistoryAndEarnings(courierId || "");
   const stats = statsData?.data;
 
   const isLoading = isUserLoading || isStatsLoading;
@@ -3811,20 +6526,30 @@ export default function CourierOverview() {
     <div className="grid gap-4 md:grid-cols-2">
       <Card className="border-muted/20 shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-          <CardTitle className="text-sm font-medium">Total Deliveries</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            {ui("Total Deliveries")}
+          </CardTitle>
           <PackageCheck className="size-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{stats?.completedDeliveries || 0}</div>
+          <div className="text-2xl font-bold">
+            {ui(stats?.completedDeliveries || 0)}
+          </div>
         </CardContent>
       </Card>
       <Card className="border-muted/20 shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-          <CardTitle className="text-sm font-medium">Total Earnings</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            {ui("Total Earnings")}
+          </CardTitle>
           <Wallet className="size-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{stats?.totalEarnings == null ? "Compensation needs configuration" : `৳ ${stats.totalEarnings.toLocaleString()}`}</div>
+          <div className="text-2xl font-bold">
+            {stats?.totalEarnings == null
+              ? ui("Compensation needs configuration")
+              : `৳ ${display.money(stats.totalEarnings)}`}
+          </div>
         </CardContent>
       </Card>
     </div>
@@ -3833,14 +6558,23 @@ export default function CourierOverview() {
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\modules\courier\delivery-tasks.tsx
 
 ```tsx
 "use client";
 
+import { useUiText } from "@/i18n/use-ui-text";
 import { useState } from "react";
 import { useGetAllShipments, useUpdateShipmentStatus } from "@/hooks";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "@/components/ui/toast";
@@ -3850,31 +6584,118 @@ import { getApiErrorMessage } from "@/lib/api-error";
 import type { ShipmentStatus } from "@/types";
 
 const labels: Partial<Record<ShipmentStatus, string>> = {
-  PICKED_UP: "Mark Picked Up", AT_ORIGIN_HUB: "Arrived at Origin Hub", IN_TRANSIT: "Start Hub Transfer",
-  AT_DESTINATION_HUB: "Arrived at Destination Hub", OUT_FOR_DELIVERY: "Out for Delivery",
-  DELIVERED: "Mark Delivered", DELIVERY_FAILED: "Delivery Failed", RETURNED: "Mark Returned",
+  PICKED_UP: "Mark Picked Up",
+  AT_ORIGIN_HUB: "Arrived at Origin Hub",
+  IN_TRANSIT: "Start Hub Transfer",
+  AT_DESTINATION_HUB: "Arrived at Destination Hub",
+  OUT_FOR_DELIVERY: "Out for Delivery",
+  DELIVERED: "Mark Delivered",
+  DELIVERY_FAILED: "Delivery Failed",
+  RETURNED: "Mark Returned",
 };
 export default function DeliveryTasks() {
+  const ui = useUiText();
   const [page, setPage] = useState(1);
-  const { data, isPending, error, refetch } = useGetAllShipments({ page, limit: 10 });
-  const { mutate: updateStatus, isPending: updating } = useUpdateShipmentStatus();
-  if (error) return <QueryError retry={() => { void refetch(); }} />;
+  const { data, isPending, error, refetch } = useGetAllShipments({
+    page,
+    limit: 10,
+  });
+  const { mutate: updateStatus, isPending: updating } =
+    useUpdateShipmentStatus();
+  if (error)
+    return (
+      <QueryError
+        retry={() => {
+          void refetch();
+        }}
+      />
+    );
   if (isPending) return <Spinner />;
-  return <div className="space-y-4"><div className="rounded-md border bg-card"><Table>
-    <TableHeader><TableRow><TableHead>Tracking ID</TableHead><TableHead>Receiver</TableHead><TableHead>Address</TableHead><TableHead>Status</TableHead><TableHead>Actions</TableHead></TableRow></TableHeader>
-    <TableBody>{data?.data.length ? data.data.map(shipment => <TableRow key={shipment.id}>
-      <TableCell className="font-mono">{shipment.trackingId}</TableCell><TableCell>{shipment.receiverName}</TableCell>
-      <TableCell>{shipment.receiverAddress}</TableCell><TableCell>{shipment.status.replace(/_/g, " ")}</TableCell>
-      <TableCell><div className="flex flex-wrap gap-2">{shipment.allowedNextStatuses.map(status => <Button key={status} size="sm"
-        variant={status === "DELIVERY_FAILED" ? "destructive" : "outline"} disabled={updating}
-        onClick={() => updateStatus({ id: shipment.id, payload: { status } }, {
-          onSuccess: () => toast.add({ title: "Status Updated", type: "success" }),
-          onError: failure => toast.add({ title: "Update Failed", description: getApiErrorMessage(failure), type: "error" }),
-        })}>{labels[status] || status.replace(/_/g, " ")}</Button>)}</div></TableCell>
-    </TableRow>) : <TableRow><TableCell colSpan={5}>No delivery tasks found.</TableCell></TableRow>}</TableBody>
-  </Table></div>{data?.meta && data.meta.totalPages > 1 && <TablePagination page={page} totalPages={data.meta.totalPages} handlePageChange={setPage} />}</div>;
+  return (
+    <div className="space-y-4">
+      <div className="rounded-md border bg-card">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{ui("Tracking ID")}</TableHead>
+              <TableHead>{ui("Receiver")}</TableHead>
+              <TableHead>{ui("Address")}</TableHead>
+              <TableHead>{ui("Status")}</TableHead>
+              <TableHead>{ui("Actions")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data?.data.length ? (
+              data.data.map((shipment) => (
+                <TableRow key={shipment.id}>
+                  <TableCell className="font-mono">
+                    {shipment.trackingId}
+                  </TableCell>
+                  <TableCell>{shipment.receiverName}</TableCell>
+                  <TableCell>{shipment.receiverAddress}</TableCell>
+                  <TableCell>
+                    {ui(shipment.status.replace(/_/g, " "))}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-2">
+                      {shipment.allowedNextStatuses.map((status) => (
+                        <Button
+                          key={status}
+                          size="sm"
+                          variant={
+                            status === "DELIVERY_FAILED"
+                              ? "destructive"
+                              : "outline"
+                          }
+                          disabled={updating}
+                          onClick={() =>
+                            updateStatus(
+                              { id: shipment.id, payload: { status } },
+                              {
+                                onSuccess: () =>
+                                  toast.add({
+                                    title: "Status Updated",
+                                    type: "success",
+                                  }),
+                                onError: (failure) =>
+                                  toast.add({
+                                    title: "Update Failed",
+                                    description: getApiErrorMessage(failure),
+                                    type: "error",
+                                  }),
+                              },
+                            )
+                          }
+                        >
+                          {ui(labels[status] || status.replace(/_/g, " "))}
+                        </Button>
+                      ))}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={5}>
+                  {ui("No delivery tasks found.")}
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+      {data?.meta && data.meta.totalPages > 1 && (
+        <TablePagination
+          page={page}
+          totalPages={data.meta.totalPages}
+          handlePageChange={setPage}
+        />
+      )}
+    </div>
+  );
 }
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\modules\customer\customer-overview.tsx
@@ -3882,6 +6703,7 @@ export default function DeliveryTasks() {
 ```tsx
 "use client";
 
+import { useUiText } from "@/i18n/use-ui-text";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Package, Truck, CheckCircle } from "lucide-react";
 import { useShipmentSummary } from "@/hooks";
@@ -3891,12 +6713,20 @@ import { useRouter } from "@/i18n/navigation";
 import QueryError from "@/components/ui/query-error";
 
 export default function CustomerOverview() {
+  const ui = useUiText();
   const router = useRouter();
   const { data, isLoading, error, refetch } = useShipmentSummary();
   const totalShipments = data?.data.totalShipments ?? 0;
   const pendingShipments = data?.data.activeShipments ?? 0;
   const deliveredShipments = data?.data.deliveredShipments ?? 0;
-  if (error) return <QueryError retry={() => { void refetch(); }} />;
+  if (error)
+    return (
+      <QueryError
+        retry={() => {
+          void refetch();
+        }}
+      />
+    );
 
   if (isLoading) {
     return (
@@ -3912,35 +6742,41 @@ export default function CustomerOverview() {
     <div className="space-y-6">
       <div className="flex justify-end">
         <Button onClick={() => router.push("/dashboard/new-shipment")}>
-          + Create Shipment
+          {ui("+ Create Shipment")}{" "}
         </Button>
       </div>
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="border-muted/20 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Total Shipments</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {ui("Total Shipments")}
+            </CardTitle>
             <Package className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalShipments}</div>
+            <div className="text-2xl font-bold">{ui(totalShipments)}</div>
           </CardContent>
         </Card>
         <Card className="border-muted/20 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Active & Pending</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {ui("Active & Pending")}
+            </CardTitle>
             <Truck className="size-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{pendingShipments}</div>
+            <div className="text-2xl font-bold">{ui(pendingShipments)}</div>
           </CardContent>
         </Card>
         <Card className="border-muted/20 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Delivered</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {ui("Delivered")}
+            </CardTitle>
             <CheckCircle className="size-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{deliveredShipments}</div>
+            <div className="text-2xl font-bold">{ui(deliveredShipments)}</div>
           </CardContent>
         </Card>
       </div>
@@ -3950,71 +6786,218 @@ export default function CustomerOverview() {
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\modules\customer\shipment-history.tsx
 
 ```tsx
 "use client";
 
+import { useUiText, useUiFormat } from "@/i18n/use-ui-text";
 import { useState } from "react";
-import { useGetAllShipments, useGetSingleShipment, useCancelShipment, useInitiatePayment } from "@/hooks";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  useGetAllShipments,
+  useGetSingleShipment,
+  useCancelShipment,
+  useInitiatePayment,
+} from "@/hooks";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "@/components/ui/toast";
 import QueryError from "@/components/ui/query-error";
 import TablePagination from "@/components/ui/table-pagination";
-import { format } from "date-fns";
 import TrackingTimeline from "../shipment-tracking/tracking-timeline";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { Link } from "@/i18n/navigation";
 
 export default function ShipmentHistory() {
+  const ui = useUiText();
+  const display = useUiFormat();
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState("");
-  const { data, isPending, error, refetch } = useGetAllShipments({ page, limit: 10 });
+  const { data, isPending, error, refetch } = useGetAllShipments({
+    page,
+    limit: 10,
+  });
   const details = useGetSingleShipment(selectedId);
   const { mutate: cancel, isPending: canceling } = useCancelShipment();
   const { mutate: initiate, isPending: paying } = useInitiatePayment();
-  if (error) return <QueryError retry={() => { void refetch(); }} />;
+  if (error)
+    return (
+      <QueryError
+        retry={() => {
+          void refetch();
+        }}
+      />
+    );
   if (isPending) return <Spinner />;
-  return <div className="space-y-4"><div className="rounded-md border bg-card"><Table>
-    <TableHeader><TableRow><TableHead>Tracking ID</TableHead><TableHead>Date</TableHead><TableHead>Receiver</TableHead><TableHead>Price</TableHead><TableHead>Status</TableHead><TableHead>Actions</TableHead></TableRow></TableHeader>
-    <TableBody>{data?.data.length ? data.data.map(shipment => <TableRow key={shipment.id}>
-      <TableCell className="font-mono">{shipment.trackingId}</TableCell><TableCell>{format(new Date(shipment.createdAt), "PP")}</TableCell>
-      <TableCell>{shipment.receiverName}</TableCell><TableCell>৳{Number(shipment.price).toFixed(2)}</TableCell>
-      <TableCell>{shipment.status.replace(/_/g, " ")}<p className="text-xs">{shipment.paymentStatus}</p></TableCell>
-      <TableCell><div className="flex flex-wrap gap-2">
-        {!["PAID", "REFUNDED"].includes(shipment.paymentStatus) && !["CANCELLED", "RETURNED"].includes(shipment.status) && <Button size="sm" disabled={paying || canceling}
-          onClick={() => initiate({ shipmentId: shipment.id }, {
-            onSuccess: response => {
-              const url = new URL(response.data.paymentUrl);
-              if (url.protocol !== "https:") return;
-              window.location.assign(url.href);
-            },
-            onError: failure => toast.add({ title: "Payment Failed", description: getApiErrorMessage(failure), type: "error" }),
-          })}>Pay Now</Button>}
-        <Button variant="outline" size="sm" onClick={() => setSelectedId(shipment.id)}>Track</Button>
-        {shipment.paymentStatus === "UNPAID" && <Link className="text-sm underline" href={`/payment/success?shipmentId=${shipment.id}`}>Check Payment</Link>}
-        {shipment.status === "PENDING" && shipment.paymentStatus !== "PAID" && <Button variant="destructive" size="sm" disabled={canceling || paying}
-          onClick={() => cancel(shipment.id, {
-            onSuccess: () => toast.add({ title: "Shipment Cancelled", type: "success" }),
-            onError: failure => toast.add({ title: "Cancellation Failed", description: getApiErrorMessage(failure), type: "error" }),
-          })}>Cancel</Button>}
-      </div></TableCell>
-    </TableRow>) : <TableRow><TableCell colSpan={6}>No shipments found.</TableCell></TableRow>}</TableBody>
-  </Table></div>
-    {data?.meta && data.meta.totalPages > 1 && <TablePagination page={page} totalPages={data.meta.totalPages} handlePageChange={setPage} />}
-    <Dialog open={!!selectedId} onOpenChange={open => { if (!open) setSelectedId(""); }}>
-      <DialogContent className="sm:max-w-md"><DialogHeader><DialogTitle>Shipment Tracking</DialogTitle></DialogHeader>
-        <div className="max-h-[60vh] overflow-y-auto">
-          {details.isError ? <QueryError retry={() => { void details.refetch(); }} /> : details.isFetching ? <Spinner /> : <TrackingTimeline trackings={details.data?.data.trackings || []} />}
-        </div>
-      </DialogContent>
-    </Dialog>
-  </div>;
+  return (
+    <div className="space-y-4">
+      <div className="rounded-md border bg-card">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{ui("Tracking ID")}</TableHead>
+              <TableHead>{ui("Date")}</TableHead>
+              <TableHead>{ui("Receiver")}</TableHead>
+              <TableHead>{ui("Price")}</TableHead>
+              <TableHead>{ui("Status")}</TableHead>
+              <TableHead>{ui("Actions")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data?.data.length ? (
+              data.data.map((shipment) => (
+                <TableRow key={shipment.id}>
+                  <TableCell className="font-mono">
+                    {shipment.trackingId}
+                  </TableCell>
+                  <TableCell>
+                    {display.date(new Date(shipment.createdAt))}
+                  </TableCell>
+                  <TableCell>{shipment.receiverName}</TableCell>
+                  <TableCell>৳{display.money(shipment.price)}</TableCell>
+                  <TableCell>
+                    {ui(shipment.status.replace(/_/g, " "))}
+                    <p className="text-xs">{ui(shipment.paymentStatus)}</p>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-2">
+                      {!["PAID", "REFUNDED"].includes(shipment.paymentStatus) &&
+                        !["CANCELLED", "RETURNED"].includes(
+                          shipment.status,
+                        ) && (
+                          <Button
+                            size="sm"
+                            disabled={paying || canceling}
+                            onClick={() =>
+                              initiate(
+                                { shipmentId: shipment.id },
+                                {
+                                  onSuccess: (response) => {
+                                    const url = new URL(
+                                      response.data.paymentUrl,
+                                    );
+                                    if (url.protocol !== "https:") return;
+                                    window.location.assign(url.href);
+                                  },
+                                  onError: (failure) =>
+                                    toast.add({
+                                      title: "Payment Failed",
+                                      description: getApiErrorMessage(failure),
+                                      type: "error",
+                                    }),
+                                },
+                              )
+                            }
+                          >
+                            {ui("Pay Now")}
+                          </Button>
+                        )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedId(shipment.id)}
+                      >
+                        {ui("Track")}
+                      </Button>
+                      {shipment.paymentStatus === "UNPAID" && (
+                        <Link
+                          className="text-sm underline"
+                          href={`/payment/success?shipmentId=${shipment.id}`}
+                        >
+                          {ui("Check Payment")}
+                        </Link>
+                      )}
+                      {shipment.status === "PENDING" &&
+                        shipment.paymentStatus !== "PAID" && (
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            disabled={canceling || paying}
+                            onClick={() =>
+                              cancel(shipment.id, {
+                                onSuccess: () =>
+                                  toast.add({
+                                    title: "Shipment Cancelled",
+                                    type: "success",
+                                  }),
+                                onError: (failure) =>
+                                  toast.add({
+                                    title: "Cancellation Failed",
+                                    description: getApiErrorMessage(failure),
+                                    type: "error",
+                                  }),
+                              })
+                            }
+                          >
+                            {ui("Cancel")}
+                          </Button>
+                        )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={6}>{ui("No shipments found.")}</TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+      {data?.meta && data.meta.totalPages > 1 && (
+        <TablePagination
+          page={page}
+          totalPages={data.meta.totalPages}
+          handlePageChange={setPage}
+        />
+      )}
+      <Dialog
+        open={!!selectedId}
+        onOpenChange={(open) => {
+          if (!open) setSelectedId("");
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{ui("Shipment Tracking")}</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto">
+            {details.isError ? (
+              <QueryError
+                retry={() => {
+                  void details.refetch();
+                }}
+              />
+            ) : details.isFetching ? (
+              <Spinner />
+            ) : (
+              <TrackingTimeline
+                trackings={details.data?.data.trackings || []}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
 }
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\modules\google-login\GoogleLogin.tsx
@@ -4050,11 +7033,13 @@ export default function GoogleLoginComponent() {
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\modules\payment\payment-status.tsx
 
 ```tsx
 "use client";
 
+import { useUiText, useUiFormat } from "@/i18n/use-ui-text";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocale } from "next-intl";
@@ -4066,16 +7051,31 @@ import { Spinner } from "@/components/ui/spinner";
 import QueryError from "@/components/ui/query-error";
 
 export default function PaymentStatus({ shipmentId }: { shipmentId: string }) {
+  const ui = useUiText();
+  const display = useUiFormat();
   const bn = useLocale() === "bn";
   const queryClient = useQueryClient();
   const [checking, setChecking] = useState(true);
   const result = useQuery({
-    queryKey: ["shipments", shipmentId], queryFn: () => getSingleShipment(shipmentId), enabled: !!shipmentId,
-    retry: false, staleTime: 0,
-    refetchInterval: query => checking && query.state.data?.data.paymentStatus !== "PAID" && !query.state.error ? 2000 : false,
+    queryKey: ["shipments", shipmentId],
+    queryFn: () => getSingleShipment(shipmentId),
+    enabled: !!shipmentId,
+    retry: false,
+    staleTime: 0,
+    refetchInterval: (query) =>
+      checking &&
+      query.state.data?.data.paymentStatus !== "PAID" &&
+      !query.state.error
+        ? 2000
+        : false,
   });
   const paid = result.data?.data.paymentStatus === "PAID";
-  const verification = useMutation({ mutationFn: () => reconcilePayment({ shipmentId }), onSuccess: () => { void result.refetch(); } });
+  const verification = useMutation({
+    mutationFn: () => reconcilePayment({ shipmentId }),
+    onSuccess: () => {
+      void result.refetch();
+    },
+  });
   useEffect(() => {
     const timer = setTimeout(() => setChecking(false), 45000);
     return () => clearTimeout(timer);
@@ -4086,21 +7086,78 @@ export default function PaymentStatus({ shipmentId }: { shipmentId: string }) {
       void queryClient.invalidateQueries({ queryKey: ["admin"] });
     }
   }, [paid, queryClient]);
-  if (!shipmentId) return <p role="alert">{bn ? "অর্থপ্রদান যাচাই করার পরিচয়সংখ্যা নেই।" : "No shipment was provided for payment verification."}</p>;
-  if (getApiErrorStatus(result.error) === 401) return <Link href="/login">{bn ? "অর্থপ্রদানের অবস্থা দেখতে প্রবেশ করুন" : "Sign in to view payment status"}</Link>;
-  if (result.isError) return <QueryError retry={() => { void result.refetch(); }} />;
+  if (!shipmentId)
+    return (
+      <p role="alert">
+        {bn
+          ? "অর্থপ্রদান যাচাই করার পরিচয়সংখ্যা নেই।"
+          : ui("No shipment was provided for payment verification.")}
+      </p>
+    );
+  if (getApiErrorStatus(result.error) === 401)
+    return (
+      <Link href="/login">
+        {bn
+          ? "অর্থপ্রদানের অবস্থা দেখতে প্রবেশ করুন"
+          : ui("Sign in to view payment status")}
+      </Link>
+    );
+  if (result.isError)
+    return (
+      <QueryError
+        retry={() => {
+          void result.refetch();
+        }}
+      />
+    );
   if (result.isPending) return <Spinner />;
-  return <div className="space-y-4" aria-live="polite">
-    <h1 className="text-3xl font-bold">{paid ? bn ? "অর্থপ্রদান নিশ্চিত হয়েছে" : "Payment Confirmed" : bn ? "অর্থপ্রদান এখনও নিশ্চিত হয়নি" : "Payment Not Yet Confirmed"}</h1>
-    <p>{paid ? bn ? "সার্ভারে আপনার অর্থপ্রদানের নথি সংরক্ষিত হয়েছে।" : "Your payment has been verified and recorded."
-      : bn ? "অর্থপ্রদানকারী প্রতিষ্ঠানের যাচাইয়ের জন্য অপেক্ষা করছি।" : "Awaiting verified payment confirmation from the provider."}</p>
-    <p className="font-mono">{result.data.data.trackingId} · {result.data.data.paymentStatus}</p>
-    {!paid && <Button variant="outline" disabled={result.isFetching || verification.isPending} onClick={() => verification.mutate()}>{bn ? "আবার যাচাই করুন" : "Check again"}</Button>}
-    {verification.isError && <p role="alert">{getApiErrorMessage(verification.error)}</p>}
-    <p><Link href="/dashboard/my-shipments">{bn ? "পার্সেলের তালিকায় যান" : "View My Shipments"}</Link></p>
-  </div>;
+  return (
+    <div className="space-y-4" aria-live="polite">
+      <h1 className="text-3xl font-bold">
+        {paid
+          ? bn
+            ? "অর্থপ্রদান নিশ্চিত হয়েছে"
+            : ui("Payment Confirmed")
+          : bn
+            ? "অর্থপ্রদান এখনও নিশ্চিত হয়নি"
+            : ui("Payment Not Yet Confirmed")}
+      </h1>
+      <p>
+        {paid
+          ? bn
+            ? "সার্ভারে আপনার অর্থপ্রদানের নথি সংরক্ষিত হয়েছে।"
+            : ui("Your payment has been verified and recorded.")
+          : bn
+            ? "অর্থপ্রদানকারী প্রতিষ্ঠানের যাচাইয়ের জন্য অপেক্ষা করছি।"
+            : ui("Awaiting verified payment confirmation from the provider.")}
+      </p>
+      <p className="font-mono">
+        {result.data.data.trackingId} · {ui(result.data.data.paymentStatus)}
+      </p>
+      {!paid && (
+        <Button
+          variant="outline"
+          disabled={result.isFetching || verification.isPending}
+          onClick={() => verification.mutate()}
+        >
+          {bn ? "আবার যাচাই করুন" : ui("Check again")}
+        </Button>
+      )}
+      {verification.isError && (
+        <p role="alert">
+          {display.error(getApiErrorMessage(verification.error))}
+        </p>
+      )}
+      <p>
+        <Link href="/dashboard/my-shipments">
+          {bn ? "পার্সেলের তালিকায় যান" : ui("View My Shipments")}
+        </Link>
+      </p>
+    </div>
+  );
 }
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\modules\shipment-tracking\track-form.tsx
@@ -4108,6 +7165,7 @@ export default function PaymentStatus({ shipmentId }: { shipmentId: string }) {
 ```tsx
 "use client";
 
+import { useUiText, useUiFormat } from "@/i18n/use-ui-text";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocale } from "next-intl";
@@ -4119,32 +7177,136 @@ import { Spinner } from "@/components/ui/spinner";
 import TrackingTimeline from "./tracking-timeline";
 
 export default function TrackForm() {
+  const ui = useUiText();
+  const display = useUiFormat();
   const bn = useLocale() === "bn";
   const [input, setInput] = useState("");
   const [trackingId, setTrackingId] = useState("");
   const result = useQuery({
-    queryKey: ["public-tracking", trackingId], queryFn: () => trackShipment(trackingId),
-    enabled: !!trackingId, retry: false,
+    queryKey: ["public-tracking", trackingId],
+    queryFn: () => trackShipment(trackingId),
+    enabled: !!trackingId,
+    retry: false,
   });
-  return <div className="space-y-6">
-    <form className="flex flex-col sm:flex-row gap-3" onSubmit={event => {
-      event.preventDefault();
-      const value = input.trim().toUpperCase();
-      if (!/^TRK-[A-Z0-9-]{4,76}$/.test(value)) return;
-      if (trackingId === value) void result.refetch(); else setTrackingId(value);
-    }}>
-      <Input value={input} onChange={event => setInput(event.target.value)} required maxLength={80}
-        pattern={"TRK-[A-Za-z0-9\\-]{4,76}"} placeholder="TRK-..." aria-label={bn ? "পার্সেলের অনুসন্ধানসংখ্যা" : "Tracking ID"} />
-      <Button type="submit" disabled={result.isFetching}>{result.isFetching ? <Spinner /> : bn ? "খুঁজুন" : "Track"}</Button>
-    </form>
-    {result.isError && <p role="alert">{getApiErrorMessage(result.error, bn ? "পার্সেলের তথ্য পাওয়া যায়নি।" : "Tracking unavailable")}</p>}
-    {result.data?.data && <div aria-live="polite">
-      <p className="font-semibold mb-4">{result.data.data.trackingId}</p>
-      <TrackingTimeline trackings={result.data.data.trackings} />
-    </div>}
-  </div>;
+  return (
+    <div className="space-y-6">
+      <form
+        className="flex flex-col sm:flex-row gap-3"
+        onSubmit={(event) => {
+          event.preventDefault();
+          const value = input.trim().toUpperCase();
+          if (!/^TRK-[A-Z0-9-]{4,76}$/.test(value)) return;
+          if (trackingId === value) void result.refetch();
+          else setTrackingId(value);
+        }}
+      >
+        <Input
+          value={input}
+          onChange={(event) => setInput(event.target.value)}
+          required
+          maxLength={80}
+          pattern={"TRK-[A-Za-z0-9\\-]{4,76}"}
+          placeholder="TRK-..."
+          aria-label={bn ? "পার্সেলের অনুসন্ধানসংখ্যা" : "Tracking ID"}
+        />
+        <Button type="submit" disabled={result.isFetching}>
+          {result.isFetching ? <Spinner /> : bn ? "খুঁজুন" : ui("Track")}
+        </Button>
+      </form>
+      {result.isError && (
+        <p role="alert">
+          {display.error(
+            getApiErrorMessage(
+              result.error,
+              bn ? "পার্সেলের তথ্য পাওয়া যায়নি।" : "Tracking unavailable",
+            ),
+          )}
+        </p>
+      )}
+      {result.data?.data && (
+        <div aria-live="polite">
+          <p className="font-semibold mb-4">{result.data.data.trackingId}</p>
+          <TrackingTimeline trackings={result.data.data.trackings} />
+        </div>
+      )}
+    </div>
+  );
 }
 ```
+
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\modules\shipment-tracking\tracking-timeline.tsx
+
+```tsx
+"use client";
+
+import { useUiText, useUiFormat } from "@/i18n/use-ui-text";
+import { CheckCircle2, Circle, Clock } from "lucide-react";
+
+interface TrackingEvent {
+  id: string;
+  status: string;
+  note?: string | null;
+  createdAt: string;
+}
+
+interface TrackingTimelineProps {
+  trackings: TrackingEvent[];
+}
+
+export default function TrackingTimeline({ trackings }: TrackingTimelineProps) {
+  const ui = useUiText();
+  const display = useUiFormat();
+  if (!trackings || trackings.length === 0) {
+    return (
+      <div className="text-center text-muted-foreground py-8">
+        {ui("No tracking information available yet.")}
+      </div>
+    );
+  }
+
+  const sortedTrackings = [...trackings].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
+
+  return (
+    <div className="relative pl-6 border-l-2 border-muted space-y-8 my-4">
+      {sortedTrackings.map((event, index) => {
+        const isLatest = index === 0;
+        return (
+          <div key={event.id} className="relative">
+            <span className="absolute -left-[35px] bg-background">
+              {isLatest ? (
+                <CheckCircle2 className="size-6 text-primary bg-background rounded-full" />
+              ) : (
+                <Circle className="size-6 text-muted-foreground bg-background rounded-full" />
+              )}
+            </span>
+            <div className="flex flex-col gap-1">
+              <h4
+                className={`font-semibold text-sm ${isLatest ? "text-foreground" : "text-muted-foreground"}`}
+              >
+                {ui(event.status.replace(/_/g, " "))}
+              </h4>
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Clock className="size-3.5" />
+                <span>{display.date(new Date(event.createdAt), true)}</span>
+              </div>
+              {event.note && (
+                <p className="text-sm mt-1 text-muted-foreground border-l-2 pl-3 ml-1 border-muted">
+                  {event.note}
+                </p>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\ui\button.tsx
@@ -4176,6 +7338,7 @@ function Button({
 
 export { Button, buttonVariants }
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\ui\card.tsx
@@ -4286,32 +7449,34 @@ export {
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\ui\dialog.tsx
 
 ```tsx
-"use client"
+"use client";
 
-import type * as React from "react"
-import { Dialog as DialogPrimitive } from "@base-ui/react/dialog"
-import { cn } from "cn"
+import { useUiText } from "@/i18n/use-ui-text";
+import type * as React from "react";
+import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
+import { cn } from "cn";
 
-import { Button } from "@/components/ui/button"
-import { XIcon } from "lucide-react"
+import { Button } from "@/components/ui/button";
+import { XIcon } from "lucide-react";
 
 function Dialog({ ...props }: DialogPrimitive.Root.Props) {
-  return <DialogPrimitive.Root data-slot="dialog" {...props} />
+  return <DialogPrimitive.Root data-slot="dialog" {...props} />;
 }
 
 function DialogTrigger({ ...props }: DialogPrimitive.Trigger.Props) {
-  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />
+  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />;
 }
 
 function DialogPortal({ ...props }: DialogPrimitive.Portal.Props) {
-  return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />
+  return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />;
 }
 
 function DialogClose({ ...props }: DialogPrimitive.Close.Props) {
-  return <DialogPrimitive.Close data-slot="dialog-close" {...props} />
+  return <DialogPrimitive.Close data-slot="dialog-close" {...props} />;
 }
 
 function DialogOverlay({
@@ -4323,11 +7488,11 @@ function DialogOverlay({
       data-slot="dialog-overlay"
       className={cn(
         "fixed inset-0 isolate z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
-        className
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
 function DialogContent({
@@ -4336,8 +7501,9 @@ function DialogContent({
   showCloseButton = true,
   ...props
 }: DialogPrimitive.Popup.Props & {
-  showCloseButton?: boolean
+  showCloseButton?: boolean;
 }) {
+  const ui = useUiText();
   return (
     <DialogPortal>
       <DialogOverlay />
@@ -4345,7 +7511,7 @@ function DialogContent({
         data-slot="dialog-content"
         className={cn(
           "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
-          className
+          className,
         )}
         {...props}
       >
@@ -4361,14 +7527,13 @@ function DialogContent({
               />
             }
           >
-            <XIcon
-            />
-            <span className="sr-only">Close</span>
+            <XIcon />
+            <span className="sr-only">{ui("Close")}</span>
           </DialogPrimitive.Close>
         )}
       </DialogPrimitive.Popup>
     </DialogPortal>
-  )
+  );
 }
 
 function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
@@ -4378,7 +7543,7 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
       className={cn("flex flex-col gap-2", className)}
       {...props}
     />
-  )
+  );
 }
 
 function DialogFooter({
@@ -4387,38 +7552,36 @@ function DialogFooter({
   children,
   ...props
 }: React.ComponentProps<"div"> & {
-  showCloseButton?: boolean
+  showCloseButton?: boolean;
 }) {
+  const ui = useUiText();
   return (
     <div
       data-slot="dialog-footer"
       className={cn(
         "-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t bg-muted/50 p-4 sm:flex-row sm:justify-end",
-        className
+        className,
       )}
       {...props}
     >
       {children}
       {showCloseButton && (
         <DialogPrimitive.Close render={<Button variant="outline" />}>
-          Close
+          {ui("Close")}{" "}
         </DialogPrimitive.Close>
       )}
     </div>
-  )
+  );
 }
 
 function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn(
-        "text-base leading-none font-medium",
-        className
-      )}
+      className={cn("text-base leading-none font-medium", className)}
       {...props}
     />
-  )
+  );
 }
 
 function DialogDescription({
@@ -4430,11 +7593,11 @@ function DialogDescription({
       data-slot="dialog-description"
       className={cn(
         "text-sm text-muted-foreground *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-foreground",
-        className
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
 export {
@@ -4448,20 +7611,21 @@ export {
   DialogPortal,
   DialogTitle,
   DialogTrigger,
-}
+};
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\ui\field.tsx
 
 ```tsx
-"use client"
+"use client";
 
-import { useMemo } from "react"
-import { cva, type VariantProps } from "class-variance-authority"
-import { cn } from "@/lib/utils"
+import { useUiFormat } from "@/i18n/use-ui-text";
+import { cva, type VariantProps } from "class-variance-authority";
+import { cn } from "@/lib/utils";
 
-import { Label } from "@/components/ui/label"
+import { Label } from "@/components/ui/label";
 
 function FieldSet({ className, ...props }: React.ComponentProps<"fieldset">) {
   return (
@@ -4469,11 +7633,11 @@ function FieldSet({ className, ...props }: React.ComponentProps<"fieldset">) {
       data-slot="field-set"
       className={cn(
         "flex flex-col gap-4 has-[>[data-slot=checkbox-group]]:gap-3 has-[>[data-slot=radio-group]]:gap-3",
-        className
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
 function FieldLegend({
@@ -4487,11 +7651,11 @@ function FieldLegend({
       data-variant={variant}
       className={cn(
         "mb-1.5 font-medium data-[variant=label]:text-sm data-[variant=legend]:text-base",
-        className
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
 function FieldGroup({ className, ...props }: React.ComponentProps<"div">) {
@@ -4500,11 +7664,11 @@ function FieldGroup({ className, ...props }: React.ComponentProps<"div">) {
       data-slot="field-group"
       className={cn(
         "group/field-group @container/field-group flex w-full flex-col gap-5 data-[slot=checkbox-group]:gap-3 *:data-[slot=field-group]:gap-4",
-        className
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
 const fieldVariants = cva(
@@ -4522,8 +7686,8 @@ const fieldVariants = cva(
     defaultVariants: {
       orientation: "vertical",
     },
-  }
-)
+  },
+);
 
 function Field({
   className,
@@ -4537,7 +7701,7 @@ function Field({
       className={cn(fieldVariants({ orientation }), className)}
       {...props}
     />
-  )
+  );
 }
 
 function FieldContent({ className, ...props }: React.ComponentProps<"div">) {
@@ -4546,11 +7710,11 @@ function FieldContent({ className, ...props }: React.ComponentProps<"div">) {
       data-slot="field-content"
       className={cn(
         "group/field-content flex flex-1 flex-col gap-0.5 leading-snug",
-        className
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
 function FieldLabel({
@@ -4563,11 +7727,11 @@ function FieldLabel({
       className={cn(
         "group/field-label peer/field-label flex w-fit gap-2 leading-snug group-data-[disabled=true]/field:opacity-50 has-data-checked:border-primary/30 has-data-checked:bg-primary/5 has-[>[data-slot=field]]:rounded-lg has-[>[data-slot=field]]:border has-[>[data-slot=field]]:not-has-[:disabled,[data-disabled]]:hover:bg-muted/50 has-[>[data-slot=field]]:has-[:focus-visible]:border-ring has-[>[data-slot=field]]:has-[:focus-visible]:ring-3 has-[>[data-slot=field]]:has-[:focus-visible]:ring-ring/50 *:data-[slot=field]:p-2.5 dark:has-data-checked:border-primary/20 dark:has-data-checked:bg-primary/10",
         "has-[>[data-slot=field]]:w-full has-[>[data-slot=field]]:flex-col",
-        className
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
 function FieldTitle({ className, ...props }: React.ComponentProps<"div">) {
@@ -4576,11 +7740,11 @@ function FieldTitle({ className, ...props }: React.ComponentProps<"div">) {
       data-slot="field-label"
       className={cn(
         "flex w-fit items-center gap-2 text-sm font-medium group-data-[disabled=true]/field:opacity-50",
-        className
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
 function FieldDescription({ className, ...props }: React.ComponentProps<"p">) {
@@ -4591,11 +7755,11 @@ function FieldDescription({ className, ...props }: React.ComponentProps<"p">) {
         "text-left text-sm leading-normal font-normal text-muted-foreground group-has-data-horizontal/field:text-balance [[data-variant=legend]+&]:-mt-1.5",
         "last:mt-0 nth-last-2:-mt-1",
         "[&>a]:underline [&>a]:underline-offset-4 [&>a:hover]:text-primary",
-        className
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
 function FieldSeparator({
@@ -4603,7 +7767,7 @@ function FieldSeparator({
   className,
   ...props
 }: React.ComponentProps<"div"> & {
-  children?: React.ReactNode
+  children?: React.ReactNode;
 }) {
   return (
     <div
@@ -4611,11 +7775,11 @@ function FieldSeparator({
       data-content={!!children}
       className={cn(
         "relative -my-2 h-5 text-sm group-data-[variant=outline]/field-group:-mb-2",
-        className
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
 function FieldError({
@@ -4624,37 +7788,40 @@ function FieldError({
   errors,
   ...props
 }: React.ComponentProps<"div"> & {
-  errors?: Array<{ message?: string } | undefined>
+  errors?: Array<{ message?: string } | undefined>;
 }) {
-  const content = useMemo(() => {
+  const display = useUiFormat();
+  const content = (() => {
     if (children) {
-      return children
+      return typeof children === "string" ? display.error(children) : children;
     }
 
     if (!errors?.length) {
-      return null
+      return null;
     }
 
     const uniqueErrors = [
       ...new Map(errors.map((error) => [error?.message, error])).values(),
-    ]
+    ];
 
     if (uniqueErrors?.length === 1) {
-      return uniqueErrors[0]?.message
+      return display.error(uniqueErrors[0]?.message);
     }
 
     return (
       <ul className="ml-4 flex list-disc flex-col gap-1">
         {uniqueErrors.map(
           (error) =>
-            error?.message && <li key={error.message}>{error.message}</li>
+            error?.message && (
+              <li key={error.message}>{display.error(error.message)}</li>
+            ),
         )}
       </ul>
-    )
-  }, [children, errors])
+    );
+  })();
 
   if (!content) {
-    return null
+    return null;
   }
 
   return (
@@ -4666,7 +7833,7 @@ function FieldError({
     >
       {content}
     </div>
-  )
+  );
 }
 
 export {
@@ -4680,8 +7847,9 @@ export {
   FieldSet,
   FieldContent,
   FieldTitle,
-}
+};
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\ui\input-otp.tsx
@@ -4776,6 +7944,7 @@ export { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator }
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\ui\input.tsx
 
 ```tsx
@@ -4801,6 +7970,7 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
 
 export { Input }
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\ui\label.tsx
@@ -4829,24 +7999,31 @@ export { Label }
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\ui\pagination.tsx
 
 ```tsx
-import type * as React from "react"
-import { cn } from "@/lib/utils"
+import { useUiText } from "@/i18n/use-ui-text";
+import type * as React from "react";
+import { cn } from "@/lib/utils";
 
-import { Button } from "@/components/ui/button"
-import { ChevronLeftIcon, ChevronRightIcon, MoreHorizontalIcon } from "lucide-react"
+import { Button } from "@/components/ui/button";
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  MoreHorizontalIcon,
+} from "lucide-react";
 
 function Pagination({ className, ...props }: React.ComponentProps<"nav">) {
+  const ui = useUiText();
   return (
     <nav
-      aria-label="pagination"
+      aria-label={ui("pagination")}
       data-slot="pagination"
       className={cn("mx-auto flex w-full justify-center", className)}
       {...props}
     />
-  )
+  );
 }
 
 function PaginationContent({
@@ -4859,17 +8036,17 @@ function PaginationContent({
       className={cn("flex items-center gap-0.5", className)}
       {...props}
     />
-  )
+  );
 }
 
 function PaginationItem({ ...props }: React.ComponentProps<"li">) {
-  return <li data-slot="pagination-item" {...props} />
+  return <li data-slot="pagination-item" {...props} />;
 }
 
 type PaginationLinkProps = {
-  isActive?: boolean
+  isActive?: boolean;
 } & Pick<React.ComponentProps<typeof Button>, "size"> &
-  React.ComponentProps<"a">
+  React.ComponentProps<"a">;
 
 function PaginationLink({
   className,
@@ -4892,7 +8069,7 @@ function PaginationLink({
         />
       }
     />
-  )
+  );
 }
 
 function PaginationPrevious({
@@ -4900,17 +8077,18 @@ function PaginationPrevious({
   text = "Previous",
   ...props
 }: React.ComponentProps<typeof PaginationLink> & { text?: string }) {
+  const ui = useUiText();
   return (
     <PaginationLink
-      aria-label="Go to previous page"
+      aria-label={ui("Go to previous page")}
       size="default"
       className={cn("pl-1.5!", className)}
       {...props}
     >
       <ChevronLeftIcon data-icon="inline-start" />
-      <span className="hidden sm:block">{text}</span>
+      <span className="hidden sm:block">{ui(text)}</span>
     </PaginationLink>
-  )
+  );
 }
 
 function PaginationNext({
@@ -4918,38 +8096,39 @@ function PaginationNext({
   text = "Next",
   ...props
 }: React.ComponentProps<typeof PaginationLink> & { text?: string }) {
+  const ui = useUiText();
   return (
     <PaginationLink
-      aria-label="Go to next page"
+      aria-label={ui("Go to next page")}
       size="default"
       className={cn("pr-1.5!", className)}
       {...props}
     >
-      <span className="hidden sm:block">{text}</span>
+      <span className="hidden sm:block">{ui(text)}</span>
       <ChevronRightIcon data-icon="inline-end" />
     </PaginationLink>
-  )
+  );
 }
 
 function PaginationEllipsis({
   className,
   ...props
 }: React.ComponentProps<"span">) {
+  const ui = useUiText();
   return (
     <span
       aria-hidden
       data-slot="pagination-ellipsis"
       className={cn(
         "flex size-8 items-center justify-center [&_svg:not([class*='size-'])]:size-4",
-        className
+        className,
       )}
       {...props}
     >
-      <MoreHorizontalIcon
-      />
-      <span className="sr-only">More pages</span>
+      <MoreHorizontalIcon />
+      <span className="sr-only">{ui("More pages")}</span>
     </span>
-  )
+  );
 }
 
 export {
@@ -4960,8 +8139,9 @@ export {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-}
+};
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\ui\query-error.tsx
@@ -4969,45 +8149,57 @@ export {
 ```tsx
 "use client";
 
+import { useUiText } from "@/i18n/use-ui-text";
 import { useLocale } from "next-intl";
 import { Button } from "./button";
 
 export default function QueryError({ retry }: { retry: () => void }) {
+  const ui = useUiText();
   const bn = useLocale() === "bn";
-  return <div role="alert" className="rounded-xl border p-6 text-center space-y-3">
-    <p>{bn ? "তথ্য আনা যায়নি। আবার চেষ্টা করুন।" : "Unable to load this information. Please try again."}</p>
-    <Button variant="outline" onClick={retry}>{bn ? "আবার চেষ্টা করুন" : "Try again"}</Button>
-  </div>;
+  return (
+    <div role="alert" className="rounded-xl border p-6 text-center space-y-3">
+      <p>
+        {bn
+          ? "তথ্য আনা যায়নি। আবার চেষ্টা করুন।"
+          : ui("Unable to load this information. Please try again.")}
+      </p>
+      <Button variant="outline" onClick={retry}>
+        {bn ? "আবার চেষ্টা করুন" : ui("Try again")}
+      </Button>
+    </div>
+  );
 }
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\ui\sheet.tsx
 
 ```tsx
-"use client"
+"use client";
 
-import type * as React from "react"
-import { Dialog as SheetPrimitive } from "@base-ui/react/dialog"
-import { cn } from "cn"
+import { useUiText } from "@/i18n/use-ui-text";
+import type * as React from "react";
+import { Dialog as SheetPrimitive } from "@base-ui/react/dialog";
+import { cn } from "cn";
 
-import { Button } from "@/components/ui/button"
-import { XIcon } from "lucide-react"
+import { Button } from "@/components/ui/button";
+import { XIcon } from "lucide-react";
 
 function Sheet({ ...props }: SheetPrimitive.Root.Props) {
-  return <SheetPrimitive.Root data-slot="sheet" {...props} />
+  return <SheetPrimitive.Root data-slot="sheet" {...props} />;
 }
 
 function SheetTrigger({ ...props }: SheetPrimitive.Trigger.Props) {
-  return <SheetPrimitive.Trigger data-slot="sheet-trigger" {...props} />
+  return <SheetPrimitive.Trigger data-slot="sheet-trigger" {...props} />;
 }
 
 function SheetClose({ ...props }: SheetPrimitive.Close.Props) {
-  return <SheetPrimitive.Close data-slot="sheet-close" {...props} />
+  return <SheetPrimitive.Close data-slot="sheet-close" {...props} />;
 }
 
 function SheetPortal({ ...props }: SheetPrimitive.Portal.Props) {
-  return <SheetPrimitive.Portal data-slot="sheet-portal" {...props} />
+  return <SheetPrimitive.Portal data-slot="sheet-portal" {...props} />;
 }
 
 function SheetOverlay({ className, ...props }: SheetPrimitive.Backdrop.Props) {
@@ -5016,11 +8208,11 @@ function SheetOverlay({ className, ...props }: SheetPrimitive.Backdrop.Props) {
       data-slot="sheet-overlay"
       className={cn(
         "fixed inset-0 z-50 bg-black/10 transition-opacity duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0 supports-backdrop-filter:backdrop-blur-xs",
-        className
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
 function SheetContent({
@@ -5030,9 +8222,10 @@ function SheetContent({
   showCloseButton = true,
   ...props
 }: SheetPrimitive.Popup.Props & {
-  side?: "top" | "right" | "bottom" | "left"
-  showCloseButton?: boolean
+  side?: "top" | "right" | "bottom" | "left";
+  showCloseButton?: boolean;
 }) {
+  const ui = useUiText();
   return (
     <SheetPortal>
       <SheetOverlay />
@@ -5041,7 +8234,7 @@ function SheetContent({
         data-side={side}
         className={cn(
           "fixed z-50 flex flex-col gap-4 bg-popover bg-clip-padding text-sm text-popover-foreground shadow-lg transition duration-200 ease-in-out data-ending-style:opacity-0 data-starting-style:opacity-0 data-[side=bottom]:inset-x-0 data-[side=bottom]:bottom-0 data-[side=bottom]:h-auto data-[side=bottom]:border-t data-[side=bottom]:data-ending-style:translate-y-10 data-[side=bottom]:data-starting-style:translate-y-10 data-[side=left]:inset-y-0 data-[side=left]:left-0 data-[side=left]:h-full data-[side=left]:w-3/4 data-[side=left]:border-r data-[side=left]:data-ending-style:translate-x-10 data-[side=left]:data-starting-style:translate-x-10 data-[side=right]:inset-y-0 data-[side=right]:right-0 data-[side=right]:h-full data-[side=right]:w-3/4 data-[side=right]:border-l data-[side=right]:data-ending-style:translate-x-10 data-[side=right]:data-starting-style:translate-x-10 data-[side=top]:inset-x-0 data-[side=top]:top-0 data-[side=top]:h-auto data-[side=top]:border-b data-[side=top]:data-ending-style:translate-y-10 data-[side=top]:data-starting-style:translate-y-10 data-[side=left]:sm:max-w-sm data-[side=right]:sm:max-w-sm",
-          className
+          className,
         )}
         {...props}
       >
@@ -5057,14 +8250,13 @@ function SheetContent({
               />
             }
           >
-            <XIcon
-            />
-            <span className="sr-only">Close</span>
+            <XIcon />
+            <span className="sr-only">{ui("Close")}</span>
           </SheetPrimitive.Close>
         )}
       </SheetPrimitive.Popup>
     </SheetPortal>
-  )
+  );
 }
 
 function SheetHeader({ className, ...props }: React.ComponentProps<"div">) {
@@ -5074,7 +8266,7 @@ function SheetHeader({ className, ...props }: React.ComponentProps<"div">) {
       className={cn("flex flex-col gap-0.5 p-4", className)}
       {...props}
     />
-  )
+  );
 }
 
 function SheetFooter({ className, ...props }: React.ComponentProps<"div">) {
@@ -5084,20 +8276,17 @@ function SheetFooter({ className, ...props }: React.ComponentProps<"div">) {
       className={cn("mt-auto flex flex-col gap-2 p-4", className)}
       {...props}
     />
-  )
+  );
 }
 
 function SheetTitle({ className, ...props }: SheetPrimitive.Title.Props) {
   return (
     <SheetPrimitive.Title
       data-slot="sheet-title"
-      className={cn(
-        "text-base font-medium text-foreground",
-        className
-      )}
+      className={cn("text-base font-medium text-foreground", className)}
       {...props}
     />
-  )
+  );
 }
 
 function SheetDescription({
@@ -5110,7 +8299,7 @@ function SheetDescription({
       className={cn("text-sm text-muted-foreground", className)}
       {...props}
     />
-  )
+  );
 }
 
 export {
@@ -5122,66 +8311,68 @@ export {
   SheetFooter,
   SheetTitle,
   SheetDescription,
-}
+};
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\ui\sidebar.tsx
 
 ```tsx
-"use client"
+"use client";
 
-import * as React from "react"
-import { mergeProps } from "@base-ui/react/merge-props"
-import { useRender } from "@base-ui/react/use-render"
-import { cva, type VariantProps } from "class-variance-authority"
-import { cn } from "cn"
+import { useUiText } from "@/i18n/use-ui-text";
+import * as React from "react";
+import { mergeProps } from "@base-ui/react/merge-props";
+import { useRender } from "@base-ui/react/use-render";
+import { cva, type VariantProps } from "class-variance-authority";
+import { cn } from "cn";
 
-import { useIsMobile } from "@/hooks/use-mobile"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Separator } from "@/components/ui/separator"
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet"
-import { Skeleton } from "@/components/ui/skeleton"
+} from "@/components/ui/sheet";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
-import { PanelLeftIcon } from "lucide-react"
+} from "@/components/ui/tooltip";
+import { PanelLeftIcon } from "lucide-react";
 
-const SIDEBAR_COOKIE_NAME = "sidebar_state"
-const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
-const SIDEBAR_WIDTH = "16rem"
-const SIDEBAR_WIDTH_MOBILE = "18rem"
-const SIDEBAR_WIDTH_ICON = "3rem"
-const SIDEBAR_KEYBOARD_SHORTCUT = "b"
+const SIDEBAR_COOKIE_NAME = "sidebar_state";
+const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
+const SIDEBAR_WIDTH = "16rem";
+const SIDEBAR_WIDTH_MOBILE = "18rem";
+const SIDEBAR_WIDTH_ICON = "3rem";
+const SIDEBAR_KEYBOARD_SHORTCUT = "b";
 
 type SidebarContextProps = {
-  state: "expanded" | "collapsed"
-  open: boolean
-  setOpen: (open: boolean) => void
-  openMobile: boolean
-  setOpenMobile: (open: boolean) => void
-  isMobile: boolean
-  toggleSidebar: () => void
-}
+  state: "expanded" | "collapsed";
+  open: boolean;
+  setOpen: (open: boolean) => void;
+  openMobile: boolean;
+  setOpenMobile: (open: boolean) => void;
+  isMobile: boolean;
+  toggleSidebar: () => void;
+};
 
-const SidebarContext = React.createContext<SidebarContextProps | null>(null)
+const SidebarContext = React.createContext<SidebarContextProps | null>(null);
 
 function useSidebar() {
-  const context = React.useContext(SidebarContext)
+  const context = React.useContext(SidebarContext);
   if (!context) {
-    throw new Error("useSidebar must be used within a SidebarProvider.")
+    throw new Error("useSidebar must be used within a SidebarProvider.");
   }
 
-  return context
+  return context;
 }
 
 function SidebarProvider({
@@ -5193,32 +8384,32 @@ function SidebarProvider({
   children,
   ...props
 }: React.ComponentProps<"div"> & {
-  defaultOpen?: boolean
-  open?: boolean
-  onOpenChange?: (open: boolean) => void
+  defaultOpen?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
-  const isMobile = useIsMobile()
-  const [openMobile, setOpenMobile] = React.useState(false)
+  const isMobile = useIsMobile();
+  const [openMobile, setOpenMobile] = React.useState(false);
 
-  const [_open, _setOpen] = React.useState(defaultOpen)
-  const open = openProp ?? _open
+  const [_open, _setOpen] = React.useState(defaultOpen);
+  const open = openProp ?? _open;
   const setOpen = React.useCallback(
     (value: boolean | ((value: boolean) => boolean)) => {
-      const openState = typeof value === "function" ? value(open) : value
+      const openState = typeof value === "function" ? value(open) : value;
       if (setOpenProp) {
-        setOpenProp(openState)
+        setOpenProp(openState);
       } else {
-        _setOpen(openState)
+        _setOpen(openState);
       }
 
-      document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
+      document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
     },
-    [setOpenProp, open]
-  )
+    [setOpenProp, open],
+  );
 
   const toggleSidebar = React.useCallback(() => {
-    return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open)
-  }, [isMobile, setOpen])
+    return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open);
+  }, [isMobile, setOpen]);
 
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -5226,16 +8417,16 @@ function SidebarProvider({
         event.key === SIDEBAR_KEYBOARD_SHORTCUT &&
         (event.metaKey || event.ctrlKey)
       ) {
-        event.preventDefault()
-        toggleSidebar()
+        event.preventDefault();
+        toggleSidebar();
       }
-    }
+    };
 
-    window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [toggleSidebar])
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [toggleSidebar]);
 
-  const state = open ? "expanded" : "collapsed"
+  const state = open ? "expanded" : "collapsed";
 
   const contextValue = React.useMemo<SidebarContextProps>(
     () => ({
@@ -5247,8 +8438,8 @@ function SidebarProvider({
       setOpenMobile,
       toggleSidebar,
     }),
-    [state, open, setOpen, isMobile, openMobile, toggleSidebar]
-  )
+    [state, open, setOpen, isMobile, openMobile, toggleSidebar],
+  );
 
   return (
     <SidebarContext.Provider value={contextValue}>
@@ -5263,14 +8454,14 @@ function SidebarProvider({
         }
         className={cn(
           "group/sidebar-wrapper flex min-h-svh w-full has-data-[variant=inset]:bg-sidebar",
-          className
+          className,
         )}
         {...props}
       >
         {children}
       </div>
     </SidebarContext.Provider>
-  )
+  );
 }
 
 function Sidebar({
@@ -5282,11 +8473,12 @@ function Sidebar({
   dir,
   ...props
 }: React.ComponentProps<"div"> & {
-  side?: "left" | "right"
-  variant?: "sidebar" | "floating" | "inset"
-  collapsible?: "offcanvas" | "icon" | "none"
+  side?: "left" | "right";
+  variant?: "sidebar" | "floating" | "inset";
+  collapsible?: "offcanvas" | "icon" | "none";
 }) {
-  const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+  const ui = useUiText();
+  const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
 
   if (collapsible === "none") {
     return (
@@ -5294,13 +8486,13 @@ function Sidebar({
         data-slot="sidebar"
         className={cn(
           "flex h-full w-(--sidebar-width) flex-col bg-sidebar text-sidebar-foreground",
-          className
+          className,
         )}
         {...props}
       >
         {children}
       </div>
-    )
+    );
   }
 
   if (isMobile) {
@@ -5320,13 +8512,15 @@ function Sidebar({
           side={side}
         >
           <SheetHeader className="sr-only">
-            <SheetTitle>Sidebar</SheetTitle>
-            <SheetDescription>Displays the mobile sidebar.</SheetDescription>
+            <SheetTitle>{ui("Sidebar")}</SheetTitle>
+            <SheetDescription>
+              {ui("Displays the mobile sidebar.")}
+            </SheetDescription>
           </SheetHeader>
           <div className="flex h-full w-full flex-col">{children}</div>
         </SheetContent>
       </Sheet>
-    )
+    );
   }
 
   return (
@@ -5346,7 +8540,7 @@ function Sidebar({
           "group-data-[side=right]:rotate-180",
           variant === "floating" || variant === "inset"
             ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4)))]"
-            : "group-data-[collapsible=icon]:w-(--sidebar-width-icon)"
+            : "group-data-[collapsible=icon]:w-(--sidebar-width-icon)",
         )}
       />
       <div
@@ -5357,7 +8551,7 @@ function Sidebar({
           variant === "floating" || variant === "inset"
             ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]"
             : "group-data-[collapsible=icon]:w-(--sidebar-width-icon) group-data-[side=left]:border-r group-data-[side=right]:border-l",
-          className
+          className,
         )}
         {...props}
       >
@@ -5370,7 +8564,7 @@ function Sidebar({
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 function SidebarTrigger({
@@ -5378,7 +8572,8 @@ function SidebarTrigger({
   onClick,
   ...props
 }: React.ComponentProps<typeof Button>) {
-  const { toggleSidebar } = useSidebar()
+  const ui = useUiText();
+  const { toggleSidebar } = useSidebar();
 
   return (
     <Button
@@ -5388,28 +8583,29 @@ function SidebarTrigger({
       size="icon-sm"
       className={cn(className)}
       onClick={(event) => {
-        onClick?.(event)
-        toggleSidebar()
+        onClick?.(event);
+        toggleSidebar();
       }}
       {...props}
     >
       <PanelLeftIcon />
-      <span className="sr-only">Toggle Sidebar</span>
+      <span className="sr-only">{ui("Toggle Sidebar")}</span>
     </Button>
-  )
+  );
 }
 
 function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
-  const { toggleSidebar } = useSidebar()
+  const ui = useUiText();
+  const { toggleSidebar } = useSidebar();
 
   return (
     <button
       data-sidebar="rail"
       data-slot="sidebar-rail"
-      aria-label="Toggle Sidebar"
+      aria-label={ui("Toggle Sidebar")}
       tabIndex={-1}
       onClick={toggleSidebar}
-      title="Toggle Sidebar"
+      title={ui("Toggle Sidebar")}
       className={cn(
         "absolute inset-y-0 z-20 hidden w-4 transition-all ease-linear group-data-[side=left]:-right-4 group-data-[side=right]:left-0 after:absolute after:inset-y-0 after:inset:s-1/2 after:w-0.5 hover:after:bg-sidebar-border sm:flex ltr:-translate-x-1/2 rtl:-translate-x-1/2",
         "in-data-[side=left]:cursor-w-resize in-data-[side=right]:cursor-e-resize",
@@ -5417,11 +8613,11 @@ function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
         "group-data-[collapsible=offcanvas]:translate-x-0 group-data-[collapsible=offcanvas]:after:left-full hover:group-data-[collapsible=offcanvas]:bg-sidebar",
         "[[data-side=left][data-collapsible=offcanvas]_&]:-right-2",
         "[[data-side=right][data-collapsible=offcanvas]_&]:-left-2",
-        className
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
 function SidebarInset({ className, ...props }: React.ComponentProps<"main">) {
@@ -5430,11 +8626,11 @@ function SidebarInset({ className, ...props }: React.ComponentProps<"main">) {
       data-slot="sidebar-inset"
       className={cn(
         "relative flex w-full flex-1 flex-col bg-background md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2",
-        className
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
 function SidebarInput({
@@ -5448,7 +8644,7 @@ function SidebarInput({
       className={cn("h-8 w-full bg-background shadow-none", className)}
       {...props}
     />
-  )
+  );
 }
 
 function SidebarHeader({ className, ...props }: React.ComponentProps<"div">) {
@@ -5459,7 +8655,7 @@ function SidebarHeader({ className, ...props }: React.ComponentProps<"div">) {
       className={cn("flex flex-col gap-2 p-2", className)}
       {...props}
     />
-  )
+  );
 }
 
 function SidebarFooter({ className, ...props }: React.ComponentProps<"div">) {
@@ -5470,7 +8666,7 @@ function SidebarFooter({ className, ...props }: React.ComponentProps<"div">) {
       className={cn("flex flex-col gap-2 p-2", className)}
       {...props}
     />
-  )
+  );
 }
 
 function SidebarSeparator({
@@ -5484,7 +8680,7 @@ function SidebarSeparator({
       className={cn("mx-2 w-auto bg-sidebar-border", className)}
       {...props}
     />
-  )
+  );
 }
 
 function SidebarContent({ className, ...props }: React.ComponentProps<"div">) {
@@ -5494,11 +8690,11 @@ function SidebarContent({ className, ...props }: React.ComponentProps<"div">) {
       data-sidebar="content"
       className={cn(
         "no-scrollbar flex min-h-0 flex-1 flex-col gap-0 overflow-auto group-data-[collapsible=icon]:overflow-hidden",
-        className
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
 function SidebarGroup({ className, ...props }: React.ComponentProps<"div">) {
@@ -5509,7 +8705,7 @@ function SidebarGroup({ className, ...props }: React.ComponentProps<"div">) {
       className={cn("relative flex w-full min-w-0 flex-col p-2", className)}
       {...props}
     />
-  )
+  );
 }
 
 function SidebarGroupLabel({
@@ -5523,17 +8719,17 @@ function SidebarGroupLabel({
       {
         className: cn(
           "flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-sidebar-foreground/70 ring-sidebar-ring outline-hidden transition-[margin,opacity] duration-200 ease-linear group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
-          className
+          className,
         ),
       },
-      props
+      props,
     ),
     render,
     state: {
       slot: "sidebar-group-label",
       sidebar: "group-label",
     },
-  })
+  });
 }
 
 function SidebarGroupAction({
@@ -5547,17 +8743,17 @@ function SidebarGroupAction({
       {
         className: cn(
           "absolute top-3.5 right-3 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-sidebar-foreground ring-sidebar-ring outline-hidden transition-transform group-data-[collapsible=icon]:hidden after:absolute after:-inset-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 md:after:hidden [&>svg]:size-4 [&>svg]:shrink-0",
-          className
+          className,
         ),
       },
-      props
+      props,
     ),
     render,
     state: {
       slot: "sidebar-group-action",
       sidebar: "group-action",
     },
-  })
+  });
 }
 
 function SidebarGroupContent({
@@ -5571,7 +8767,7 @@ function SidebarGroupContent({
       className={cn("w-full text-sm", className)}
       {...props}
     />
-  )
+  );
 }
 
 function SidebarMenu({ className, ...props }: React.ComponentProps<"ul">) {
@@ -5582,7 +8778,7 @@ function SidebarMenu({ className, ...props }: React.ComponentProps<"ul">) {
       className={cn("flex w-full min-w-0 flex-col gap-0", className)}
       {...props}
     />
-  )
+  );
 }
 
 function SidebarMenuItem({ className, ...props }: React.ComponentProps<"li">) {
@@ -5593,7 +8789,7 @@ function SidebarMenuItem({ className, ...props }: React.ComponentProps<"li">) {
       className={cn("group/menu-item relative", className)}
       {...props}
     />
-  )
+  );
 }
 
 const sidebarMenuButtonVariants = cva(
@@ -5615,8 +8811,8 @@ const sidebarMenuButtonVariants = cva(
       variant: "default",
       size: "default",
     },
-  }
-)
+  },
+);
 
 function SidebarMenuButton({
   render,
@@ -5628,17 +8824,17 @@ function SidebarMenuButton({
   ...props
 }: useRender.ComponentProps<"button"> &
   React.ComponentProps<"button"> & {
-    isActive?: boolean
-    tooltip?: string | React.ComponentProps<typeof TooltipContent>
+    isActive?: boolean;
+    tooltip?: string | React.ComponentProps<typeof TooltipContent>;
   } & VariantProps<typeof sidebarMenuButtonVariants>) {
-  const { isMobile, state } = useSidebar()
+  const { isMobile, state } = useSidebar();
   const comp = useRender({
     defaultTagName: "button",
     props: mergeProps<"button">(
       {
         className: cn(sidebarMenuButtonVariants({ variant, size }), className),
       },
-      props
+      props,
     ),
     render: !tooltip ? render : <TooltipTrigger render={render} />,
     state: {
@@ -5647,27 +8843,24 @@ function SidebarMenuButton({
       size,
       active: isActive,
     },
-  })
+  });
 
   if (!tooltip) {
-    return comp
+    return comp;
   }
 
   if (typeof tooltip === "string") {
     tooltip = {
       children: tooltip,
-    }
+    };
   }
 
   return (
     <Tooltip>
       {comp}
-      <TooltipContent
-        hidden={state !== "collapsed" || isMobile}
-        {...tooltip}
-      />
+      <TooltipContent hidden={state !== "collapsed" || isMobile} {...tooltip} />
     </Tooltip>
-  )
+  );
 }
 
 function SidebarMenuAction({
@@ -5677,7 +8870,7 @@ function SidebarMenuAction({
   ...props
 }: useRender.ComponentProps<"button"> &
   React.ComponentProps<"button"> & {
-    showOnHover?: boolean
+    showOnHover?: boolean;
   }) {
   return useRender({
     defaultTagName: "button",
@@ -5687,17 +8880,17 @@ function SidebarMenuAction({
           "absolute top-1.5 right-1 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-sidebar-foreground ring-sidebar-ring outline-hidden transition-transform group-data-[collapsible=icon]:hidden peer-hover/menu-button:text-sidebar-accent-foreground peer-data-[size=default]/menu-button:top-1.5 peer-data-[size=lg]/menu-button:top-2.5 peer-data-[size=sm]/menu-button:top-1 after:absolute after:-inset-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 md:after:hidden [&>svg]:size-4 [&>svg]:shrink-0",
           showOnHover &&
             "group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100 peer-data-active/menu-button:text-sidebar-accent-foreground aria-expanded:opacity-100 md:opacity-0",
-          className
+          className,
         ),
       },
-      props
+      props,
     ),
     render,
     state: {
       slot: "sidebar-menu-action",
       sidebar: "menu-action",
     },
-  })
+  });
 }
 
 function SidebarMenuBadge({
@@ -5710,11 +8903,11 @@ function SidebarMenuBadge({
       data-sidebar="menu-badge"
       className={cn(
         "pointer-events-none absolute right-1 flex h-5 min-w-5 items-center justify-center rounded-md px-1 text-xs font-medium text-sidebar-foreground tabular-nums select-none group-data-[collapsible=icon]:hidden peer-hover/menu-button:text-sidebar-accent-foreground peer-data-[size=default]/menu-button:top-1.5 peer-data-[size=lg]/menu-button:top-2.5 peer-data-[size=sm]/menu-button:top-1 peer-data-active/menu-button:text-sidebar-accent-foreground",
-        className
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
 function SidebarMenuSkeleton({
@@ -5722,11 +8915,11 @@ function SidebarMenuSkeleton({
   showIcon = false,
   ...props
 }: React.ComponentProps<"div"> & {
-  showIcon?: boolean
+  showIcon?: boolean;
 }) {
   const [width] = React.useState(() => {
-    return `${Math.floor(Math.random() * 40) + 50}%`
-  })
+    return `${Math.floor(Math.random() * 40) + 50}%`;
+  });
 
   return (
     <div
@@ -5751,7 +8944,7 @@ function SidebarMenuSkeleton({
         }
       />
     </div>
-  )
+  );
 }
 
 function SidebarMenuSub({ className, ...props }: React.ComponentProps<"ul">) {
@@ -5761,11 +8954,11 @@ function SidebarMenuSub({ className, ...props }: React.ComponentProps<"ul">) {
       data-sidebar="menu-sub"
       className={cn(
         "mx-3.5 flex min-w-0 translate-x-px flex-col gap-1 border-l border-sidebar-border px-2.5 py-0.5 group-data-[collapsible=icon]:hidden",
-        className
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
 function SidebarMenuSubItem({
@@ -5779,7 +8972,7 @@ function SidebarMenuSubItem({
       className={cn("group/menu-sub-item relative", className)}
       {...props}
     />
-  )
+  );
 }
 
 function SidebarMenuSubButton({
@@ -5790,8 +8983,8 @@ function SidebarMenuSubButton({
   ...props
 }: useRender.ComponentProps<"a"> &
   React.ComponentProps<"a"> & {
-    size?: "sm" | "md"
-    isActive?: boolean
+    size?: "sm" | "md";
+    isActive?: boolean;
   }) {
   return useRender({
     defaultTagName: "a",
@@ -5799,10 +8992,10 @@ function SidebarMenuSubButton({
       {
         className: cn(
           "flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-2 text-sidebar-foreground ring-sidebar-ring outline-hidden group-data-[collapsible=icon]:hidden hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[size=md]:text-sm data-[size=sm]:text-xs data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-sidebar-accent-foreground",
-          className
+          className,
         ),
       },
-      props
+      props,
     ),
     render,
     state: {
@@ -5811,7 +9004,7 @@ function SidebarMenuSubButton({
       size,
       active: isActive,
     },
-  })
+  });
 }
 
 export {
@@ -5839,13 +9032,40 @@ export {
   SidebarSeparator,
   SidebarTrigger,
   useSidebar,
-}
+};
 ```
+
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\ui\spinner.tsx
+
+```tsx
+import { useUiText } from "@/i18n/use-ui-text";
+import { cn } from "@/lib/utils";
+import { Loader2Icon } from "lucide-react";
+
+function Spinner({ className, ...props }: React.ComponentProps<"svg">) {
+  const ui = useUiText();
+  return (
+    <Loader2Icon
+      data-slot="spinner"
+      role="status"
+      aria-label={ui("Loading")}
+      className={cn("size-4 animate-spin", className)}
+      {...props}
+    />
+  );
+}
+
+export { Spinner };
+```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\ui\table-pagination.tsx
 
 ```tsx
+import { useUiText } from "@/i18n/use-ui-text";
 import type { Dispatch, SetStateAction } from "react";
 import {
   Pagination,
@@ -5881,7 +9101,15 @@ const getButtonArray = (
     ];
   }
 
-  return [1, "ellipsis-start", page - 1, page, page + 1, "ellipsis-end", totalPages];
+  return [
+    1,
+    "ellipsis-start",
+    page - 1,
+    page,
+    page + 1,
+    "ellipsis-end",
+    totalPages,
+  ];
 };
 
 interface Props {
@@ -5895,6 +9123,7 @@ export default function TablePagination({
   handlePageChange,
   page,
 }: Props) {
+  const ui = useUiText();
   const goToPage = (page: number) => {
     handlePageChange(page);
   };
@@ -5926,7 +9155,7 @@ export default function TablePagination({
                 onClick={() => handlePageChange(item as number)}
                 isActive={page === item}
               >
-                {item}
+                {ui(item)}
               </PaginationLink>
             </PaginationItem>
           ),
@@ -5945,6 +9174,7 @@ export default function TablePagination({
   );
 }
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\ui\table.tsx
@@ -6068,39 +9298,50 @@ export {
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\ui\toast.tsx
 
 ```tsx
-"use client"
+"use client";
 
-import type * as React from "react"
-import { Toast as ToastPrimitive } from "@base-ui/react/toast"
-import { cn } from "@/lib/utils"
+import { useUiText, useUiFormat } from "@/i18n/use-ui-text";
+import type * as React from "react";
+import { Toast as ToastPrimitive } from "@base-ui/react/toast";
+import { cn } from "@/lib/utils";
 
-import { Button } from "@/components/ui/button"
-import { XIcon, CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react"
+import { Button } from "@/components/ui/button";
+import {
+  XIcon,
+  CircleCheckIcon,
+  InfoIcon,
+  TriangleAlertIcon,
+  OctagonXIcon,
+  Loader2Icon,
+} from "lucide-react";
 
-const toast = ToastPrimitive.createToastManager()
+const toast = ToastPrimitive.createToastManager();
 
 function ToastProvider({ ...props }: ToastPrimitive.Provider.Props) {
-  return <ToastPrimitive.Provider {...props} />
+  return <ToastPrimitive.Provider {...props} />;
 }
 
 function ToastPortal({ ...props }: ToastPrimitive.Portal.Props) {
-  return <ToastPrimitive.Portal data-slot="toast-portal" {...props} />
+  return <ToastPrimitive.Portal data-slot="toast-portal" {...props} />;
 }
 
 function ToastViewport({ className, ...props }: ToastPrimitive.Viewport.Props) {
+  const ui = useUiText();
   return (
     <ToastPrimitive.Viewport
       data-slot="toast-viewport"
+      aria-label={ui("Notifications")}
       className={cn(
         "pointer-events-none fixed inset-x-4 bottom-4 z-50 mx-auto w-auto max-w-sm outline-none sm:right-4 sm:left-auto sm:mx-0 sm:w-full",
-        className
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
 function Toast({ className, ...props }: ToastPrimitive.Root.Props) {
@@ -6123,11 +9364,11 @@ function Toast({ className, ...props }: ToastPrimitive.Root.Props) {
         "data-expanded:data-ending-style:data-[swipe-direction=left]:[transform:translateX(calc(var(--toast-swipe-movement-x)-150%))_translateY(var(--offset-y))]",
         "data-expanded:data-ending-style:data-[swipe-direction=right]:[transform:translateX(calc(var(--toast-swipe-movement-x)+150%))_translateY(var(--offset-y))]",
         "data-expanded:data-ending-style:data-[swipe-direction=up]:[transform:translateY(calc(var(--toast-swipe-movement-y)-150%))]",
-        className
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
 function ToastContent({ className, ...props }: ToastPrimitive.Content.Props) {
@@ -6136,11 +9377,11 @@ function ToastContent({ className, ...props }: ToastPrimitive.Content.Props) {
       data-slot="toast-content"
       className={cn(
         "flex h-full items-center gap-3 overflow-hidden p-4 transition-opacity duration-250 ease-[cubic-bezier(0.22,1,0.36,1)] data-behind:opacity-0 data-expanded:opacity-100",
-        className
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
 function ToastTitle({ className, ...props }: ToastPrimitive.Title.Props) {
@@ -6150,7 +9391,7 @@ function ToastTitle({ className, ...props }: ToastPrimitive.Title.Props) {
       className={cn("text-sm font-medium", className)}
       {...props}
     />
-  )
+  );
 }
 
 function ToastDescription({
@@ -6163,7 +9404,7 @@ function ToastDescription({
       className={cn("text-sm text-muted-foreground", className)}
       {...props}
     />
-  )
+  );
 }
 
 function ToastAction({
@@ -6178,7 +9419,7 @@ function ToastAction({
       className={cn("shrink-0", className)}
       {...props}
     />
-  )
+  );
 }
 
 function ToastClose({
@@ -6187,59 +9428,48 @@ function ToastClose({
   render = <Button variant="ghost" size="icon-sm" />,
   ...props
 }: ToastPrimitive.Close.Props) {
+  const ui = useUiText();
   return (
     <ToastPrimitive.Close
       data-slot="toast-close"
-      aria-label="Close toast"
+      aria-label={ui("Close toast")}
       render={render}
       className={cn(
         "relative shrink-0 text-muted-foreground after:absolute after:-inset-2 after:content-[''] hover:text-foreground",
-        className
+        className,
       )}
       {...props}
     >
-      {children ?? (
-        <XIcon aria-hidden="true" />
-      )}
+      {children ?? <XIcon aria-hidden="true" />}
     </ToastPrimitive.Close>
-  )
+  );
 }
 
 function ToastIcon({ type }: { type: string | undefined }) {
-  let icon: React.ReactNode = null
+  let icon: React.ReactNode = null;
 
   if (type === "success") {
-    icon = (
-      <CircleCheckIcon aria-hidden="true" />
-    )
+    icon = <CircleCheckIcon aria-hidden="true" />;
   }
 
   if (type === "info") {
-    icon = (
-      <InfoIcon aria-hidden="true" />
-    )
+    icon = <InfoIcon aria-hidden="true" />;
   }
 
   if (type === "warning") {
-    icon = (
-      <TriangleAlertIcon aria-hidden="true" />
-    )
+    icon = <TriangleAlertIcon aria-hidden="true" />;
   }
 
   if (type === "error") {
-    icon = (
-      <OctagonXIcon className="text-destructive" aria-hidden="true" />
-    )
+    icon = <OctagonXIcon className="text-destructive" aria-hidden="true" />;
   }
 
   if (type === "loading") {
-    icon = (
-      <Loader2Icon className="animate-spin" aria-hidden="true" />
-    )
+    icon = <Loader2Icon className="animate-spin" aria-hidden="true" />;
   }
 
   if (!icon) {
-    return null
+    return null;
   }
 
   return (
@@ -6249,25 +9479,37 @@ function ToastIcon({ type }: { type: string | undefined }) {
     >
       {icon}
     </span>
-  )
+  );
 }
 
 function ToastList() {
-  const { toasts } = ToastPrimitive.useToastManager()
+  const ui = useUiText();
+  const display = useUiFormat();
+  const { toasts } = ToastPrimitive.useToastManager();
 
   return toasts.map((toastItem) => (
     <Toast key={toastItem.id} toast={toastItem}>
       <ToastContent>
         <ToastIcon type={toastItem.type} />
         <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <ToastTitle />
-          <ToastDescription />
+          <ToastTitle>
+            {typeof toastItem.title === "string"
+              ? ui(toastItem.title)
+              : toastItem.title}
+          </ToastTitle>
+          <ToastDescription>
+            {typeof toastItem.description === "string"
+              ? toastItem.type === "error"
+                ? display.error(toastItem.description)
+                : ui(toastItem.description)
+              : toastItem.description}
+          </ToastDescription>
         </div>
         <ToastAction />
         <ToastClose />
       </ToastContent>
     </Toast>
-  ))
+  ));
 }
 
 function Toaster({
@@ -6284,11 +9526,11 @@ function Toaster({
         </ToastViewport>
       </ToastPortal>
     </ToastProvider>
-  )
+  );
 }
 
-const createToastManager = ToastPrimitive.createToastManager
-const useToastManager = ToastPrimitive.useToastManager
+const createToastManager = ToastPrimitive.createToastManager;
+const useToastManager = ToastPrimitive.useToastManager;
 
 export {
   Toaster,
@@ -6304,8 +9546,9 @@ export {
   createToastManager,
   toast,
   useToastManager,
-}
+};
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\ui\tooltip.tsx
@@ -6358,6 +9601,320 @@ export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider }
 ```
 
 
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\content\legal.ts
+
+```ts
+export type LegalKind = "terms" | "privacy" | "cookies";
+type Section = { title: string; paragraphs: string[] };
+type Document = { title: string; sections: Section[] };
+
+const documents: Record<"en" | "bn", Record<LegalKind, Document>> = {
+  en: {
+    terms: {
+      title: "Terms of Service",
+      sections: [
+        {
+          title: "1. Operator and scope",
+          paragraphs: [
+            "[Company Name], located at [Address], operates this courier platform. These draft terms cover account access, parcel booking, tracking and payment. Effective date: [Effective Date]. Contact: [Contact Email].",
+          ],
+        },
+        {
+          title: "2. Accounts and eligibility",
+          paragraphs: [
+            "Provide accurate account details, keep credentials and verification codes private, and report unauthorized access. Eligibility and age requirements: [Age Requirement]. Administrative and courier accounts require authorization from the operator.",
+          ],
+        },
+        {
+          title: "3. Parcel booking and responsibilities",
+          paragraphs: [
+            "Provide accurate recipient details, weight, addresses and hub selections. Ensure you are entitled to share recipient information and that the parcel is lawfully transportable and suitably packaged.",
+            "Service areas, delivery estimates, restricted goods, packaging requirements and failed-delivery procedures: [Delivery Terms]. Confirm these details before booking; a tracking update is not a delivery guarantee.",
+          ],
+        },
+        {
+          title: "4. Prices, payments and refunds",
+          paragraphs: [
+            "Review the displayed charge before paying. A payment is confirmed only after provider verification and a recorded paid status; visiting a success URL alone does not confirm payment.",
+            "Stripe or bKash may process payments when configured. Applicable charges, taxes, cancellations, refunds, cash-on-delivery arrangements and settlement times: [Payment and Refund Policy]. Provider terms may also apply. Do not submit card or wallet credentials through support messages.",
+          ],
+        },
+        {
+          title: "5. Acceptable use",
+          paragraphs: [
+            "Do not use the service for unlawful parcels, fraud, impersonation, unauthorized access, interference with tracking or payments, or disclosure of another person's private information. Access may be restricted to protect the service, subject to applicable law and [Account Suspension and Appeal Process].",
+          ],
+        },
+        {
+          title: "6. Service limitations and complaints",
+          paragraphs: [
+            "Delivery may be affected by route conditions, incomplete recipient information or external service interruptions. Loss, damage, delays, insurance, compensation limits and the complaint procedure must be set out in [Liability and Claims Policy]. This draft does not waive mandatory consumer rights or create a blanket exclusion of liability.",
+          ],
+        },
+        {
+          title: "7. Data, ownership and changes",
+          paragraphs: [
+            "Personal information is described in the Privacy Policy and Cookie Policy. Platform materials belong to their respective owners; using the platform does not transfer ownership of them.",
+            "Material changes, notice periods and any account-closure procedure: [Policy Change and Termination Process]. State the applicable law and dispute process only after review: [Jurisdiction and Dispute Resolution].",
+          ],
+        },
+        {
+          title: "8. Before final publication",
+          paragraphs: [
+            "Replace all bracketed placeholders, confirm actual operating practices, publish verified contact information and obtain legal review for the territories served. This is a working draft, not a representation of legal compliance.",
+          ],
+        },
+      ],
+    },
+    privacy: {
+      title: "Privacy Policy",
+      sections: [
+        {
+          title: "1. Who handles your information",
+          paragraphs: [
+            "[Company Name], [Address], is responsible for the platform's handling of personal information. Contact [Contact Email] for privacy questions. Effective date: [Effective Date]. Privacy representative, if required: [Privacy Contact].",
+          ],
+        },
+        {
+          title: "2. Information collected and its sources",
+          paragraphs: [
+            "Account information may include name, email, phone, address, password hash and verification or session records. Optional profile images and courier contact, vehicle and hub information are handled when supplied.",
+            "Parcel information includes sender references, recipient name, phone, delivery address, weight, selected hubs and tracking history. Recipient details are supplied by the sender. Payment records contain amount, provider, payment status and transaction references.",
+            "Security and activity records can include request metadata and administrative audit events. Complete the deployment-specific inventory here: [Data Inventory and Sources].",
+          ],
+        },
+        {
+          title: "3. Why information is used",
+          paragraphs: [
+            "Information is used to authenticate accounts, arrange and track deliveries, reconcile payments, send verification or password-reset messages, support users and investigate misuse. Required booking details are needed to fulfill a delivery request.",
+            "Specify the legal basis for each purpose under the law that actually applies: [Purpose and Lawful Basis Schedule]. Optional marketing, analytics or automated decision-making must be described separately before activation: [Optional Processing Details].",
+          ],
+        },
+        {
+          title: "4. Sharing and external providers",
+          paragraphs: [
+            "Authorized staff and assigned couriers receive information needed for their duties. Configured payment providers, email delivery, image storage, hosting, databases and other infrastructure services may process necessary information.",
+            "Identify each active provider, what it receives, processing locations and applicable safeguards: [Processors and International Transfers]. Avoid listing an integration as active unless it is configured and used.",
+          ],
+        },
+        {
+          title: "5. Public tracking and security",
+          paragraphs: [
+            "Public tracking is designed to expose shipment status and history rather than recipient contact details. Keep tracking identifiers private. Authentication uses session cookies and access controls; technical measures reduce risk but cannot guarantee absolute security.",
+            "State incident reporting, notification requirements and operational safeguards after review: [Security and Incident Process].",
+          ],
+        },
+        {
+          title: "6. Storage and deletion",
+          paragraphs: [
+            "Retention and deletion schedules for account, parcel, payment, image, verification, security and audit records: [Retention Schedule]. State any legal recordkeeping obligations, backup deletion delays and account-deletion process. Do not claim data is automatically deleted until that process is implemented and verified.",
+          ],
+        },
+        {
+          title: "7. Your choices and requests",
+          paragraphs: [
+            "You can update available profile fields and contact [Contact Email] to request access, correction, deletion or other rights available under applicable law. Explain identity checks, response times, consent withdrawal, limitations and how to appeal: [Rights Request Procedure].",
+            "Privacy complaints and the appropriate regulator, if applicable: [Complaint Process and Supervisory Authority]. Requests may require retention of records where the applicable law requires it.",
+          ],
+        },
+        {
+          title: "8. Cookies, age requirements and updates",
+          paragraphs: [
+            "See the Cookie Policy for session cookies and browser preferences. Eligibility and handling of children's information: [Age Requirement and Children's Privacy]. Changes will be announced through [Privacy Change Notification Process].",
+            "Fill every placeholder, verify the actual data flows and seek legal review before adopting this document as a final policy. No jurisdiction-specific compliance claim is made by this draft.",
+          ],
+        },
+      ],
+    },
+    cookies: {
+      title: "Cookie Policy",
+      sections: [
+        {
+          title: "1. Authentication cookies",
+          paragraphs: [
+            "The backend uses accessToken and refreshToken cookies for signed-in sessions. Production settings should use HTTPS with Secure and HttpOnly protections. Cookie lifetimes and scope: [Cookie Lifetime and Domain Inventory]. These values must match the deployed authentication configuration.",
+          ],
+        },
+        {
+          title: "2. Interface preferences",
+          paragraphs: [
+            "The sidebar_state cookie remembers the dashboard sidebar preference. Locale routing and any locale cookie depend on the deployed language configuration. Record exact names, purposes, durations and providers: [Cookie Inventory].",
+          ],
+        },
+        {
+          title: "3. External services and consent",
+          paragraphs: [
+            "Optional Google sign-in and configured payment services may use their own storage or cookies. Review the actual provider inventory and consent obligations in [Third-party Cookie and Consent Assessment].",
+            "Do not enable non-essential analytics or advertising before documenting their purposes and implementing any consent required by the applicable law. This draft does not certify that optional cookies are absent.",
+          ],
+        },
+        {
+          title: "4. Managing storage",
+          paragraphs: [
+            "You can clear or block cookies using browser settings. Blocking session cookies can prevent sign-in and authenticated functions from working. Contact [Contact Email] at [Company Name], [Address], for questions. Effective date: [Effective Date].",
+          ],
+        },
+      ],
+    },
+  },
+  bn: {
+    terms: {
+      title: "ব্যবহারের শর্তাবলী",
+      sections: [
+        {
+          title: "১. পরিচালনাকারী ও প্রযোজ্য সেবা",
+          paragraphs: [
+            "[Address] ঠিকানায় অবস্থিত [Company Name] এই পার্সেল পরিবহনব্যবস্থা পরিচালনা করে। অ্যাকাউন্ট ব্যবহার, পার্সেলের অনুরোধ, অনুসরণ ও অর্থপ্রদান এই খসড়ার আওতায় পড়ে। কার্যকর হওয়ার তারিখ: [Effective Date]। যোগাযোগ: [Contact Email]।",
+          ],
+        },
+        {
+          title: "২. অ্যাকাউন্ট ও যোগ্যতা",
+          paragraphs: [
+            "অ্যাকাউন্টের সঠিক তথ্য দিন, পাসওয়ার্ড ও যাচাইয়ের সংকেত গোপন রাখুন এবং অননুমোদিত ব্যবহার জানিয়ে দিন। বয়স ও ব্যবহারের যোগ্যতা: [Age Requirement]। প্রশাসক ও বাহকের অ্যাকাউন্টের জন্য প্রতিষ্ঠানের অনুমোদন প্রয়োজন।",
+          ],
+        },
+        {
+          title: "৩. পার্সেলের অনুরোধ ও দায়িত্ব",
+          paragraphs: [
+            "প্রাপকের পরিচয়, ফোন, ঠিকানা, ওজন ও হাবের সঠিক তথ্য দিন। প্রাপকের তথ্য দেওয়ার বৈধ অধিকার, পণ্যের বৈধতা ও উপযুক্ত মোড়ক নিশ্চিত করুন।",
+            "সেবার আওতা, সম্ভাব্য সরবরাহের সময়, নিষিদ্ধ পণ্য, মোড়কের নিয়ম ও ব্যর্থ সরবরাহের ব্যবস্থা: [Delivery Terms]। বুকিংয়ের আগে এগুলো নিশ্চিত করুন। অনুসরণের হালনাগাদ তথ্য সরবরাহের নিশ্চয়তা নয়।",
+          ],
+        },
+        {
+          title: "৪. মূল্য, অর্থপ্রদান ও ফেরত",
+          paragraphs: [
+            "পরিশোধের আগে প্রদর্শিত মূল্য যাচাই করুন। অর্থপ্রদানকারী প্রতিষ্ঠানের যাচাই এবং সার্ভারে পরিশোধিত অবস্থা নথিভুক্ত হওয়ার পরেই অর্থপ্রদান নিশ্চিত হয়। সফলতার পাতায় প্রবেশ করলেই অর্থপ্রদান নিশ্চিত হয় না।",
+            "চালু থাকলে Stripe বা bKash অর্থপ্রদান প্রক্রিয়া সম্পন্ন করতে পারে। মূল্য, কর, বাতিল, টাকা ফেরত, পণ্য হাতে পেয়ে মূল্য পরিশোধ ও নিষ্পত্তির সময়: [Payment and Refund Policy]। সংশ্লিষ্ট প্রতিষ্ঠানের শর্তও প্রযোজ্য হতে পারে। সহায়তার বার্তায় কার্ড বা ওয়ালেটের গোপন তথ্য দেবেন না।",
+          ],
+        },
+        {
+          title: "৫. গ্রহণযোগ্য ব্যবহার",
+          paragraphs: [
+            "অবৈধ পণ্য, প্রতারণা, পরিচয় জালিয়াতি, অননুমোদিত প্রবেশ, পার্সেল বা অর্থপ্রদানের তথ্য বিকৃতি এবং অন্যের ব্যক্তিগত তথ্য প্রকাশের জন্য সেবা ব্যবহার করবেন না। সুরক্ষার জন্য প্রযোজ্য আইন ও [Account Suspension and Appeal Process] অনুযায়ী প্রবেশ সীমিত করা হতে পারে।",
+          ],
+        },
+        {
+          title: "৬. সীমাবদ্ধতা ও অভিযোগ",
+          paragraphs: [
+            "পথের পরিস্থিতি, অসম্পূর্ণ প্রাপকের তথ্য বা বাইরের সেবার সমস্যায় সরবরাহ বাধাগ্রস্ত হতে পারে। ক্ষতি, বিলম্ব, বিমা, ক্ষতিপূরণের সীমা ও অভিযোগের পদ্ধতি লিখুন: [Liability and Claims Policy]। এই খসড়া বাধ্যতামূলক ভোক্তা অধিকার বাতিল করে না এবং সব দায় থেকে অব্যাহতি দেয় না।",
+          ],
+        },
+        {
+          title: "৭. তথ্য, মালিকানা ও পরিবর্তন",
+          paragraphs: [
+            "ব্যক্তিগত তথ্যের ব্যবহার গোপনীয়তার নীতি ও কুকির নীতিতে বর্ণিত। ব্যবস্থার উপকরণের মালিকানা সংশ্লিষ্ট মালিকের; ব্যবহার করলে মালিকানা হস্তান্তর হয় না।",
+            "গুরুত্বপূর্ণ পরিবর্তন জানানো, নোটিশ ও অ্যাকাউন্ট বন্ধের পদ্ধতি: [Policy Change and Termination Process]। পর্যালোচনার পরে প্রযোজ্য আইন ও বিরোধ নিষ্পত্তি লিখুন: [Jurisdiction and Dispute Resolution]।",
+          ],
+        },
+        {
+          title: "৮. চূড়ান্ত প্রকাশের আগে",
+          paragraphs: [
+            "বন্ধনীর সব প্লেসহোল্ডার পূরণ করুন, বাস্তব পরিচালনার নিয়ম যাচাই করুন, সঠিক যোগাযোগের তথ্য দিন এবং সেবার আওতাভুক্ত এলাকার জন্য আইনি পর্যালোচনা করান। এটি কাজের খসড়া, আইন মেনে চলার প্রত্যয়ন নয়।",
+          ],
+        },
+      ],
+    },
+    privacy: {
+      title: "গোপনীয়তার নীতি",
+      sections: [
+        {
+          title: "১. তথ্য পরিচালনার দায়িত্ব",
+          paragraphs: [
+            "[Company Name], [Address], এই ব্যবস্থায় ব্যক্তিগত তথ্য পরিচালনার জন্য দায়ী। গোপনীয়তা নিয়ে যোগাযোগ: [Contact Email]। কার্যকর হওয়ার তারিখ: [Effective Date]। প্রয়োজন হলে গোপনীয়তার প্রতিনিধি: [Privacy Contact]।",
+          ],
+        },
+        {
+          title: "২. সংগৃহীত তথ্য ও উৎস",
+          paragraphs: [
+            "অ্যাকাউন্টের তথ্যে নাম, ইমেইল, ফোন, ঠিকানা, পাসওয়ার্ডের হ্যাশ এবং যাচাই বা সেশনের নথি থাকতে পারে। দেওয়া হলে ঐচ্ছিক প্রোফাইল ছবি, বাহকের যোগাযোগ, যানবাহন ও হাবের তথ্য পরিচালিত হয়।",
+            "পার্সেলের তথ্যে প্রেরকের পরিচয়, প্রাপকের নাম, ফোন, ঠিকানা, ওজন, নির্বাচিত হাব ও পথের ইতিহাস থাকে। প্রাপকের তথ্য প্রেরক দেন। অর্থপ্রদানের নথিতে পরিমাণ, মাধ্যম, অবস্থা ও লেনদেনের পরিচয় থাকে।",
+            "নিরাপত্তা ও কার্যক্রমের নথিতে অনুরোধের কারিগরি তথ্য ও প্রশাসনিক ঘটনা থাকতে পারে। বাস্তব ব্যবস্থার তথ্যের পূর্ণ তালিকা লিখুন: [Data Inventory and Sources]।",
+          ],
+        },
+        {
+          title: "৩. তথ্য ব্যবহারের উদ্দেশ্য",
+          paragraphs: [
+            "অ্যাকাউন্ট যাচাই, পার্সেল পাঠানো ও অনুসরণ, অর্থপ্রদান যাচাই, নিবন্ধন বা পাসওয়ার্ড বদলানোর বার্তা পাঠানো, সহায়তা ও অপব্যবহার শনাক্ত করতে তথ্য ব্যবহার করা হয়। সরবরাহের অনুরোধ সম্পন্ন করতে প্রয়োজনীয় তথ্য দিতে হয়।",
+            "যে আইন বাস্তবে প্রযোজ্য, সে অনুযায়ী প্রতিটি উদ্দেশ্যের বৈধ ভিত্তি লিখুন: [Purpose and Lawful Basis Schedule]। ঐচ্ছিক প্রচার, ব্যবহার বিশ্লেষণ বা স্বয়ংক্রিয় সিদ্ধান্ত চালুর আগে আলাদা বিবরণ দিন: [Optional Processing Details]।",
+          ],
+        },
+        {
+          title: "৪. তথ্য ভাগ করা ও বাইরের সেবা",
+          paragraphs: [
+            "অনুমোদিত কর্মী ও নির্ধারিত বাহক তাঁদের কাজের প্রয়োজনীয় তথ্য পান। চালু থাকা অর্থপ্রদান, ইমেইল, ছবি সংরক্ষণ, হোস্টিং, ডেটাবেস ও অবকাঠামোর সেবা প্রয়োজনীয় তথ্য প্রক্রিয়াকরণ করতে পারে।",
+            "প্রতিটি চালু প্রতিষ্ঠানের নাম, প্রাপ্ত তথ্য, প্রক্রিয়াকরণের দেশ ও সুরক্ষাব্যবস্থা লিখুন: [Processors and International Transfers]। কোনো সংযোগ বাস্তবে চালু ও ব্যবহৃত না হলে তাকে সক্রিয় বলে লিখবেন না।",
+          ],
+        },
+        {
+          title: "৫. প্রকাশ্য অনুসরণ ও নিরাপত্তা",
+          paragraphs: [
+            "প্রকাশ্য অনুসরণে প্রাপকের যোগাযোগের তথ্যের বদলে পার্সেলের অবস্থা ও ইতিহাস দেখানোর ব্যবস্থা রয়েছে। অনুসন্ধানসংখ্যা গোপন রাখুন। পরিচয় যাচাইয়ে সেশন কুকি ও প্রবেশের নিয়ন্ত্রণ ব্যবহৃত হয়। নিরাপত্তাব্যবস্থা ঝুঁকি কমায়, সম্পূর্ণ নিরাপত্তার নিশ্চয়তা দেয় না।",
+            "ঘটনা জানানো, প্রযোজ্য বিজ্ঞপ্তি ও পরিচালনাগত সুরক্ষাব্যবস্থা পর্যালোচনা করে লিখুন: [Security and Incident Process]।",
+          ],
+        },
+        {
+          title: "৬. সংরক্ষণ ও মুছে ফেলা",
+          paragraphs: [
+            "অ্যাকাউন্ট, পার্সেল, অর্থপ্রদান, ছবি, যাচাই, নিরাপত্তা ও কার্যক্রমের তথ্য রাখার সময় এবং মুছে ফেলার নিয়ম: [Retention Schedule]। আইনগত সংরক্ষণ, ব্যাকআপ মোছার বিলম্ব ও অ্যাকাউন্ট মুছে ফেলার পদ্ধতি লিখুন। ব্যবস্থা তৈরি ও যাচাই না হওয়া পর্যন্ত স্বয়ংক্রিয়ভাবে তথ্য মুছে ফেলার দাবি করবেন না।",
+          ],
+        },
+        {
+          title: "৭. আপনার পছন্দ ও অনুরোধ",
+          paragraphs: [
+            "উপলব্ধ প্রোফাইলের ঘরগুলো বদলাতে পারেন। প্রযোজ্য আইনে তথ্য দেখা, সংশোধন, মুছে ফেলা বা অন্য অধিকার প্রয়োগের জন্য [Contact Email] ঠিকানায় অনুরোধ করুন। পরিচয় যাচাই, উত্তর দেওয়ার সময়, সম্মতি প্রত্যাহার, সীমাবদ্ধতা ও আপিলের পদ্ধতি: [Rights Request Procedure]।",
+            "গোপনীয়তার অভিযোগ ও প্রযোজ্য নিয়ন্ত্রক কর্তৃপক্ষ: [Complaint Process and Supervisory Authority]। প্রযোজ্য আইন অনুযায়ী কিছু নথি সংরক্ষণ করা প্রয়োজন হতে পারে।",
+          ],
+        },
+        {
+          title: "৮. কুকি, বয়স ও পরিবর্তন",
+          paragraphs: [
+            "সেশন কুকি ও ব্রাউজারের পছন্দের জন্য কুকির নীতি দেখুন। বয়সের যোগ্যতা ও শিশুদের তথ্যের নিয়ম: [Age Requirement and Children's Privacy]। নীতির পরিবর্তন জানানোর পদ্ধতি: [Privacy Change Notification Process]।",
+            "চূড়ান্ত নীতি হিসেবে গ্রহণের আগে সব প্লেসহোল্ডার পূরণ, বাস্তব তথ্যের প্রবাহ যাচাই ও আইনি পর্যালোচনা করুন। এই খসড়া কোনো নির্দিষ্ট দেশের আইন মেনে চলার নিশ্চয়তা দেয় না।",
+          ],
+        },
+      ],
+    },
+    cookies: {
+      title: "কুকির নীতি",
+      sections: [
+        {
+          title: "১. পরিচয় যাচাইয়ের কুকি",
+          paragraphs: [
+            "ব্যাকএন্ডে অ্যাকাউন্টের সেশনের জন্য accessToken ও refreshToken কুকি ব্যবহৃত হয়। প্রোডাকশনে HTTPS এবং Secure ও HttpOnly সুরক্ষা প্রয়োগ করা উচিত। কুকির মেয়াদ ও আওতা: [Cookie Lifetime and Domain Inventory]। প্রকাশিত তথ্যের সঙ্গে বাস্তব কনফিগারেশন মিলতে হবে।",
+          ],
+        },
+        {
+          title: "২. পর্দার পছন্দ",
+          paragraphs: [
+            "sidebar_state কুকি ড্যাশবোর্ডের পাশের মেনুর পছন্দ মনে রাখে। ভাষার পথ ও ভাষা-সংক্রান্ত কুকি বাস্তব ভাষা-কনফিগারেশনের ওপর নির্ভর করে। নাম, উদ্দেশ্য, মেয়াদ ও সেবাদাতার পূর্ণ তালিকা: [Cookie Inventory]।",
+          ],
+        },
+        {
+          title: "৩. বাইরের সেবা ও সম্মতি",
+          paragraphs: [
+            "ঐচ্ছিক গুগল প্রবেশ ও চালু অর্থপ্রদানের সেবা নিজস্ব কুকি বা সংরক্ষণ ব্যবহার করতে পারে। বাস্তব তালিকা ও সম্মতির প্রয়োজন পর্যালোচনা করুন: [Third-party Cookie and Consent Assessment]।",
+            "অপ্রয়োজনীয় ব্যবহার-বিশ্লেষণ বা বিজ্ঞাপন চালুর আগে উদ্দেশ্য লিখুন এবং প্রযোজ্য আইনে দরকার হলে সম্মতির ব্যবস্থা করুন। এই খসড়া ঐচ্ছিক কুকি নেই বলে প্রত্যয়ন করে না।",
+          ],
+        },
+        {
+          title: "৪. সংরক্ষণ নিয়ন্ত্রণ",
+          paragraphs: [
+            "ব্রাউজারের সেটিংস দিয়ে কুকি মুছতে বা বন্ধ করতে পারেন। সেশনের কুকি বন্ধ করলে প্রবেশ ও অনুমতিনির্ভর কাজ বন্ধ হতে পারে। প্রশ্নের জন্য [Company Name], [Address], [Contact Email] ঠিকানায় যোগাযোগ করুন। কার্যকর হওয়ার তারিখ: [Effective Date]।",
+          ],
+        },
+      ],
+    },
+  },
+};
+
+export function getLegalDocument(locale: string, kind: LegalKind) {
+  return documents[locale === "bn" ? "bn" : "en"][kind];
+}
+```
+
+
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\hooks\auth.hook.ts
 
 ```ts
@@ -6377,6 +9934,7 @@ export const useForgotPassword = () => useMutation({ mutationFn: forgotPassword 
 export const useResetPassword = () => useSessionMutation(resetPassword);
 export const useLogout = () => useSessionMutation(userLogout);
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\hooks\shipment.hook.ts
@@ -6464,6 +10022,7 @@ export function useShipmentSummary() {
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\i18n\navigation.ts
 
 ```ts
@@ -6473,6 +10032,106 @@ export const { Link, redirect, usePathname, useRouter, getPathname } = createNav
   locales: ["en", "bn"], defaultLocale: "en",
 });
 ```
+
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\i18n\ui.ts
+
+```ts
+import bengali from "../../messages/ui.bn.json";
+
+const messages: Record<string, string> = bengali;
+
+export function translateUi(
+  locale: string,
+  text: string | number | null | undefined,
+): string {
+  if (text == null) return "";
+  if (typeof text === "number")
+    return new Intl.NumberFormat(locale === "bn" ? "bn-BD" : "en-US").format(
+      text,
+    );
+  return locale === "bn" ? (messages[text] ?? text) : text;
+}
+
+export function translateError(
+  locale: string,
+  message: string | null | undefined,
+): string {
+  if (!message) return translateUi(locale, "Unable to complete this request");
+  if (locale !== "bn" || /[\u0980-\u09ff]/.test(message)) return message;
+  return (
+    messages[message] ?? "অনুরোধটি সম্পন্ন করা যায়নি। তথ্য যাচাই করে আবার চেষ্টা করুন।"
+  );
+}
+
+export function formatUiDate(
+  locale: string,
+  value: Date | string,
+  includeTime = false,
+): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return translateUi(locale, "N/A");
+  return new Intl.DateTimeFormat(locale === "bn" ? "bn-BD" : "en-US", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    timeZone: "Asia/Dhaka",
+    ...(includeTime ? ({ hour: "2-digit", minute: "2-digit" } as const) : {}),
+  }).format(date);
+}
+
+export function formatUiNumber(
+  locale: string,
+  value: string | number,
+  money = false,
+): string {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return translateUi(locale, "N/A");
+  return new Intl.NumberFormat(
+    locale === "bn" ? "bn-BD" : "en-US",
+    money
+      ? {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }
+      : {},
+  ).format(number);
+}
+```
+
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\i18n\use-ui-text.ts
+
+```ts
+import { useLocale } from "next-intl";
+import {
+  formatUiDate,
+  formatUiNumber,
+  translateError,
+  translateUi,
+} from "./ui";
+
+export function useUiText() {
+  const locale = useLocale();
+  return (text: string | number | null | undefined) =>
+    translateUi(locale, text);
+}
+
+export function useUiFormat() {
+  const locale = useLocale();
+  return {
+    date: (value: Date | string, includeTime = false) =>
+      formatUiDate(locale, value, includeTime),
+    number: (value: string | number) => formatUiNumber(locale, value),
+    money: (value: string | number) => formatUiNumber(locale, value, true),
+    error: (message: string | null | undefined) =>
+      translateError(locale, message),
+  };
+}
+```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\lib\api-error.ts
@@ -6488,6 +10147,7 @@ export function getApiErrorMessage(error: unknown, fallback = "Unable to complet
   return typeof data?.message === "string" ? data.message : fallback;
 }
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\lib\apiClient.ts
@@ -6521,6 +10181,7 @@ export default async function apiClient<T = unknown>(request: string, options: F
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\lib\auth-token.ts
 
 ```ts
@@ -6530,12 +10191,14 @@ export const clearAccessToken = () => {
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\providers\google-auth.provider.tsx
 
 ```tsx
 "use client";
 
 import { GoogleOAuthProvider } from "@react-oauth/google";
+import { useLocale } from "next-intl";
 import type { ReactNode } from "react";
 
 export default function GoogleAuthProvider({
@@ -6543,6 +10206,7 @@ export default function GoogleAuthProvider({
 }: {
   children: ReactNode;
 }) {
+  const locale = useLocale();
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
   if (!clientId) {
@@ -6550,10 +10214,13 @@ export default function GoogleAuthProvider({
   }
 
   return (
-    <GoogleOAuthProvider clientId={clientId}>{children}</GoogleOAuthProvider>
+    <GoogleOAuthProvider clientId={clientId} locale={locale}>
+      {children}
+    </GoogleOAuthProvider>
   );
 }
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\providers\index.tsx
@@ -6576,6 +10243,7 @@ export default function Providers({ children }: { children: ReactNode }) {
   );
 }
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\providers\query.provider.tsx
@@ -6620,6 +10288,7 @@ export default function QueryProvider({ children }: { children: ReactNode }) {
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\proxy.ts
 
 ```ts
@@ -6633,6 +10302,7 @@ export function proxy(request: NextRequest) {
 }
 export const config = { matcher: ["/((?!api|_next|.*\\..*).*)"] };
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\routes\admin.routes.ts
@@ -6672,6 +10342,7 @@ export const adminRoutes: SidebarItems = [
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\routes\courier.routes.ts
 
 ```ts
@@ -6708,6 +10379,7 @@ export const courierRoutes: SidebarItems = [
   },
 ];
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\routes\customer.routes.ts
@@ -6750,6 +10422,7 @@ export const customerRoutes: SidebarItems = [
   },
 ];
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\styles\shadcn.css
@@ -7387,6 +11060,7 @@ export const customerRoutes: SidebarItems = [
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\types\admin.type.ts
 
 ```ts
@@ -7416,6 +11090,7 @@ export interface AuditLog {
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\types\auth.type.ts
 
 ```ts
@@ -7442,6 +11117,7 @@ export interface VerifyEmailPayload {
   otp: string;
 }
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\types\courier.type.ts
@@ -7475,6 +11151,7 @@ export interface CourierEarnings {
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\types\payment.type.ts
 
 ```ts
@@ -7495,6 +11172,7 @@ export interface Payment {
   updatedAt: string;
 }
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\types\shipment.type.ts
@@ -7563,6 +11241,7 @@ export interface PublicShipmentTracking {
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\types\sidebar.type.ts
 
 ```ts
@@ -7582,6 +11261,7 @@ export interface SidebarGroup {
 
 export type SidebarItems = SidebarGroup[];
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\types\user.type.ts
@@ -7614,6 +11294,7 @@ export interface Customer {
   updatedAt: string;
 }
 ```
+
 
 
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\validation\auth.validation.ts
@@ -7675,6 +11356,7 @@ export const ResetPasswordZodSchema = z.object({
 ```
 
 
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\tsconfig.json
 
 ```json
@@ -7723,4 +11405,5 @@ export const ResetPasswordZodSchema = z.object({
   ]
 }
 ```
+
 নথির সমাপ্তি।

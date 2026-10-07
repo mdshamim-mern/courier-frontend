@@ -1,3 +1,4 @@
+import { useUiText } from "@/i18n/use-ui-text";
 import type { Dispatch, SetStateAction } from "react";
 import {
   Pagination,
@@ -33,7 +34,15 @@ const getButtonArray = (
     ];
   }
 
-  return [1, "ellipsis-start", page - 1, page, page + 1, "ellipsis-end", totalPages];
+  return [
+    1,
+    "ellipsis-start",
+    page - 1,
+    page,
+    page + 1,
+    "ellipsis-end",
+    totalPages,
+  ];
 };
 
 interface Props {
@@ -47,6 +56,7 @@ export default function TablePagination({
   handlePageChange,
   page,
 }: Props) {
+  const ui = useUiText();
   const goToPage = (page: number) => {
     handlePageChange(page);
   };
@@ -78,7 +88,7 @@ export default function TablePagination({
                 onClick={() => handlePageChange(item as number)}
                 isActive={page === item}
               >
-                {item}
+                {ui(item)}
               </PaginationLink>
             </PaginationItem>
           ),
