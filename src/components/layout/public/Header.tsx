@@ -4,6 +4,7 @@ import Logo from "@/assets/svg/Logo";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useGetMe, useLogout } from "@/hooks";
 import { toast } from "@/components/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -12,6 +13,7 @@ import { Search, Menu, Globe } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 export default function Header() {
+  const t = useTranslations("Header");
   const { data, isLoading } = useGetMe();
   const { mutate: logout, isPending } = useLogout();
   const queryClient = useQueryClient();
@@ -67,14 +69,14 @@ export default function Header() {
         </Link>
 
         <div className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
-          <Link href="/services" className="hover:text-primary transition-colors">Services</Link>
-          <Link href="/about" className="hover:text-primary transition-colors">About</Link>
-          <Link href="/contact" className="hover:text-primary transition-colors">Contact</Link>
+          <Link href="/services" className="hover:text-primary transition-colors">{t("services")}</Link>
+          <Link href="/about" className="hover:text-primary transition-colors">{t("about")}</Link>
+          <Link href="/contact" className="hover:text-primary transition-colors">{t("contact")}</Link>
         </div>
 
         <nav className="hidden md:flex items-center gap-3">
           <Button variant="outline" render={<Link href="/track-shipment" />} nativeButton={false} className="gap-2 border-primary/20 hover:bg-primary/5">
-            <Search className="size-4" /> Track Shipment
+            <Search className="size-4" /> {t("track")}
           </Button>
 
           <Button variant="ghost" onClick={toggleLang} className="gap-1 px-2 text-muted-foreground hover:text-foreground">
@@ -84,10 +86,10 @@ export default function Header() {
           {!isLoading && !user && (
             <>
               <Button variant="ghost" render={<Link href="/login" />} nativeButton={false}>
-                Login
+                {t("login")}
               </Button>
               <Button render={<Link href="/register" />} nativeButton={false} className="shadow-md">
-                Sign Up
+                {t("register")}
               </Button>
             </>
           )}
@@ -95,10 +97,10 @@ export default function Header() {
           {!isLoading && user && (
             <>
               <Button variant="outline" render={<Link href={dashboardRoute[user.role as UserRole]} />} nativeButton={false}>
-                Dashboard
+                {t("dashboard")}
               </Button>
               <Button variant="destructive" onClick={handleLogout} disabled={isPending}>
-                {isPending ? "Logging out..." : "Logout"}
+                {isPending ? t("loggingOut") : t("logout")}
               </Button>
             </>
           )}
@@ -115,15 +117,15 @@ export default function Header() {
             </SheetTrigger>
             <SheetContent side="right">
               <SheetHeader>
-                <SheetTitle className="text-left">Menu</SheetTitle>
+                <SheetTitle className="text-left">{t("menu")}</SheetTitle>
               </SheetHeader>
               <div className="flex flex-col gap-4 mt-6">
-                <Link href="/services" className="text-lg font-medium hover:text-primary">Services</Link>
-                <Link href="/about" className="text-lg font-medium hover:text-primary">About</Link>
-                <Link href="/contact" className="text-lg font-medium hover:text-primary">Contact</Link>
+                <Link href="/services" className="text-lg font-medium hover:text-primary">{t("services")}</Link>
+                <Link href="/about" className="text-lg font-medium hover:text-primary">{t("about")}</Link>
+                <Link href="/contact" className="text-lg font-medium hover:text-primary">{t("contact")}</Link>
                 
                 <Button variant="ghost" className="justify-start px-0 text-lg font-medium" onClick={toggleLang}>
-                  <Globe className="size-5 mr-2" /> Language: {currentLocale.toUpperCase()}
+                  <Globe className="size-5 mr-2" /> {t("language")}{currentLocale.toUpperCase()}
                 </Button>
                 
                 <hr className="my-2 border-border" />
@@ -131,10 +133,10 @@ export default function Header() {
                 {!isLoading && !user && (
                   <div className="flex flex-col gap-3">
                     <Button variant="outline" render={<Link href="/login" />} nativeButton={false} className="w-full">
-                      Login
+                      {t("login")}
                     </Button>
                     <Button render={<Link href="/register" />} nativeButton={false} className="w-full">
-                      Sign Up
+                      {t("register")}
                     </Button>
                   </div>
                 )}
@@ -142,10 +144,10 @@ export default function Header() {
                 {!isLoading && user && (
                   <div className="flex flex-col gap-3">
                     <Button variant="outline" render={<Link href={dashboardRoute[user.role as UserRole]} />} nativeButton={false} className="w-full">
-                      Dashboard
+                      {t("dashboard")}
                     </Button>
                     <Button variant="destructive" onClick={handleLogout} disabled={isPending} className="w-full">
-                      {isPending ? "Logging out..." : "Logout"}
+                      {isPending ? t("loggingOut") : t("logout")}
                     </Button>
                   </div>
                 )}
