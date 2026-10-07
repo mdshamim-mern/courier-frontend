@@ -1,4 +1,4 @@
-import { PackagePlus, Truck, Map, CheckCircle2 } from "lucide-react";
+import { PackagePlus, Truck, Map as MapIcon, CheckCircle2 } from "lucide-react";
 
 const steps = [
   {
@@ -7,7 +7,7 @@ const steps = [
     description: "Enter package details and destination."
   },
   {
-    icon: <Map className="size-7 text-primary" />,
+    icon: <MapIcon className="size-7 text-primary" />,
     title: "Hub Assignment",
     description: "Package is routed through our network."
   },
@@ -36,7 +36,7 @@ export default function HowItWorksSection() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10 relative">
           <div className="hidden md:block absolute top-10 left-[10%] w-[80%] h-px bg-linear-to-r from-transparent via-border to-transparent -z-10" />
           {steps.map((step, index) => (
-            <div key={index} className="flex flex-col items-center text-center">
+            <div key={step.title} className="flex flex-col items-center text-center">
               <div className="relative flex items-center justify-center size-20 rounded-2xl border border-white/40 bg-white/70 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.08)] mb-6 dark:border-white/10 dark:bg-white/4">
                 {step.icon}
                 <span className="absolute -top-2 -right-2 flex size-6 items-center justify-center rounded-full bg-linear-to-br from-primary to-blue-600 text-xs font-bold text-white shadow-md">

@@ -2,16 +2,14 @@
 
 import Logo from "@/assets/svg/Logo";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { Link, usePathname, useRouter } from "@/i18n/navigation";
+import { useTranslations, useLocale } from "next-intl";
 import { useGetMe, useLogout } from "@/hooks";
 import { toast } from "@/components/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { UserRole } from "@/types";
+import type { UserRole } from "@/types";
 import { Search, Menu, Globe } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { clearAccessToken } from "@/lib/auth-token";
 
 export default function Header() {
   const t = useTranslations("Header");
@@ -22,7 +20,7 @@ export default function Header() {
 
   const pathname = usePathname();
   const router = useRouter();
-  const currentLocale = pathname.split("/")[1] === "bn" ? "bn" : "en";
+  const currentLocale = useLocale();
 
   const dashboardRoute: Record<UserRole, string> = {
     ADMIN: "/admin",
@@ -33,14 +31,14 @@ export default function Header() {
   const handleLogout = () => {
     logout(undefined, {
       onSuccess: () => {
-        clearAccessToken();
         toast.add({
           title: "Logged Out",
           description: "You have been successfully logged out.",
           type: "success",
         });
         queryClient.removeQueries({ queryKey: ["user"] });
-        window.location.href = "/";
+        router.replace("/");
+        router.refresh();
       },
       onError: () => {
         toast.add({
@@ -54,9 +52,7 @@ export default function Header() {
 
   const toggleLang = () => {
     const nextLocale = currentLocale === "en" ? "bn" : "en";
-    const segments = pathname.split("/");
-    segments[1] = nextLocale;
-    router.push(segments.join("/") || "/");
+    router.replace(pathname, { locale: nextLocale });
   };
 
   return (

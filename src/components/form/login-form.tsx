@@ -1,6 +1,7 @@
 "use client";
 
 import { useForm } from "@tanstack/react-form";
+import { useQueryClient } from "@tanstack/react-query";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel, FieldSeparator } from "../ui/field";
@@ -8,16 +9,16 @@ import { LoginZodSchema } from "@/validation";
 import { useState } from "react";
 import { Eye, EyeClosed, Mail, Lock, ShieldCheck, Truck, UserRound } from "lucide-react";
 import { useLogin } from "@/hooks";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { toast } from "../ui/toast";
 import { Spinner } from "../ui/spinner";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import GoogleLoginComponent from "../modules/google-login/GoogleLogin";
-import { setAccessToken } from "@/lib/auth-token";
 
 export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { mutate: login, isPending: loginPending } = useLogin();
 
   const form = useForm({
@@ -26,18 +27,18 @@ export default function LoginForm() {
       password: "",
     },
     validators: {
-      onSubmit: LoginZodSchema.shape.body as any,
+      onSubmit: LoginZodSchema.shape.body,
     },
     onSubmit: ({ value }) => {
       login(value, {
         onSuccess: (res) => {
-          setAccessToken(res.data.accessToken);
+          queryClient.invalidateQueries({ queryKey: ["user"] });
           toast.add({
             title: "Login Successful",
             description: "Welcome back to Dropzo",
             type: "success",
           });
-          const role = res.data.role;
+          const role = res.data.user.role;
           if (role === "ADMIN") router.push("/admin");
           else if (role === "COURIER") router.push("/courier");
           else router.push("/dashboard");
@@ -64,6 +65,7 @@ export default function LoginForm() {
       </div>
 
       <form
+        method="post"
         onSubmit={(e) => {
           e.preventDefault();
           form.handleSubmit();
@@ -146,7 +148,7 @@ export default function LoginForm() {
             )}
           </Button>
 
-          <div className="flex flex-col gap-3 pt-2">
+          {process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === "true" && <div className="flex flex-col gap-3 pt-2">
             <div className="text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
               One-Click Demo Login
             </div>
@@ -155,8 +157,8 @@ export default function LoginForm() {
                 type="button"
                 variant="outline"
                 onClick={() => {
-                  form.setFieldValue("email", "admin@gmail.com");
-                  form.setFieldValue("password", "123456");
+                  form.setFieldValue("email", "admin@courier.com");
+                  form.setFieldValue("password", "Admin@12345");
                 }}
                 className="h-auto flex-col gap-1.5 border-border/60 bg-white/40 py-3 backdrop-blur-sm hover:border-primary/40 hover:bg-primary/5 dark:bg-white/3"
               >
@@ -166,8 +168,8 @@ export default function LoginForm() {
                 type="button"
                 variant="outline"
                 onClick={() => {
-                  form.setFieldValue("email", "courier@gmail.com");
-                  form.setFieldValue("password", "123456");
+                  form.setFieldValue("email", "courier@courier.com");
+                  form.setFieldValue("password", "Courier@1234");
                 }}
                 className="h-auto flex-col gap-1.5 border-border/60 bg-white/40 py-3 backdrop-blur-sm hover:border-primary/40 hover:bg-primary/5 dark:bg-white/3"
               >
@@ -177,15 +179,15 @@ export default function LoginForm() {
                 type="button"
                 variant="outline"
                 onClick={() => {
-                  form.setFieldValue("email", "user@gmail.com");
-                  form.setFieldValue("password", "123456");
+                  form.setFieldValue("email", "customer@courier.com");
+                  form.setFieldValue("password", "Customer@1234");
                 }}
                 className="h-auto flex-col gap-1.5 border-border/60 bg-white/40 py-3 backdrop-blur-sm hover:border-primary/40 hover:bg-primary/5 dark:bg-white/3"
               >
                 <UserRound className="size-4 text-primary" /> User
               </Button>
             </div>
-          </div>
+          </div>}
         </FieldGroup>
       </form>
 

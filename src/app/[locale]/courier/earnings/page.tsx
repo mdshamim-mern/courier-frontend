@@ -4,13 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useGetMe, useGetCourierHistoryAndEarnings } from "@/hooks";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Wallet, TrendingUp, Activity } from "lucide-react";
+import QueryError from "@/components/ui/query-error";
 
 export default function EarningsPage() {
   const { data: userData, isLoading: userLoading } = useGetMe();
   const courierId = userData?.data?.courier?.id;
 
-  const { data, isLoading } = useGetCourierHistoryAndEarnings(courierId || "");
+  const { data, isLoading, error, refetch } = useGetCourierHistoryAndEarnings(courierId || "");
   const stats = data?.data;
+
+  if (error) return <QueryError retry={() => { void refetch(); }} />;
 
   if (userLoading || isLoading) {
     return (
@@ -39,7 +42,7 @@ export default function EarningsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-              ৳ {stats?.totalEarnings?.toLocaleString() || 0}
+              {stats?.totalEarnings == null ? "Compensation needs configuration" : `৳ ${stats.totalEarnings.toLocaleString()}`}
             </div>
           </CardContent>
         </Card>
@@ -50,7 +53,7 @@ export default function EarningsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {stats?.totalShipments || 0}
+              {stats?.completedDeliveries || 0}
             </div>
           </CardContent>
         </Card>
@@ -61,7 +64,7 @@ export default function EarningsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {stats?.totalShipments > 0 ? "98.5%" : "0%"}
+              {stats?.performanceRate ?? 0}%
             </div>
           </CardContent>
         </Card>

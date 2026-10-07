@@ -12,6 +12,7 @@ export const RegisterCustomerZodSchema = z.object({
     password: z
       .string()
       .min(8, "Password must be at least 8 characters")
+      .max(72, "Password must be at most 72 characters")
       .regex(/[a-z]/, "Must contain a lowercase letter")
       .regex(/[A-Z]/, "Must contain an uppercase letter")
       .regex(/[0-9]/, "Must contain a number")
@@ -39,10 +40,11 @@ export const ForgotPasswordZodSchema = z.object({
 export const ResetPasswordZodSchema = z.object({
   body: z.object({
     email: z.string().email("Invalid email address"),
-    otp: z.string().length(6, "OTP must be exactly 6 digits"),
+    otp: z.string().regex(/^\d{6}$/, "OTP must be exactly 6 digits"),
     newPassword: z
       .string()
       .min(8, "Password must be at least 8 characters")
+      .max(72, "Password must be at most 72 characters")
       .regex(/[a-z]/, "Must contain a lowercase letter")
       .regex(/[A-Z]/, "Must contain an uppercase letter")
       .regex(/[0-9]/, "Must contain a number")

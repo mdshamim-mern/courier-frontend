@@ -5,16 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import TablePagination from "@/components/ui/table-pagination";
 import { format } from "date-fns";
 import { useState, Suspense } from "react";
-import { useGetAuditLogs } from "@/hooks"; 
-
-interface IAuditLog {
-  id: string;
-  action: string;
-  entityType: string;
-  entityId: string;
-  details: unknown;
-  createdAt: string;
-}
+import { useGetAuditLogs } from "@/hooks";
 
 function AuditLogsContent() {
   const [page, setPage] = useState(1);
@@ -46,8 +37,8 @@ function AuditLogsContent() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                Array.from({ length: 5 }).map((_, idx) => (
-                  <TableRow key={idx}>
+                ["placeholder-a", "placeholder-b", "placeholder-c", "placeholder-d", "placeholder-e"].map(key => (
+                  <TableRow key={key}>
                     <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-24" /></TableCell>
@@ -62,7 +53,7 @@ function AuditLogsContent() {
                   </TableCell>
                 </TableRow>
               ) : (
-                logs.map((log: IAuditLog) => (
+              logs.map((log) => (
                   <TableRow key={log.id}>
                     <TableCell className="whitespace-nowrap">{format(new Date(log.createdAt), "MMM dd, yyyy HH:mm")}</TableCell>
                     <TableCell>

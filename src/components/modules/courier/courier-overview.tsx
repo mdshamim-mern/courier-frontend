@@ -31,7 +31,7 @@ export default function CourierOverview() {
           <PackageCheck className="size-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{stats?.totalShipments || 0}</div>
+          <div className="text-2xl font-bold">{stats?.completedDeliveries || 0}</div>
         </CardContent>
       </Card>
       <Card className="border-muted/20 shadow-sm">
@@ -40,7 +40,7 @@ export default function CourierOverview() {
           <Wallet className="size-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">৳ {stats?.totalEarnings?.toLocaleString() || 0}</div>
+          <div className="text-2xl font-bold">{stats?.totalEarnings == null ? "Compensation needs configuration" : `৳ ${stats.totalEarnings.toLocaleString()}`}</div>
         </CardContent>
       </Card>
     </div>

@@ -8,10 +8,10 @@ import { RegisterCustomerZodSchema } from "@/validation";
 import { useState } from "react";
 import { Eye, EyeClosed, User, Mail, Phone, Lock, UserPlus } from "lucide-react";
 import { useRegistration } from "@/hooks";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { toast } from "../ui/toast";
 import { Spinner } from "../ui/spinner";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import GoogleLoginComponent from "../modules/google-login/GoogleLogin";
 
 interface IRegisterError {
@@ -43,7 +43,6 @@ export default function RegisterForm() {
       }
 
       const payload = {
-        role: "CUSTOMER",
         name: value.name,
         email: value.email,
         contactNumber: value.contactNumber || "",
@@ -83,6 +82,7 @@ export default function RegisterForm() {
       </div>
 
       <form
+        method="post"
         onSubmit={(e) => {
           e.preventDefault();
           form.handleSubmit();

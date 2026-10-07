@@ -12,19 +12,6 @@ import { useState, useEffect, Suspense } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 
-interface ICourier {
-  id: string;
-  user?: {
-    name: string;
-    email: string;
-  };
-  contactNumber: string;
-  vehicleType: string;
-  vehicleNumber: string;
-  isAvailable: boolean;
-  createdAt: string;
-}
-
 function ManageCouriersContent() {
   const router = useRouter();
   const pathname = usePathname();
@@ -102,8 +89,8 @@ function ManageCouriersContent() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                Array.from({ length: 5 }).map((_, idx) => (
-                  <TableRow key={idx}>
+                ["placeholder-a", "placeholder-b", "placeholder-c", "placeholder-d", "placeholder-e"].map(key => (
+                  <TableRow key={key}>
                     <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-40" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-20" /></TableCell>
@@ -119,7 +106,7 @@ function ManageCouriersContent() {
                   </TableCell>
                 </TableRow>
               ) : (
-                couriers.map((courier: ICourier) => (
+              couriers.map((courier) => (
                   <TableRow key={courier.id}>
                     <TableCell className="font-medium">{courier.user?.name}</TableCell>
                     <TableCell>

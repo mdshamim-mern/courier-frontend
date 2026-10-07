@@ -1,4 +1,4 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MapPin, Mail, Clock3 } from "lucide-react";
@@ -77,25 +77,25 @@ export default function ContactPage() {
             <form className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">First Name</label>
-                  <Input placeholder="John" />
+                  <label htmlFor="first-name" className="text-sm font-medium">First Name</label>
+                  <Input id="first-name" placeholder="John" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Last Name</label>
-                  <Input placeholder="Doe" />
+                  <label htmlFor="last-name" className="text-sm font-medium">Last Name</label>
+                  <Input id="last-name" placeholder="Doe" />
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Email Address</label>
-                <Input type="email" placeholder="john@example.com" />
+                <label htmlFor="contact-email" className="text-sm font-medium">Email Address</label>
+                <Input id="contact-email" type="email" placeholder="john@example.com" />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Subject</label>
-                <Input placeholder="How can we help?" />
+                <label htmlFor="contact-subject" className="text-sm font-medium">Subject</label>
+                <Input id="contact-subject" placeholder="How can we help?" />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Message</label>
-                <textarea
+                <label htmlFor="contact-message" className="text-sm font-medium">Message</label>
+                <textarea id="contact-message"
                   className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring min-h-30"
                   placeholder="Write your message here..."
                 ></textarea>

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { getTranslations } from "next-intl/server";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { cn } from "@/lib/utils";

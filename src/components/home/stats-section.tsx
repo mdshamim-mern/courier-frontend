@@ -12,9 +12,9 @@ export default function StatsSection() {
       <div className="pointer-events-none absolute -bottom-16 -right-16 size-72 rounded-full bg-white/10 blur-3xl" />
       <div className="container relative mx-auto px-4 md:px-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-          {stats.map((stat, index) => (
+          {stats.map((stat) => (
             <div
-              key={index}
+              key={stat.label}
               className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 p-6 backdrop-blur-xl"
             >
               <h4 className="text-4xl md:text-5xl font-bold tracking-tight">{stat.value}</h4>

@@ -8,8 +8,8 @@ import { toast } from "@/components/ui/toast";
 import { useForgotPassword } from "@/hooks";
 import { AuthValidation } from "@/validation";
 import { useForm } from "@tanstack/react-form";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Link } from "@/i18n/navigation";
+import { useRouter } from "@/i18n/navigation";
 
 export default function ForgotPasswordPage() {
   const router = useRouter();

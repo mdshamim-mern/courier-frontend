@@ -4,6 +4,7 @@ import {
   createShipment,
   getAllShipments,
   getSingleShipment,
+  getShipmentSummary,
   updateShipmentStatus,
 } from "@/api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -14,6 +15,7 @@ export function useCreateShipment() {
     mutationFn: createShipment,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shipments"] });
+      queryClient.invalidateQueries({ queryKey: ["admin"] });
     },
   });
 }
@@ -40,6 +42,8 @@ export function useAssignCourier() {
       assignCourier(id, payload),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["shipments"] });
+      queryClient.invalidateQueries({ queryKey: ["couriers"] });
+      queryClient.invalidateQueries({ queryKey: ["admin"] });
       queryClient.invalidateQueries({ queryKey: ["shipments", variables.id] });
     },
   });
@@ -52,6 +56,8 @@ export function useUpdateShipmentStatus() {
       updateShipmentStatus(id, payload),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["shipments"] });
+      queryClient.invalidateQueries({ queryKey: ["couriers"] });
+      queryClient.invalidateQueries({ queryKey: ["admin"] });
       queryClient.invalidateQueries({ queryKey: ["shipments", variables.id] });
     },
   });
@@ -63,6 +69,11 @@ export function useCancelShipment() {
     mutationFn: cancelShipment,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shipments"] });
+      queryClient.invalidateQueries({ queryKey: ["admin"] });
     },
   });
+}
+
+export function useShipmentSummary() {
+  return useQuery({ queryKey: ["shipments", "summary"], queryFn: getShipmentSummary });
 }

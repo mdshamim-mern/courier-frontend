@@ -4,7 +4,6 @@ import "../globals.css";
 import { cn } from "@/lib/utils";
 import Providers from "@/providers";
 import { Toaster } from "@/components/ui/toast";
-import { GoogleOAuthProvider } from "@react-oauth/google";
 import Header from "@/components/layout/public/Header";
 import Footer from "@/components/layout/public/Footer";
 import { NextIntlClientProvider } from 'next-intl';
@@ -31,7 +30,6 @@ export default async function RootLayout({
     <html lang={locale} className={cn("h-full antialiased font-sans", inter.variable)}>
       <body className="min-h-full flex flex-col">
         <NextIntlClientProvider messages={messages}>
-          <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "dummy-id-for-build"}>
             <Providers>
               <Header />
               <main className="flex-1">
@@ -40,7 +38,6 @@ export default async function RootLayout({
               <Footer />
               <Toaster />
             </Providers>
-          </GoogleOAuthProvider>
         </NextIntlClientProvider>
       </body>
     </html>

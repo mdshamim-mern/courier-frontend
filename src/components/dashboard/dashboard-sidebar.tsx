@@ -13,10 +13,9 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import Logo from "@/assets/svg/Logo";
-import { UserRole, SidebarItems } from "@/types";
+import type { UserRole, SidebarItems } from "@/types";
 import { adminRoutes, courierRoutes, customerRoutes } from "@/routes";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Link, usePathname } from "@/i18n/navigation";
 
 const sidebarRoutes: Record<UserRole, SidebarItems> = {
   
@@ -25,9 +24,9 @@ const sidebarRoutes: Record<UserRole, SidebarItems> = {
   CUSTOMER: customerRoutes,
 };
 
-export function DashboardSidebar({ role }: { role: UserRole }) {
+export function DashboardSidebar({ userRole }: { userRole: UserRole }) {
   const pathname = usePathname();
-  const routes: SidebarItems = sidebarRoutes[role] || [];
+  const routes: SidebarItems = sidebarRoutes[userRole] || [];
 
   return (
     <Sidebar>

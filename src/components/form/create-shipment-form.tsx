@@ -6,7 +6,7 @@ import { Button } from "../ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "../ui/field";
 import { ShipmentValidation } from "@/validation";
 import { useCreateShipment, useGetAllHubs } from "@/hooks";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { toast } from "../ui/toast";
 import { Spinner } from "../ui/spinner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";

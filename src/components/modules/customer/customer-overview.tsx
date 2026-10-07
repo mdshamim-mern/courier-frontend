@@ -2,23 +2,19 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Package, Truck, CheckCircle } from "lucide-react";
-import { useGetAllShipments } from "@/hooks";
+import { useShipmentSummary } from "@/hooks";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
-
-interface IShipmentOverview {
-  status: string;
-}
+import { useRouter } from "@/i18n/navigation";
+import QueryError from "@/components/ui/query-error";
 
 export default function CustomerOverview() {
   const router = useRouter();
-  const { data, isLoading } = useGetAllShipments({ limit: 100 });
-  const shipments = data?.data || [];
-
-  const totalShipments = shipments.length;
-  const pendingShipments = shipments.filter((s: IShipmentOverview) => s.status === "PENDING" || s.status === "ASSIGNED").length;
-  const deliveredShipments = shipments.filter((s: IShipmentOverview) => s.status === "DELIVERED").length;
+  const { data, isLoading, error, refetch } = useShipmentSummary();
+  const totalShipments = data?.data.totalShipments ?? 0;
+  const pendingShipments = data?.data.activeShipments ?? 0;
+  const deliveredShipments = data?.data.deliveredShipments ?? 0;
+  if (error) return <QueryError retry={() => { void refetch(); }} />;
 
   if (isLoading) {
     return (

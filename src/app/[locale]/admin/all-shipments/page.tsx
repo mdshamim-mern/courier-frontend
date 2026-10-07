@@ -11,24 +11,6 @@ import { useState, useEffect, Suspense } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 
-interface IAdminShipment {
-  id: string;
-  trackingId: string;
-  createdAt: string;
-  sender?: {
-    name: string;
-  };
-  receiverName: string;
-  receiverPhone: string;
-  originHub?: {
-    name: string;
-  };
-  destinationHub?: {
-    name: string;
-  };
-  status: string;
-}
-
 function AllShipmentsContent() {
   const router = useRouter();
   const pathname = usePathname();
@@ -102,8 +84,8 @@ function AllShipmentsContent() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                Array.from({ length: 5 }).map((_, idx) => (
-                  <TableRow key={idx}>
+                ["placeholder-a", "placeholder-b", "placeholder-c", "placeholder-d", "placeholder-e"].map(key => (
+                  <TableRow key={key}>
                     <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-32" /></TableCell>
@@ -120,7 +102,7 @@ function AllShipmentsContent() {
                   </TableCell>
                 </TableRow>
               ) : (
-                shipments.map((shipment: IAdminShipment) => (
+              shipments.map((shipment) => (
                   <TableRow key={shipment.id}>
                     <TableCell className="font-mono text-xs font-semibold">{shipment.trackingId}</TableCell>
                     <TableCell>{format(new Date(shipment.createdAt), "MMM dd, yyyy")}</TableCell>

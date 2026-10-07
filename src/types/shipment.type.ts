@@ -1,6 +1,6 @@
-import { Hub } from "./hub.type";
-import { Payment } from "./payment.type";
-import { User } from "./user.type";
+import type { Hub } from "./hub.type";
+import type { Payment } from "./payment.type";
+import type { User } from "./user.type";
 
 export type ShipmentStatus =
   | "PENDING"
@@ -36,8 +36,8 @@ export interface Shipment {
   receiverName: string;
   receiverPhone: string;
   receiverAddress: string;
-  weight: number;
-  price: number;
+  weight: number | string;
+  price: number | string;
   status: ShipmentStatus;
   estimatedDelivery?: string | null;
   sender?: User;
@@ -46,6 +46,15 @@ export interface Shipment {
   destinationHub?: Hub | null;
   payment?: Payment | null;
   trackings?: ShipmentTracking[];
+  paymentStatus: import("./payment.type").PaymentStatus;
+  allowedNextStatuses: ShipmentStatus[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface PublicShipmentTracking {
+  trackingId: string;
+  status: ShipmentStatus;
+  estimatedDelivery?: string | null;
+  trackings: Pick<ShipmentTracking, "id" | "status" | "createdAt">[];
 }

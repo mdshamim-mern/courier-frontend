@@ -1,6 +1,7 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "../ui/input-otp";
@@ -66,6 +67,7 @@ export default function VerifyAccountForm() {
       </CardHeader>
       <CardContent className="flex justify-center py-6">
         <form
+          method="post"
           id="otp-form"
           onSubmit={(e) => {
             e.preventDefault();

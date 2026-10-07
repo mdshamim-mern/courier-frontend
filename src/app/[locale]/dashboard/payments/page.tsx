@@ -7,15 +7,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import TablePagination from "@/components/ui/table-pagination";
 import { format } from "date-fns";
 
-interface IPayment {
-  id: string;
-  transactionId: string;
-  createdAt: string;
-  amount: number;
-  paymentGateway: string;
-  status: string;
-}
-
 export default function PaymentsPage() {
   const [page, setPage] = useState(1);
   const { data, isLoading } = useGetPayments({ page, limit: 10 });
@@ -44,8 +35,8 @@ export default function PaymentsPage() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              Array.from({ length: 5 }).map((_, idx) => (
-                <TableRow key={idx}>
+              ["placeholder-a", "placeholder-b", "placeholder-c", "placeholder-d", "placeholder-e"].map(key => (
+                <TableRow key={key}>
                   <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-16" /></TableCell>
@@ -60,7 +51,7 @@ export default function PaymentsPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              payments.map((payment: IPayment) => (
+              payments.map((payment) => (
                 <TableRow key={payment.id}>
                   <TableCell className="font-mono text-xs">{payment.transactionId || "N/A"}</TableCell>
                   <TableCell>{format(new Date(payment.createdAt), "PP")}</TableCell>

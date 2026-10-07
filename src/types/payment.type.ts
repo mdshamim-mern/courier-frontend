@@ -11,7 +11,6 @@ export interface Payment {
   status: PaymentStatus;
   payerReference?: string | null;
   paidAt?: string | null;
-  gatewayResponse?: Record<string, unknown> | null;
   createdAt: string;
   updatedAt: string;
 }

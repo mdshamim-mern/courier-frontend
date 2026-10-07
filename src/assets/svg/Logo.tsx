@@ -1,8 +1,8 @@
-import * as React from "react";
+import type * as React from "react";
 
 export default function Logo(props: React.SVGProps<SVGSVGElement>) {
   return (
-    <svg
+    <svg aria-hidden="true"
       xmlns="http://www.w3.org/2000/svg"
       width="40"
       height="40"

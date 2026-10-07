@@ -1,4 +1,4 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import { ShieldCheck, MapPin, Clock3 } from "lucide-react";
 
 export const metadata: Metadata = {

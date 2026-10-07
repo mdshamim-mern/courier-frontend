@@ -2,84 +2,26 @@
 
 import { toast } from "@/components/ui/toast";
 import { useGoogleOAuth } from "@/hooks";
+import { useRouter } from "@/i18n/navigation";
+import { getApiErrorMessage } from "@/lib/api-error";
 import { GoogleLogin } from "@react-oauth/google";
-import { useRouter } from "next/navigation";
-
-interface IGoogleLoginResponse {
-  data?: {
-    role?: string;
-  };
-  role?: string;
-}
-
-interface IGoogleLoginError {
-  message?: string;
-}
 
 export default function GoogleLoginComponent() {
   const router = useRouter();
-  const { mutate: googleLogin } = useGoogleOAuth();
-
-  const handleGoogleSuccess = (credentialResponse: { credential?: string }) => {
-    const idToken = credentialResponse.credential;
-
-    if (!idToken) {
-      toast.add({
-        title: "Google OAuth Failed",
-        description: "Something went wrong. Please try again",
-        type: "error",
+  const { mutate: googleLogin, isPending } = useGoogleOAuth();
+  if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) return null;
+  return <div aria-busy={isPending}><GoogleLogin theme="outline" shape="pill" text="continue_with"
+    onSuccess={({ credential }) => {
+      if (!credential || isPending) return;
+      googleLogin({ idToken: credential }, {
+        onSuccess: result => {
+          const role = result.data.user.role;
+          toast.add({ title: "Logged in Successfully", type: "success" });
+          router.replace(role === "ADMIN" ? "/admin" : role === "COURIER" ? "/courier" : "/dashboard");
+        },
+        onError: error => toast.add({ title: "Google Login Failed", description: getApiErrorMessage(error), type: "error" }),
       });
-      return;
-    }
-
-    googleLogin(
-      { idToken },
-      {
-        onSuccess: (res: IGoogleLoginResponse) => {
-          toast.add({
-            title: "Logged in Successfully",
-            description: "Welcome to Dropzo",
-            type: "success",
-          });
-          
-          const role = res?.data?.role || res?.role;
-          
-          setTimeout(() => {
-            if (role === "ADMIN" || role === "SUPER_ADMIN") {
-              window.location.href = "/admin";
-            } else if (role === "COURIER") {
-              window.location.href = "/courier";
-            } else {
-              window.location.href = "/dashboard";
-            }
-          }, 500);
-        },
-        onError: (err: IGoogleLoginError) => {
-          toast.add({
-            title: "Google OAuth Failed",
-            description: err?.message || "Something went wrong. Please try again",
-            type: "error",
-          });
-        },
-      }
-    );
-  };
-
-  const handleGoogleError = () => {
-    toast.add({
-      title: "Google OAuth Failed",
-      description: "Something went wrong. Please try again",
-      type: "error",
-    });
-  };
-
-  return (
-    <GoogleLogin
-      theme="outline"
-      shape="pill"
-      text="continue_with"
-      onSuccess={handleGoogleSuccess}
-      onError={handleGoogleError}
-    />
-  );
+    }}
+    onError={() => toast.add({ title: "Google Login Failed", type: "error" })}
+  /></div>;
 }

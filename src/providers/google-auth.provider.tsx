@@ -1,7 +1,7 @@
 "use client";
 
 import { GoogleOAuthProvider } from "@react-oauth/google";
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 
 export default function GoogleAuthProvider({
   children,

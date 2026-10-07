@@ -11,7 +11,8 @@ import { AuthValidation } from "@/validation";
 import { useForm } from "@tanstack/react-form";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { Eye, EyeClosed } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { Suspense, useEffect, useState } from "react";
 
 function ResetPasswordForm() {
@@ -69,6 +70,7 @@ function ResetPasswordForm() {
       </div>
 
       <form
+        method="post"
         onSubmit={(e) => {
           e.preventDefault();
           form.handleSubmit();
