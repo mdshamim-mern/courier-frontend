@@ -40,24 +40,34 @@ export default function ServicesPage() {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-      <div className="text-center mb-16">
-        <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl mb-4">Our Services</h1>
-        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          Comprehensive logistics solutions designed to meet the unique needs of individuals and modern businesses.
-        </p>
-      </div>
+    <div className="relative overflow-hidden">
+      <div className="pointer-events-none absolute -top-24 right-0 size-96 rounded-full bg-primary/10 blur-3xl" />
+      <div className="pointer-events-none absolute bottom-0 left-0 size-96 rounded-full bg-blue-500/10 blur-3xl" />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {services.map((service, idx) => (
-          <div key={idx} className="flex flex-col p-8 bg-card rounded-2xl border shadow-sm hover:shadow-md transition-shadow">
-            <div className="text-4xl mb-4">{service.icon}</div>
-            <h3 className="text-xl font-bold mb-3">{service.title}</h3>
-            <p className="text-muted-foreground leading-relaxed grow">
-              {service.description}
-            </p>
-          </div>
-        ))}
+      <div className="relative max-w-7xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-16">
+          <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl mb-4">Our Services</h1>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            Comprehensive logistics solutions designed to meet the unique needs of individuals and modern businesses.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {services.map((service, idx) => (
+            <div
+              key={idx}
+              className="group flex flex-col p-8 rounded-3xl border border-white/40 bg-white/60 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.06)] transition-all hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(0,0,0,0.1)] dark:border-white/10 dark:bg-white/4"
+            >
+              <div className="mb-5 flex size-14 items-center justify-center rounded-2xl bg-linear-to-br from-primary/15 to-blue-500/15 text-3xl ring-1 ring-primary/10 transition-transform group-hover:scale-110">
+                {service.icon}
+              </div>
+              <h3 className="text-xl font-bold mb-3">{service.title}</h3>
+              <p className="text-muted-foreground leading-relaxed grow">
+                {service.description}
+              </p>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
