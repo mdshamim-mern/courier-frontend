@@ -6,7 +6,7 @@ import { Button } from "../ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel, FieldSeparator } from "../ui/field";
 import { LoginZodSchema } from "@/validation";
 import { useState } from "react";
-import { Eye, EyeClosed } from "lucide-react";
+import { Eye, EyeClosed, Mail, Lock, ShieldCheck, Truck, UserRound } from "lucide-react";
 import { useLogin } from "@/hooks";
 import { useRouter } from "next/navigation";
 import { toast } from "../ui/toast";
@@ -53,7 +53,10 @@ export default function LoginForm() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col items-center gap-2 text-center">
+      <div className="flex flex-col items-center gap-3 text-center">
+        <div className="flex size-14 items-center justify-center rounded-2xl bg-linear-to-br from-primary to-blue-600 shadow-lg shadow-primary/30">
+          <Lock className="size-6 text-white" />
+        </div>
         <h1 className="text-3xl font-bold tracking-tight">Welcome Back 👋</h1>
         <p className="text-sm text-muted-foreground">Login to your account to continue</p>
       </div>
@@ -71,17 +74,21 @@ export default function LoginForm() {
               return (
                 <Field data-invalid={isInvalid}>
                   <FieldLabel htmlFor={field.name}>Email Address</FieldLabel>
-                  <Input
-                    id={field.name}
-                    name={field.name}
-                    type="email"
-                    placeholder="you@example.com"
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    value={field.state.value}
-                    autoComplete="email"
-                    aria-invalid={isInvalid}
-                  />
+                  <div className="relative">
+                    <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      type="email"
+                      placeholder="you@example.com"
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      value={field.state.value}
+                      autoComplete="email"
+                      aria-invalid={isInvalid}
+                      className="pl-10"
+                    />
+                  </div>
                   {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
               );
@@ -100,6 +107,7 @@ export default function LoginForm() {
                     </Link>
                   </div>
                   <div className="relative">
+                    <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
                       id={field.name}
                       name={field.name}
@@ -110,7 +118,7 @@ export default function LoginForm() {
                       value={field.state.value}
                       autoComplete="current-password"
                       aria-invalid={isInvalid}
-                      className="pr-10"
+                      className="pl-10 pr-10"
                     />
                     <button
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
@@ -126,7 +134,7 @@ export default function LoginForm() {
             }}
           </form.Field>
 
-          <Button disabled={loginPending} type="submit" className="w-full">
+          <Button disabled={loginPending} type="submit" className="w-full shadow-lg shadow-primary/20">
             {loginPending ? (
               <>
                 <Spinner className="mr-2" /> Authenticating...
@@ -137,40 +145,42 @@ export default function LoginForm() {
           </Button>
 
           <div className="flex flex-col gap-3 pt-2">
-            <div className="text-center text-sm font-medium text-muted-foreground">One-Click Demo Login</div>
+            <div className="text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              One-Click Demo Login
+            </div>
             <div className="grid grid-cols-3 gap-2">
               <Button
                 type="button"
                 variant="outline"
-                size="sm"
                 onClick={() => {
                   form.setFieldValue("email", "admin@gmail.com");
                   form.setFieldValue("password", "123456");
                 }}
+                className="h-auto flex-col gap-1.5 border-border/60 bg-white/40 py-3 backdrop-blur-sm hover:border-primary/40 hover:bg-primary/5 dark:bg-white/3"
               >
-                Admin
+                <ShieldCheck className="size-4 text-primary" /> Admin
               </Button>
               <Button
                 type="button"
                 variant="outline"
-                size="sm"
                 onClick={() => {
                   form.setFieldValue("email", "courier@gmail.com");
                   form.setFieldValue("password", "123456");
                 }}
+                className="h-auto flex-col gap-1.5 border-border/60 bg-white/40 py-3 backdrop-blur-sm hover:border-primary/40 hover:bg-primary/5 dark:bg-white/3"
               >
-                Courier
+                <Truck className="size-4 text-primary" /> Courier
               </Button>
               <Button
                 type="button"
                 variant="outline"
-                size="sm"
                 onClick={() => {
                   form.setFieldValue("email", "user@gmail.com");
                   form.setFieldValue("password", "123456");
                 }}
+                className="h-auto flex-col gap-1.5 border-border/60 bg-white/40 py-3 backdrop-blur-sm hover:border-primary/40 hover:bg-primary/5 dark:bg-white/3"
               >
-                User
+                <UserRound className="size-4 text-primary" /> User
               </Button>
             </div>
           </div>

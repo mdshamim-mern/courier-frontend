@@ -6,7 +6,7 @@ import { Button } from "../ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel, FieldSeparator } from "../ui/field";
 import { RegisterCustomerZodSchema } from "@/validation";
 import { useState } from "react";
-import { Eye, EyeClosed } from "lucide-react";
+import { Eye, EyeClosed, User, Mail, Phone, Lock, UserPlus } from "lucide-react";
 import { useRegistration } from "@/hooks";
 import { useRouter } from "next/navigation";
 import { toast } from "../ui/toast";
@@ -74,7 +74,10 @@ export default function RegisterForm() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col items-center gap-2 text-center">
+      <div className="flex flex-col items-center gap-3 text-center">
+        <div className="flex size-14 items-center justify-center rounded-2xl bg-linear-to-br from-primary to-blue-600 shadow-lg shadow-primary/30">
+          <UserPlus className="size-6 text-white" />
+        </div>
         <h1 className="text-3xl font-bold tracking-tight">Create an Account</h1>
         <p className="text-sm text-muted-foreground">Enter your details to get started</p>
       </div>
@@ -92,16 +95,20 @@ export default function RegisterForm() {
               return (
                 <Field data-invalid={isInvalid}>
                   <FieldLabel htmlFor={field.name}>Full Name</FieldLabel>
-                  <Input
-                    id={field.name}
-                    name={field.name}
-                    type="text"
-                    placeholder="John Doe"
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    value={field.state.value}
-                    aria-invalid={isInvalid}
-                  />
+                  <div className="relative">
+                    <User className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      type="text"
+                      placeholder="John Doe"
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      value={field.state.value}
+                      aria-invalid={isInvalid}
+                      className="pl-10"
+                    />
+                  </div>
                   {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
               );
@@ -114,16 +121,20 @@ export default function RegisterForm() {
               return (
                 <Field data-invalid={isInvalid}>
                   <FieldLabel htmlFor={field.name}>Email Address</FieldLabel>
-                  <Input
-                    id={field.name}
-                    name={field.name}
-                    type="email"
-                    placeholder="you@example.com"
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    value={field.state.value}
-                    aria-invalid={isInvalid}
-                  />
+                  <div className="relative">
+                    <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      type="email"
+                      placeholder="you@example.com"
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      value={field.state.value}
+                      aria-invalid={isInvalid}
+                      className="pl-10"
+                    />
+                  </div>
                   {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
               );
@@ -136,16 +147,20 @@ export default function RegisterForm() {
               return (
                 <Field data-invalid={isInvalid}>
                   <FieldLabel htmlFor={field.name}>Phone Number</FieldLabel>
-                  <Input
-                    id={field.name}
-                    name={field.name}
-                    type="text"
-                    placeholder="01XXXXXXXXX"
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    value={field.state.value || ""}
-                    aria-invalid={isInvalid}
-                  />
+                  <div className="relative">
+                    <Phone className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      type="text"
+                      placeholder="01XXXXXXXXX"
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      value={field.state.value || ""}
+                      aria-invalid={isInvalid}
+                      className="pl-10"
+                    />
+                  </div>
                   {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
               );
@@ -160,6 +175,7 @@ export default function RegisterForm() {
                   <Field data-invalid={isInvalid}>
                     <FieldLabel htmlFor={field.name}>Password</FieldLabel>
                     <div className="relative">
+                      <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
                         id={field.name}
                         name={field.name}
@@ -169,7 +185,7 @@ export default function RegisterForm() {
                         onBlur={field.handleBlur}
                         value={field.state.value}
                         aria-invalid={isInvalid}
-                        className="pr-10"
+                        className="pl-10 pr-10"
                       />
                       <button
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
@@ -191,16 +207,20 @@ export default function RegisterForm() {
                 return (
                   <Field data-invalid={isInvalid}>
                     <FieldLabel htmlFor={field.name}>Confirm</FieldLabel>
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      type={showPassword ? "text" : "password"}
-                      placeholder="••••••••"
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      onBlur={field.handleBlur}
-                      value={field.state.value}
-                      aria-invalid={isInvalid}
-                    />
+                    <div className="relative">
+                      <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        id={field.name}
+                        name={field.name}
+                        type={showPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        onBlur={field.handleBlur}
+                        value={field.state.value}
+                        aria-invalid={isInvalid}
+                        className="pl-10"
+                      />
+                    </div>
                     {isInvalid && <FieldError errors={field.state.meta.errors} />}
                   </Field>
                 );
@@ -208,7 +228,7 @@ export default function RegisterForm() {
             </form.Field>
           </div>
 
-          <Button disabled={registerPending} type="submit" className="w-full">
+          <Button disabled={registerPending} type="submit" className="w-full shadow-lg shadow-primary/20">
             {registerPending ? (
               <>
                 <Spinner className="mr-2" /> Creating...
