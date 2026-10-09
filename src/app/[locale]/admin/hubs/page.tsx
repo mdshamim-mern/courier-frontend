@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocale } from "next-intl";
+import { placeName, hubAddress } from "@/i18n/geography";
 import { useUiText, useUiFormat } from "@/i18n/use-ui-text";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +28,7 @@ interface IHub {
 }
 
 export default function HubsManagementPage() {
+  const locale = useLocale();
   const ui = useUiText();
   const display = useUiFormat();
   const [page, setPage] = useState(1);
@@ -117,12 +120,12 @@ export default function HubsManagementPage() {
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
                         <MapPin className="size-4 text-muted-foreground" />
-                        {hub.name}
+                        {placeName(hub.name, locale)}
                       </div>
                     </TableCell>
-                    <TableCell>{hub.location}</TableCell>
-                    <TableCell className="max-w-62.5 truncate">
-                      {hub.address}
+                    <TableCell>{placeName(hub.location, locale)}</TableCell>
+                    <TableCell className="max-w-sm whitespace-normal break-words">
+                      {hubAddress(hub.address, locale)}
                     </TableCell>
                     <TableCell>
                       {display.date(new Date(hub.createdAt))}

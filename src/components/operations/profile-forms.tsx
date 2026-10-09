@@ -138,6 +138,12 @@ export default function ProfileForms({
               "স্বয়ংক্রিয় অনুমোদন হয় না। যাচাইয়ের পরে হাব বরাদ্দ হবে; অনুমোদনের পরে আবার প্রবেশ করতে হবে।",
             )}
       </p>
+      <p className="rounded-xl border bg-background/70 p-4 text-sm">
+        {t(
+          "Submit for review saves your application for Dropzo administrators in Admin → Operations. It does not send an email or transfer money. Approval is required before COD bookings or staff access.",
+          "যাচাইয়ের জন্য পাঠালে আবেদন Dropzo প্রশাসকের Admin → Operations পাতায় জমা হয়। এটি ইমেইল পাঠায় না বা টাকা হস্তান্তর করে না। পণ্যের টাকা সংগ্রহের বুকিং বা কর্মীর প্রবেশাধিকার পেতে অনুমোদন লাগবে।",
+        )}
+      </p>
       <form
         key={record?.id || kind}
         className="glass-panel grid gap-5 p-5 sm:grid-cols-2 sm:p-8"

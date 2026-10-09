@@ -6,7 +6,7 @@ import { useGetMe, useLogout } from "@/hooks";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, Globe2, Menu, ArrowUpRight } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 export default function Header() {
   const locale = useLocale(),
@@ -16,7 +16,12 @@ export default function Header() {
     router = useRouter(),
     query = useQueryClient();
   const header = useRef<HTMLElement>(null),
-    mobile = useRef<HTMLDetailsElement>(null);
+    mobile = useRef<HTMLDetailsElement>(null),
+    team = useRef<HTMLDetailsElement>(null);
+  const closeMenus = useCallback(() => {
+    if (mobile.current) mobile.current.open = false;
+    if (team.current) team.current.open = false;
+  }, []);
   const { data, isLoading } = useGetMe(),
     user = data?.data,
     logout = useLogout();
@@ -33,8 +38,35 @@ export default function Header() {
     return () => observer.disconnect();
   }, []);
   useEffect(() => {
-    if (pathname && mobile.current) mobile.current.open = false;
-  }, [pathname]);
+    if (pathname && locale) closeMenus();
+  }, [pathname, locale, closeMenus]);
+  useEffect(() => {
+    const outside = (event: PointerEvent) => {
+      for (const menu of [team.current, mobile.current]) {
+        if (
+          menu &&
+          event.target instanceof Node &&
+          !menu.contains(event.target)
+        )
+          menu.open = false;
+      }
+    };
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      for (const menu of [team.current, mobile.current]) {
+        if (menu?.open) {
+          menu.open = false;
+          menu.querySelector("summary")?.focus();
+        }
+      }
+    };
+    document.addEventListener("pointerdown", outside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("pointerdown", outside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
   const links = [
     ["/dashboard/new-shipment", "Send a parcel", "পার্সেল পাঠান"],
     ["/track-shipment", "Track parcel", "পার্সেল অনুসরণ"],
@@ -126,16 +158,16 @@ export default function Header() {
               {bn ? bangla : en}
             </Link>
           ))}
-          <details className="team-menu">
+          <details ref={team} className="team-menu">
             <summary className="nav-link">
               {bn ? "দল" : "Team"}
               <ChevronDown size={13} aria-hidden="true" />
             </summary>
             <div className="team-dropdown glass-panel">
-              <Link href="/courier-apply">
+              <Link href="/courier-apply" onClick={closeMenus}>
                 {bn ? "কর্মীর আবেদন" : "Join our team"}
               </Link>
-              <Link href="/login?staff=1">
+              <Link href="/login?staff=1" onClick={closeMenus}>
                 {bn ? "কর্মীদের প্রবেশ" : "Staff sign in"}
               </Link>
             </div>
@@ -152,20 +184,14 @@ export default function Header() {
           </summary>
           <nav aria-label={t("menu")} className="mobile-dropdown glass-panel">
             {links.map(([href, en, bangla]) => (
-              <Link
-                key={href}
-                href={href}
-                onClick={() => {
-                  if (mobile.current) mobile.current.open = false;
-                }}
-              >
+              <Link key={href} href={href} onClick={closeMenus}>
                 {bn ? bangla : en}
               </Link>
             ))}
-            <Link href="/courier-apply">
+            <Link href="/courier-apply" onClick={closeMenus}>
               {bn ? "কর্মীর আবেদন" : "Worker application"}
             </Link>
-            <Link href="/login?staff=1">
+            <Link href="/login?staff=1" onClick={closeMenus}>
               {bn ? "কর্মীদের প্রবেশ" : "Staff sign in"}
             </Link>
             <div className="mobile-accounts">

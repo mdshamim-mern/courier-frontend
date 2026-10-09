@@ -1,9 +1,11 @@
 "use client";
 import { useLocale } from "next-intl";
-import { placeName } from "@/i18n/geography";
-import { useState, useRef } from "react";
+import { placeName, hubAddress } from "@/i18n/geography";
+import { useState, useRef, useId } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useRouter } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
+import { bookingErrorMessage } from "@/lib/booking-error";
+import { getApiErrorMessage } from "@/lib/api-error";
 import apiClient from "@/lib/apiClient";
 import { Button } from "@/components/ui/button";
 import type { ApiResponse, Shipment } from "@/types";
@@ -14,6 +16,7 @@ export default function CreateShipmentForm() {
     bn = locale === "bn",
     t = (en: string, bangla: string) => (bn ? bangla : en),
     router = useRouter();
+  const formId = useId();
   const areas = useQuery({
     queryKey: ["coverage"],
     queryFn: () =>
@@ -80,15 +83,27 @@ export default function CreateShipmentForm() {
     onSuccess: (res) => router.push(`/dashboard/my-shipments/${res.data.id}`),
   });
   const update = (key: string, value: string | number) => {
-    setPayload({
-      ...payload,
+    setPayload((previous) => ({
+      ...previous,
       [key]: value,
-      ...(key === "pickupMode" ? { pickupAreaId: "" } : {}),
-    });
+      ...(key === "pickupMode" && previous.pickupMode !== value
+        ? { pickupAreaId: "" }
+        : {}),
+    }));
     quote.reset();
+    create.reset();
     setAccepted(false);
     setInvalid(false);
     requestId.current = "";
+  };
+  const error = create.error || quote.error;
+  const errorReason = getApiErrorMessage(error, "");
+  const autocomplete: Record<string, string> = {
+    senderPhone: "section-sender tel",
+    pickupAddress: "section-sender street-address",
+    receiverName: "section-recipient name",
+    receiverPhone: "section-recipient tel",
+    receiverAddress: "section-recipient street-address",
   };
   const style =
     "mt-2 block min-h-11 w-full rounded-md border bg-background px-3 py-2";
@@ -143,6 +158,8 @@ export default function CreateShipmentForm() {
         </p>
       )}
       <form
+        id={formId}
+        autoComplete="off"
         className="grid gap-4 sm:grid-cols-2"
         onSubmit={(event) => {
           event.preventDefault();
@@ -160,7 +177,7 @@ export default function CreateShipmentForm() {
         }}
       >
         {(["pickupAreaId", "receiverAreaId"] as const).map((key) => (
-          <label key={key}>
+          <label key={key} htmlFor={`${formId}-${key}`}>
             {key === "pickupAreaId"
               ? t(
                   "Pickup area (district / upazila / locality)",
@@ -171,6 +188,9 @@ export default function CreateShipmentForm() {
                   "প্রাপকের এলাকা (জেলা / উপজেলা / এলাকা)",
                 )}
             <select
+              id={`${formId}-${key}`}
+              name={key}
+              autoComplete="off"
               className={style}
               value={payload[key]}
               onChange={(e) => update(key, e.target.value)}
@@ -196,10 +216,12 @@ export default function CreateShipmentForm() {
           </label>
         ))}
         {fields.map(([key, en, bangla, type]) => (
-          <label key={key}>
+          <label key={key} htmlFor={`${formId}-${key}`}>
             {t(en, bangla)}
             <input
               required
+              id={`${formId}-${key}`}
+              autoComplete={autocomplete[key] || "off"}
               className={style}
               name={key}
               type={type}
@@ -231,9 +253,12 @@ export default function CreateShipmentForm() {
             />
           </label>
         ))}
-        <label>
+        <label htmlFor={`${formId}-productType`}>
           {t("Product type", "পণ্যের ধরন")}
           <select
+            id={`${formId}-productType`}
+            name="productType"
+            autoComplete="off"
             className={style}
             value={payload.productType}
             onChange={(e) => update("productType", e.target.value)}
@@ -249,9 +274,12 @@ export default function CreateShipmentForm() {
             ))}
           </select>
         </label>
-        <label>
+        <label htmlFor={`${formId}-serviceType`}>
           {t("Service", "সেবা")}
           <select
+            id={`${formId}-serviceType`}
+            name="serviceType"
+            autoComplete="off"
             className={style}
             value={payload.serviceType}
             onChange={(e) => update("serviceType", e.target.value)}
@@ -271,9 +299,12 @@ export default function CreateShipmentForm() {
             </option>
           </select>
         </label>
-        <label>
+        <label htmlFor={`${formId}-pickupMode`}>
           {t("Pickup method", "সংগ্রহের পদ্ধতি")}
           <select
+            id={`${formId}-pickupMode`}
+            name="pickupMode"
+            autoComplete="off"
             className={style}
             value={payload.pickupMode}
             onChange={(e) => update("pickupMode", e.target.value)}
@@ -286,9 +317,12 @@ export default function CreateShipmentForm() {
             </option>
           </select>
         </label>
-        <label>
+        <label htmlFor={`${formId}-deliveryInstructions`}>
           {t("Special instructions", "বিশেষ নির্দেশনা")}
           <textarea
+            id={`${formId}-deliveryInstructions`}
+            name="deliveryInstructions"
+            autoComplete="off"
             className={style}
             maxLength={500}
             value={payload.deliveryInstructions}
@@ -317,7 +351,7 @@ export default function CreateShipmentForm() {
               <p>
                 {t("Assigned branch: ", "নির্ধারিত শাখা: ")}
                 {placeName(quote.data.data.originHub.name, locale)} ·{" "}
-                {quote.data.data.originHub.address}
+                {hubAddress(quote.data.data.originHub.address, locale)}
               </p>
             )}
             {(
@@ -357,13 +391,33 @@ export default function CreateShipmentForm() {
             </label>
           </div>
         )}
-        {(quote.isError || create.isError) && (
-          <p role="alert" className="sm:col-span-2">
-            {t(
-              "Booking failed. Check service availability, approved pricing, pickup time and business approval for COD.",
-              "বুকিং হয়নি। এলাকা, অনুমোদিত মূল্য, সংগ্রহের সময় এবং টাকা সংগ্রহের জন্য ব্যবসায়িক অনুমোদন যাচাই করুন।",
+        {error && (
+          <div className="space-y-3 sm:col-span-2">
+            <p role="alert">{bookingErrorMessage(error, locale)}</p>
+            {errorReason === "Approved business account required for COD" && (
+              <Link
+                className="font-medium underline"
+                href="/dashboard/business"
+              >
+                {t("View business approval", "ব্যবসায়িক অনুমোদন দেখুন")}
+              </Link>
             )}
-          </p>
+            {errorReason === "Pricing changed; review a new quote" && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  quote.reset();
+                  create.reset();
+                  setAccepted(false);
+                  requestId.current = "";
+                  quote.mutate();
+                }}
+              >
+                {t("Review updated cost", "নতুন মাশুল দেখুন")}
+              </Button>
+            )}
+          </div>
         )}
         {invalid && (
           <p role="alert" className="sm:col-span-2">

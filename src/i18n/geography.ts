@@ -35,3 +35,28 @@ export function placeSearch(values: string[], search: string): boolean {
     .toLocaleLowerCase("en");
   return text.includes(search.trim().toLocaleLowerCase("en"));
 }
+
+const hubAddresses: ReadonlyArray<readonly [string, string]> = [
+  [
+    "Dropzo ঢাকা নর্থ হাব, লাভ রোড, মিরপুর ২, ঢাকা-১২১৬।",
+    "Dropzo Dhaka North Hub, Love Road, Mirpur 2, Dhaka-1216.",
+  ],
+  [
+    "Dropzo বগুড়া সদর হাব, শেরপুর রোড (সাতমাথার কাছে), সদর, বগুড়া-৫৮০০।",
+    "Dropzo Bogura Sadar Hub, Sherpur Road (near Satmatha), Sadar, Bogura-5800.",
+  ],
+  [
+    "Dropzo ঢাকা সাউথ হাব, রোড নং ২৭ (পুরাতন), ধানমন্ডি, ঢাকা-১২০৯।",
+    "Dropzo Dhaka South Hub, Road No. 27 (old), Dhanmondi, Dhaka-1209.",
+  ],
+];
+export function hubAddress(value: string, locale: string): string {
+  const normalized = value.trim().normalize("NFC").toLocaleLowerCase("en");
+  const match = hubAddresses.find((pair) =>
+    pair.some(
+      (address) =>
+        address.normalize("NFC").toLocaleLowerCase("en") === normalized,
+    ),
+  );
+  return match ? match[locale === "bn" ? 0 : 1] : value;
+}

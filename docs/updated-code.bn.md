@@ -2,7 +2,7 @@
 
 মূল কাঠামো রেখে সংশোধিত ফাইলের বর্তমান কোড নিচে আছে। প্রতিটি কোডের আগে সম্পূর্ণ স্থানীয় পথ দেওয়া হয়েছে। বাস্তব শংসাপত্রের ফাইল অন্তর্ভুক্ত করা হয়নি। যেগুলোতে কার্যকর পরিবর্তনের বদলে টাইপের আমদানি, ভাষা-সচেতন লিংক বা প্রবেশযোগ্যতার সংশোধন হয়েছে, সেগুলোও অন্তর্ভুক্ত।
 
-মোট কোড ফাইল: 156।
+মোট কোড ফাইল: 158।
 
 অন্যান্য পরিবর্তিত ফাইল:
 
@@ -2082,6 +2082,8 @@ export default function AuditLogsPage() {
 ```tsx
 "use client";
 
+import { useLocale } from "next-intl";
+import { placeName, hubAddress } from "@/i18n/geography";
 import { useUiText, useUiFormat } from "@/i18n/use-ui-text";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -2108,6 +2110,7 @@ interface IHub {
 }
 
 export default function HubsManagementPage() {
+  const locale = useLocale();
   const ui = useUiText();
   const display = useUiFormat();
   const [page, setPage] = useState(1);
@@ -2199,12 +2202,12 @@ export default function HubsManagementPage() {
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
                         <MapPin className="size-4 text-muted-foreground" />
-                        {hub.name}
+                        {placeName(hub.name, locale)}
                       </div>
                     </TableCell>
-                    <TableCell>{hub.location}</TableCell>
-                    <TableCell className="max-w-62.5 truncate">
-                      {hub.address}
+                    <TableCell>{placeName(hub.location, locale)}</TableCell>
+                    <TableCell className="max-w-sm whitespace-normal break-words">
+                      {hubAddress(hub.address, locale)}
                     </TableCell>
                     <TableCell>
                       {display.date(new Date(hub.createdAt))}
@@ -4992,10 +4995,12 @@ export function DashboardSidebar({ userRole }: { userRole: UserRole }) {
 ```tsx
 "use client";
 import { useLocale } from "next-intl";
-import { placeName } from "@/i18n/geography";
-import { useState, useRef } from "react";
+import { placeName, hubAddress } from "@/i18n/geography";
+import { useState, useRef, useId } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useRouter } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
+import { bookingErrorMessage } from "@/lib/booking-error";
+import { getApiErrorMessage } from "@/lib/api-error";
 import apiClient from "@/lib/apiClient";
 import { Button } from "@/components/ui/button";
 import type { ApiResponse, Shipment } from "@/types";
@@ -5006,6 +5011,7 @@ export default function CreateShipmentForm() {
     bn = locale === "bn",
     t = (en: string, bangla: string) => (bn ? bangla : en),
     router = useRouter();
+  const formId = useId();
   const areas = useQuery({
     queryKey: ["coverage"],
     queryFn: () =>
@@ -5072,15 +5078,27 @@ export default function CreateShipmentForm() {
     onSuccess: (res) => router.push(`/dashboard/my-shipments/${res.data.id}`),
   });
   const update = (key: string, value: string | number) => {
-    setPayload({
-      ...payload,
+    setPayload((previous) => ({
+      ...previous,
       [key]: value,
-      ...(key === "pickupMode" ? { pickupAreaId: "" } : {}),
-    });
+      ...(key === "pickupMode" && previous.pickupMode !== value
+        ? { pickupAreaId: "" }
+        : {}),
+    }));
     quote.reset();
+    create.reset();
     setAccepted(false);
     setInvalid(false);
     requestId.current = "";
+  };
+  const error = create.error || quote.error;
+  const errorReason = getApiErrorMessage(error, "");
+  const autocomplete: Record<string, string> = {
+    senderPhone: "section-sender tel",
+    pickupAddress: "section-sender street-address",
+    receiverName: "section-recipient name",
+    receiverPhone: "section-recipient tel",
+    receiverAddress: "section-recipient street-address",
   };
   const style =
     "mt-2 block min-h-11 w-full rounded-md border bg-background px-3 py-2";
@@ -5135,6 +5153,8 @@ export default function CreateShipmentForm() {
         </p>
       )}
       <form
+        id={formId}
+        autoComplete="off"
         className="grid gap-4 sm:grid-cols-2"
         onSubmit={(event) => {
           event.preventDefault();
@@ -5152,7 +5172,7 @@ export default function CreateShipmentForm() {
         }}
       >
         {(["pickupAreaId", "receiverAreaId"] as const).map((key) => (
-          <label key={key}>
+          <label key={key} htmlFor={`${formId}-${key}`}>
             {key === "pickupAreaId"
               ? t(
                   "Pickup area (district / upazila / locality)",
@@ -5163,6 +5183,9 @@ export default function CreateShipmentForm() {
                   "প্রাপকের এলাকা (জেলা / উপজেলা / এলাকা)",
                 )}
             <select
+              id={`${formId}-${key}`}
+              name={key}
+              autoComplete="off"
               className={style}
               value={payload[key]}
               onChange={(e) => update(key, e.target.value)}
@@ -5188,10 +5211,12 @@ export default function CreateShipmentForm() {
           </label>
         ))}
         {fields.map(([key, en, bangla, type]) => (
-          <label key={key}>
+          <label key={key} htmlFor={`${formId}-${key}`}>
             {t(en, bangla)}
             <input
               required
+              id={`${formId}-${key}`}
+              autoComplete={autocomplete[key] || "off"}
               className={style}
               name={key}
               type={type}
@@ -5223,9 +5248,12 @@ export default function CreateShipmentForm() {
             />
           </label>
         ))}
-        <label>
+        <label htmlFor={`${formId}-productType`}>
           {t("Product type", "পণ্যের ধরন")}
           <select
+            id={`${formId}-productType`}
+            name="productType"
+            autoComplete="off"
             className={style}
             value={payload.productType}
             onChange={(e) => update("productType", e.target.value)}
@@ -5241,9 +5269,12 @@ export default function CreateShipmentForm() {
             ))}
           </select>
         </label>
-        <label>
+        <label htmlFor={`${formId}-serviceType`}>
           {t("Service", "সেবা")}
           <select
+            id={`${formId}-serviceType`}
+            name="serviceType"
+            autoComplete="off"
             className={style}
             value={payload.serviceType}
             onChange={(e) => update("serviceType", e.target.value)}
@@ -5263,9 +5294,12 @@ export default function CreateShipmentForm() {
             </option>
           </select>
         </label>
-        <label>
+        <label htmlFor={`${formId}-pickupMode`}>
           {t("Pickup method", "সংগ্রহের পদ্ধতি")}
           <select
+            id={`${formId}-pickupMode`}
+            name="pickupMode"
+            autoComplete="off"
             className={style}
             value={payload.pickupMode}
             onChange={(e) => update("pickupMode", e.target.value)}
@@ -5278,9 +5312,12 @@ export default function CreateShipmentForm() {
             </option>
           </select>
         </label>
-        <label>
+        <label htmlFor={`${formId}-deliveryInstructions`}>
           {t("Special instructions", "বিশেষ নির্দেশনা")}
           <textarea
+            id={`${formId}-deliveryInstructions`}
+            name="deliveryInstructions"
+            autoComplete="off"
             className={style}
             maxLength={500}
             value={payload.deliveryInstructions}
@@ -5309,7 +5346,7 @@ export default function CreateShipmentForm() {
               <p>
                 {t("Assigned branch: ", "নির্ধারিত শাখা: ")}
                 {placeName(quote.data.data.originHub.name, locale)} ·{" "}
-                {quote.data.data.originHub.address}
+                {hubAddress(quote.data.data.originHub.address, locale)}
               </p>
             )}
             {(
@@ -5349,13 +5386,33 @@ export default function CreateShipmentForm() {
             </label>
           </div>
         )}
-        {(quote.isError || create.isError) && (
-          <p role="alert" className="sm:col-span-2">
-            {t(
-              "Booking failed. Check service availability, approved pricing, pickup time and business approval for COD.",
-              "বুকিং হয়নি। এলাকা, অনুমোদিত মূল্য, সংগ্রহের সময় এবং টাকা সংগ্রহের জন্য ব্যবসায়িক অনুমোদন যাচাই করুন।",
+        {error && (
+          <div className="space-y-3 sm:col-span-2">
+            <p role="alert">{bookingErrorMessage(error, locale)}</p>
+            {errorReason === "Approved business account required for COD" && (
+              <Link
+                className="font-medium underline"
+                href="/dashboard/business"
+              >
+                {t("View business approval", "ব্যবসায়িক অনুমোদন দেখুন")}
+              </Link>
             )}
-          </p>
+            {errorReason === "Pricing changed; review a new quote" && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  quote.reset();
+                  create.reset();
+                  setAccepted(false);
+                  requestId.current = "";
+                  quote.mutate();
+                }}
+              >
+                {t("Review updated cost", "নতুন মাশুল দেখুন")}
+              </Button>
+            )}
+          </div>
         )}
         {invalid && (
           <p role="alert" className="sm:col-span-2">
@@ -6426,7 +6483,7 @@ import { useGetMe, useLogout } from "@/hooks";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, Globe2, Menu, ArrowUpRight } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 export default function Header() {
   const locale = useLocale(),
@@ -6436,7 +6493,12 @@ export default function Header() {
     router = useRouter(),
     query = useQueryClient();
   const header = useRef<HTMLElement>(null),
-    mobile = useRef<HTMLDetailsElement>(null);
+    mobile = useRef<HTMLDetailsElement>(null),
+    team = useRef<HTMLDetailsElement>(null);
+  const closeMenus = useCallback(() => {
+    if (mobile.current) mobile.current.open = false;
+    if (team.current) team.current.open = false;
+  }, []);
   const { data, isLoading } = useGetMe(),
     user = data?.data,
     logout = useLogout();
@@ -6453,8 +6515,35 @@ export default function Header() {
     return () => observer.disconnect();
   }, []);
   useEffect(() => {
-    if (pathname && mobile.current) mobile.current.open = false;
-  }, [pathname]);
+    if (pathname && locale) closeMenus();
+  }, [pathname, locale, closeMenus]);
+  useEffect(() => {
+    const outside = (event: PointerEvent) => {
+      for (const menu of [team.current, mobile.current]) {
+        if (
+          menu &&
+          event.target instanceof Node &&
+          !menu.contains(event.target)
+        )
+          menu.open = false;
+      }
+    };
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      for (const menu of [team.current, mobile.current]) {
+        if (menu?.open) {
+          menu.open = false;
+          menu.querySelector("summary")?.focus();
+        }
+      }
+    };
+    document.addEventListener("pointerdown", outside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("pointerdown", outside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
   const links = [
     ["/dashboard/new-shipment", "Send a parcel", "পার্সেল পাঠান"],
     ["/track-shipment", "Track parcel", "পার্সেল অনুসরণ"],
@@ -6546,16 +6635,16 @@ export default function Header() {
               {bn ? bangla : en}
             </Link>
           ))}
-          <details className="team-menu">
+          <details ref={team} className="team-menu">
             <summary className="nav-link">
               {bn ? "দল" : "Team"}
               <ChevronDown size={13} aria-hidden="true" />
             </summary>
             <div className="team-dropdown glass-panel">
-              <Link href="/courier-apply">
+              <Link href="/courier-apply" onClick={closeMenus}>
                 {bn ? "কর্মীর আবেদন" : "Join our team"}
               </Link>
-              <Link href="/login?staff=1">
+              <Link href="/login?staff=1" onClick={closeMenus}>
                 {bn ? "কর্মীদের প্রবেশ" : "Staff sign in"}
               </Link>
             </div>
@@ -6572,20 +6661,14 @@ export default function Header() {
           </summary>
           <nav aria-label={t("menu")} className="mobile-dropdown glass-panel">
             {links.map(([href, en, bangla]) => (
-              <Link
-                key={href}
-                href={href}
-                onClick={() => {
-                  if (mobile.current) mobile.current.open = false;
-                }}
-              >
+              <Link key={href} href={href} onClick={closeMenus}>
                 {bn ? bangla : en}
               </Link>
             ))}
-            <Link href="/courier-apply">
+            <Link href="/courier-apply" onClick={closeMenus}>
               {bn ? "কর্মীর আবেদন" : "Worker application"}
             </Link>
-            <Link href="/login?staff=1">
+            <Link href="/login?staff=1" onClick={closeMenus}>
               {bn ? "কর্মীদের প্রবেশ" : "Staff sign in"}
             </Link>
             <div className="mobile-accounts">
@@ -12068,16 +12151,19 @@ test("inactive pricing blocks booking rather than using a fallback price", async
 }) => {
   await mock(page);
   await page.route("**/api/backend/operations/quote", (route) =>
-    route.fulfill({ status: 409, json: { success: false } }),
+    route.fulfill({
+      status: 409,
+      json: { success: false, message: "Approved pricing is not available" },
+    }),
   );
   await page.goto("/en/dashboard/new-shipment");
   await fillBooking(page);
   await page
     .getByRole("button", { name: "Review cost before booking" })
     .click();
-  await expect(
-    page.getByRole("alert").filter({ hasText: "Booking failed" }),
-  ).toContainText("Booking failed");
+  await expect(page.locator("main").getByRole("alert")).toContainText(
+    "No approved price is available",
+  );
   await expect(
     page.getByRole("button", { name: "Confirm booking" }),
   ).toHaveCount(0);
@@ -12597,6 +12683,449 @@ export { default } from "../../../dashboard/my-shipments/[id]/page";
 ```
 
 
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\lib\booking-error.ts
+
+```typescript
+import { getApiErrorMessage, getApiErrorStatus } from "./api-error";
+
+const messages: Record<string, readonly [string, string]> = {
+  "Approved business account required for COD": [
+    "COD booking requires an approved business account. Submit your business details for administrator review, or enter 0 for COD if no product money needs to be collected.",
+    "পণ্যের টাকা সংগ্রহের বুকিংয়ের জন্য অনুমোদিত ব্যবসায়িক অ্যাকাউন্ট দরকার। প্রশাসকের যাচাইয়ের জন্য ব্যবসার তথ্য দিন; পণ্যের টাকা সংগ্রহ না করলে COD ঘরে ০ দিন।",
+  ],
+  "Pricing changed; review a new quote": [
+    "Pricing or the confirmed service changed. Review the updated cost and confirm it again before booking.",
+    "মাশুল বা নিশ্চিত সেবা বদলেছে। নতুন হিসাব দেখে আবার সম্মতি দিয়ে বুকিং করুন।",
+  ],
+  "Verified customer account required": [
+    "Booking requires an active, verified customer account. Verify your email and sign in again.",
+    "বুকিংয়ের জন্য সক্রিয়, যাচাইকৃত গ্রাহক অ্যাকাউন্ট দরকার। ইমেইল যাচাই করে আবার প্রবেশ করুন।",
+  ],
+  "Account access changed": [
+    "Your account access changed. Verify your email and sign in again with an active customer account.",
+    "অ্যাকাউন্টের প্রবেশাধিকার বদলেছে। ইমেইল যাচাই করে সক্রিয় গ্রাহক অ্যাকাউন্টে আবার প্রবেশ করুন।",
+  ],
+  "Delivery area is not available": [
+    "Pickup or delivery is unavailable in the selected area. Check coverage and the pickup method.",
+    "নির্বাচিত এলাকায় সংগ্রহ বা ডেলিভারি চালু নেই। সেবার এলাকা ও সংগ্রহের পদ্ধতি যাচাই করুন।",
+  ],
+  "Active route hubs are required": [
+    "The assigned route hub is unavailable. Contact Dropzo support before booking.",
+    "নির্ধারিত পথের হাব চালু নেই। বুকিংয়ের আগে Dropzo সহায়তা দলের সঙ্গে যোগাযোগ করুন।",
+  ],
+  "Approved pricing is not available": [
+    "No approved price is available for this route and service. Choose an available service or contact support.",
+    "এই পথ ও সেবার অনুমোদিত মূল্য নেই। চালু সেবা বেছে নিন অথবা সহায়তা দলের সঙ্গে যোগাযোগ করুন।",
+  ],
+  "Approved next-day pricing is required after cutoff": [
+    "The same-day cutoff has passed, but next-day pricing is not approved for this route. Choose an available service.",
+    "একই দিনের বুকিংয়ের শেষ সময় পার হয়েছে; এই পথে পরের দিনের মূল্য অনুমোদিত নেই। চালু সেবা বেছে নিন।",
+  ],
+  "Calculated delivery charge exceeds supported limit": [
+    "The calculated delivery charge exceeds the supported limit. Contact support.",
+    "হিসাব করা ডেলিভারি মাশুল অনুমোদিত সীমার বেশি। সহায়তা দলের সঙ্গে যোগাযোগ করুন।",
+  ],
+};
+export function bookingErrorMessage(error: unknown, locale: string): string {
+  const bn = locale === "bn";
+  const known = messages[getApiErrorMessage(error, "")];
+  if (known) return known[bn ? 1 : 0];
+  const status = getApiErrorStatus(error);
+  if (status === 401)
+    return bn
+      ? "প্রবেশের মেয়াদ শেষ। আবার প্রবেশ করুন; ফরমের তথ্য মুছবেন না।"
+      : "Your session expired. Sign in again without clearing your form.";
+  if (status === 400 || status === 422)
+    return bn
+      ? "ফরমের তথ্য গ্রহণ করা যায়নি। ফোন, ঠিকানা, মূল্য ও ভবিষ্যতের সংগ্রহের সময় যাচাই করুন।"
+      : "The booking details were not accepted. Check phone numbers, addresses, amounts and a future pickup time.";
+  if (status === 403)
+    return bn
+      ? "এই অ্যাকাউন্ট থেকে বুকিংয়ের অনুমতি নেই। গ্রাহক অ্যাকাউন্টের যাচাই ও প্রবেশাধিকার পরীক্ষা করুন।"
+      : "This account cannot book parcels. Check your customer account verification and access.";
+  return bn
+    ? "বুকিং সম্পন্ন হয়নি। আপনার তথ্য রাখা আছে। আবার চেষ্টা করুন বা সহায়তা দলের সঙ্গে যোগাযোগ করুন।"
+    : "Booking could not be completed. Your details are retained. Retry or contact support.";
+}
+```
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\e2e\booking-usability.spec.ts
+
+```typescript
+import { test, expect, type Page } from "@playwright/test";
+
+const pickup = "22222222-2222-4222-8222-222222222222";
+const delivery = "33333333-3333-4333-8333-333333333333";
+const hub = {
+  id: "44444444-4444-4444-8444-444444444444",
+  name: "ঢাকা নর্থ হাব",
+  location: "ঢাকা",
+  address: "Dropzo ঢাকা নর্থ হাব, লাভ রোড, মিরপুর ২, ঢাকা-১২১৬।",
+  createdAt: "2026-10-09T00:00:00.000Z",
+};
+const quote = {
+  baseCharge: "60",
+  extraWeightCharge: "0",
+  pickupFee: "0",
+  deliveryCharge: "60",
+  codFee: "0",
+  merchantPayable: "0.06",
+  deliveryDays: 1,
+  serviceType: "NEXT_DAY",
+  rateUpdatedAt: "2026-10-09T00:00:00.000Z",
+  originHub: hub,
+};
+async function setup(page: Page, role = "CUSTOMER") {
+  await page.route("**/api/backend/**", (route) => {
+    const path = new URL(route.request().url()).pathname.replace(
+      "/api/backend",
+      "",
+    );
+    const data =
+      path === "/users/me"
+        ? {
+            id: pickup,
+            name: "Customer",
+            email: "test@example.test",
+            role,
+            status: "ACTIVE",
+            emailVerified: true,
+          }
+        : path === "/operations/coverage"
+          ? [
+              {
+                id: pickup,
+                name: "মিরপুর",
+                district: "ঢাকা",
+                upazila: "ঢাকা মহানগর",
+                pickupEnabled: true,
+                dropoffEnabled: true,
+                deliveryEnabled: true,
+              },
+              {
+                id: delivery,
+                name: "ধানমন্ডি",
+                district: "ঢাকা",
+                upazila: "ঢাকা মহানগর",
+                pickupEnabled: true,
+                dropoffEnabled: true,
+                deliveryEnabled: true,
+              },
+            ]
+          : path === "/operations/quote"
+            ? quote
+            : path === "/operations/mine"
+              ? { business: null, application: null, collections: [] }
+              : path === "/hubs"
+                ? [
+                    hub,
+                    {
+                      ...hub,
+                      id: delivery,
+                      name: "Custom Hub",
+                      location: "Custom Location",
+                      address: "Unlisted address, Road 5",
+                    },
+                  ]
+                : path === "/admin/dashboard-stats"
+                  ? {
+                      totalRevenue: 321.5,
+                      totalCustomers: 13,
+                      totalCouriers: 19,
+                      totalShipments: 27,
+                      shipmentsByStatus: [],
+                    }
+                  : {};
+    return route.fulfill({
+      json: {
+        success: true,
+        data,
+        meta: { page: 1, limit: 10, total: 2, totalPages: 1 },
+      },
+    });
+  });
+}
+async function fill(page: Page, cod = "0.06") {
+  await page.locator('select[name="pickupAreaId"]').selectOption(pickup);
+  await page.locator('select[name="receiverAreaId"]').selectOption(delivery);
+  for (const [name, value] of [
+    ["senderPhone", "01812345678"],
+    ["pickupAddress", "Mirpur pickup address"],
+    ["receiverName", "Receiver"],
+    ["receiverPhone", "01712345678"],
+    ["receiverAddress", "Dhanmondi receiver address"],
+    ["declaredValue", "100"],
+    ["codAmount", cod],
+    [
+      "requestedPickupAt",
+      new Date(Date.now() + 86400000).toISOString().slice(0, 16),
+    ],
+  ])
+    await page.locator('input[name="' + name + '"]').fill(value);
+  await page.locator('select[name="serviceType"]').selectOption("NEXT_DAY");
+}
+for (const width of [390, 1366]) {
+  test(
+    "booking labels and batched autofill retain area selections at " + width,
+    async ({ page }) => {
+      await setup(page);
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/en/dashboard/new-shipment");
+      await fill(page);
+      await page.locator('label[for$="-receiverName"]').click();
+      await expect(
+        page.getByRole("textbox", { name: "Receiver name", exact: true }),
+      ).toBeFocused();
+      await expect(page.locator('input[name="receiverName"]')).toHaveAttribute(
+        "autocomplete",
+        "section-recipient name",
+      );
+      await expect(page.locator('input[name="pickupAddress"]')).toHaveAttribute(
+        "autocomplete",
+        "section-sender street-address",
+      );
+      await page.evaluate(() => {
+        const setter = Object.getOwnPropertyDescriptor(
+          HTMLInputElement.prototype,
+          "value",
+        )!.set!;
+        for (const [name, value] of [
+          ["receiverName", "Autofill Receiver"],
+          ["pickupAddress", "Autofill pickup address"],
+          ["receiverAddress", "Autofill delivery address"],
+        ]) {
+          const field = document.querySelector<HTMLInputElement>(
+            'input[name="' + name + '"]',
+          )!;
+          setter.call(field, value);
+          field.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+        const mode = document.querySelector<HTMLSelectElement>(
+          'select[name="pickupMode"]',
+        )!;
+        mode.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+      await expect(page.locator('input[name="receiverName"]')).toHaveValue(
+        "Autofill Receiver",
+      );
+      await expect(page.locator('input[name="pickupAddress"]')).toHaveValue(
+        "Autofill pickup address",
+      );
+      await expect(page.locator('input[name="receiverAddress"]')).toHaveValue(
+        "Autofill delivery address",
+      );
+      await expect(page.locator('select[name="pickupAreaId"]')).toHaveValue(
+        pickup,
+      );
+      await expect(page.locator('select[name="receiverAreaId"]')).toHaveValue(
+        delivery,
+      );
+      await page.locator('select[name="pickupMode"]').selectOption("BRANCH");
+      await expect(page.locator('select[name="pickupAreaId"]')).toHaveValue("");
+      await page.locator('select[name="pickupAreaId"]').selectOption(pickup);
+      await page
+        .getByRole("button", { name: "Review cost before booking" })
+        .click();
+      await expect(
+        page.getByText(
+          "Dropzo Dhaka North Hub, Love Road, Mirpur 2, Dhaka-1216.",
+          { exact: false },
+        ),
+      ).toBeVisible();
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+      ).toBe(true);
+    },
+  );
+}
+for (const locale of ["en", "bn"]) {
+  test(
+    "COD approval failure is actionable and retains the booking in " + locale,
+    async ({ page }) => {
+      await setup(page);
+      await page.route("**/api/backend/shipments", (route) =>
+        route.fulfill({
+          status: 409,
+          json: {
+            success: false,
+            message: "Approved business account required for COD",
+          },
+        }),
+      );
+      await page.goto("/" + locale + "/dashboard/new-shipment");
+      await fill(page);
+      await page
+        .getByRole("button", {
+          name:
+            locale === "en"
+              ? "Review cost before booking"
+              : "বুকিংয়ের আগে মাশুল দেখুন",
+        })
+        .click();
+      await page.getByRole("checkbox").check();
+      await page
+        .getByRole("button", {
+          name: locale === "en" ? "Confirm booking" : "বুকিং নিশ্চিত করুন",
+        })
+        .click();
+      await expect(page.locator("main").getByRole("alert")).toContainText(
+        locale === "en"
+          ? "approved business account"
+          : "অনুমোদিত ব্যবসায়িক অ্যাকাউন্ট",
+      );
+      await expect(
+        page.getByRole("link", {
+          name:
+            locale === "en" ? "View business approval" : "ব্যবসায়িক অনুমোদন দেখুন",
+          exact: true,
+        }),
+      ).toBeVisible();
+      await expect(page.locator('select[name="pickupAreaId"]')).toHaveValue(
+        pickup,
+      );
+      await expect(page.locator('input[name="receiverName"]')).toHaveValue(
+        "Receiver",
+      );
+      await expect(page.locator('input[name="codAmount"]')).toHaveValue("0.06");
+    },
+  );
+  test(
+    "approved hub names and full addresses use " + locale,
+    async ({ page }) => {
+      await setup(page, "ADMIN");
+      await page.goto("/" + locale + "/admin/hubs");
+      const row = page
+        .getByRole("row")
+        .filter({ hasText: locale === "en" ? "Dhaka North Hub" : "ঢাকা নর্থ হাব" });
+      await expect(row).toContainText(
+        locale === "en" ? "Dhaka-1216." : "ঢাকা-১২১৬।",
+      );
+      await expect(row).toContainText(
+        locale === "en" ? "Love Road, Mirpur 2" : "লাভ রোড, মিরপুর ২",
+      );
+      if (locale === "en")
+        await expect(row).not.toContainText(/[\u0980-\u09ff]/);
+      await expect(
+        page.getByRole("row").filter({ hasText: "Custom Hub" }),
+      ).toContainText("Unlisted address, Road 5");
+    },
+  );
+}
+test("changed pricing requires a new quote and fresh consent without losing fields", async ({
+  page,
+}) => {
+  await setup(page);
+  let quoteRequests = 0,
+    bookingRequests = 0;
+  await page.route("**/api/backend/operations/quote", (route) => {
+    quoteRequests++;
+    return route.fulfill({
+      json: {
+        success: true,
+        data: { ...quote, deliveryCharge: quoteRequests > 1 ? "75" : "60" },
+      },
+    });
+  });
+  await page.route("**/api/backend/shipments", (route) => {
+    bookingRequests++;
+    return route.fulfill({
+      status: 409,
+      json: { success: false, message: "Pricing changed; review a new quote" },
+    });
+  });
+  await page.goto("/en/dashboard/new-shipment");
+  await fill(page, "0");
+  await page
+    .getByRole("button", { name: "Review cost before booking" })
+    .click();
+  await page.getByRole("checkbox").check();
+  await page.getByRole("button", { name: "Confirm booking" }).click();
+  await expect(page.locator("main").getByRole("alert")).toContainText(
+    "Pricing or the confirmed service changed",
+  );
+  await page.getByRole("button", { name: "Review updated cost" }).click();
+  await expect(page.getByRole("checkbox")).not.toBeChecked();
+  await expect(
+    page.getByRole("button", { name: "Confirm booking" }),
+  ).toBeDisabled();
+  await expect(
+    page.getByText("Total delivery fee:", { exact: false }),
+  ).toContainText("75.00");
+  await expect(page.locator('input[name="receiverName"]')).toHaveValue(
+    "Receiver",
+  );
+  expect(quoteRequests).toBe(2);
+  expect(bookingRequests).toBe(1);
+});
+test("Team closes on navigation, same-page selection, outside click and Escape", async ({
+  page,
+}) => {
+  await setup(page);
+  await page.setViewportSize({ width: 1366, height: 900 });
+  await page.goto("/en");
+  const menu = page.locator(".team-menu");
+  await menu.locator("summary").click();
+  await menu.getByRole("link", { name: "Join our team" }).click();
+  await expect(page).toHaveURL(/courier-apply/);
+  await expect(menu).not.toHaveAttribute("open");
+  await menu.locator("summary").click();
+  await menu.getByRole("link", { name: "Join our team" }).click();
+  await expect(menu).not.toHaveAttribute("open");
+  await menu.locator("summary").click();
+  await page
+    .getByRole("heading", { name: "Delivery worker application" })
+    .click();
+  await expect(menu).not.toHaveAttribute("open");
+  await menu.locator("summary").click();
+  await page.keyboard.press("Escape");
+  await expect(menu).not.toHaveAttribute("open");
+  await expect(menu.locator("summary")).toBeFocused();
+});
+test("mobile staff link closes even when only the query changes", async ({
+  page,
+}) => {
+  await setup(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/en/login");
+  const menu = page.locator(".mobile-menu");
+  await menu.locator("summary").click();
+  await menu.getByRole("link", { name: "Staff sign in" }).click();
+  await expect(page).toHaveURL(/login\?staff=1/);
+  await expect(menu).not.toHaveAttribute("open");
+});
+test("business review destination is explicit without changing approval", async ({
+  page,
+}) => {
+  await setup(page);
+  await page.goto("/en/merchant-register");
+  await expect(
+    page.getByText("Submit for review saves your application", {
+      exact: false,
+    }),
+  ).toContainText("Admin → Operations");
+  await expect(
+    page.getByText("Submit for review saves your application", {
+      exact: false,
+    }),
+  ).toContainText("does not send an email or transfer money");
+});
+test("admin statistics render API values rather than screenshot constants", async ({
+  page,
+}) => {
+  await setup(page, "ADMIN");
+  await page.goto("/en/admin");
+  for (const value of ["321.50", "13", "19", "27"])
+    await expect(
+      page.locator("main").getByText(value, { exact: value !== "321.50" }),
+    ).toBeVisible();
+  await expect(page.locator("main")).not.toContainText("1,800.00");
+});
+```
+
+
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\i18n\geography.ts
 
 ```typescript
@@ -12636,6 +13165,31 @@ export function placeSearch(values: string[], search: string): boolean {
     .join(" ")
     .toLocaleLowerCase("en");
   return text.includes(search.trim().toLocaleLowerCase("en"));
+}
+
+const hubAddresses: ReadonlyArray<readonly [string, string]> = [
+  [
+    "Dropzo ঢাকা নর্থ হাব, লাভ রোড, মিরপুর ২, ঢাকা-১২১৬।",
+    "Dropzo Dhaka North Hub, Love Road, Mirpur 2, Dhaka-1216.",
+  ],
+  [
+    "Dropzo বগুড়া সদর হাব, শেরপুর রোড (সাতমাথার কাছে), সদর, বগুড়া-৫৮০০।",
+    "Dropzo Bogura Sadar Hub, Sherpur Road (near Satmatha), Sadar, Bogura-5800.",
+  ],
+  [
+    "Dropzo ঢাকা সাউথ হাব, রোড নং ২৭ (পুরাতন), ধানমন্ডি, ঢাকা-১২০৯।",
+    "Dropzo Dhaka South Hub, Road No. 27 (old), Dhanmondi, Dhaka-1209.",
+  ],
+];
+export function hubAddress(value: string, locale: string): string {
+  const normalized = value.trim().normalize("NFC").toLocaleLowerCase("en");
+  const match = hubAddresses.find((pair) =>
+    pair.some(
+      (address) =>
+        address.normalize("NFC").toLocaleLowerCase("en") === normalized,
+    ),
+  );
+  return match ? match[locale === "bn" ? 0 : 1] : value;
 }
 ```
 
@@ -14091,6 +14645,12 @@ export default function ProfileForms({
               "Approval does not happen automatically. A hub is assigned after review; sign in again after approval.",
               "স্বয়ংক্রিয় অনুমোদন হয় না। যাচাইয়ের পরে হাব বরাদ্দ হবে; অনুমোদনের পরে আবার প্রবেশ করতে হবে।",
             )}
+      </p>
+      <p className="rounded-xl border bg-background/70 p-4 text-sm">
+        {t(
+          "Submit for review saves your application for Dropzo administrators in Admin → Operations. It does not send an email or transfer money. Approval is required before COD bookings or staff access.",
+          "যাচাইয়ের জন্য পাঠালে আবেদন Dropzo প্রশাসকের Admin → Operations পাতায় জমা হয়। এটি ইমেইল পাঠায় না বা টাকা হস্তান্তর করে না। পণ্যের টাকা সংগ্রহের বুকিং বা কর্মীর প্রবেশাধিকার পেতে অনুমোদন লাগবে।",
+        )}
       </p>
       <form
         key={record?.id || kind}

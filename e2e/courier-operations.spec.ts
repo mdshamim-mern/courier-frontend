@@ -217,16 +217,19 @@ test("inactive pricing blocks booking rather than using a fallback price", async
 }) => {
   await mock(page);
   await page.route("**/api/backend/operations/quote", (route) =>
-    route.fulfill({ status: 409, json: { success: false } }),
+    route.fulfill({
+      status: 409,
+      json: { success: false, message: "Approved pricing is not available" },
+    }),
   );
   await page.goto("/en/dashboard/new-shipment");
   await fillBooking(page);
   await page
     .getByRole("button", { name: "Review cost before booking" })
     .click();
-  await expect(
-    page.getByRole("alert").filter({ hasText: "Booking failed" }),
-  ).toContainText("Booking failed");
+  await expect(page.locator("main").getByRole("alert")).toContainText(
+    "No approved price is available",
+  );
   await expect(
     page.getByRole("button", { name: "Confirm booking" }),
   ).toHaveCount(0);
