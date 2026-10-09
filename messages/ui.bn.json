@@ -429,5 +429,8 @@
   "Coverage": "সেবার এলাকা",
   "Merchant Registration": "ব্যবসায়িক নিবন্ধন",
   "Courier Application": "ডেলিভারিকর্মীর আবেদন",
-  "Dropzo serves approved areas through its own delivery team. Check coverage and pricing before booking.": "ড্রপজো নিজের ডেলিভারিকর্মীদের মাধ্যমে অনুমোদিত এলাকায় সেবা দেবে। বুকিংয়ের আগে এলাকা ও খরচ যাচাই করুন।"
+  "Dropzo serves approved areas through its own delivery team. Check coverage and pricing before booking.": "ড্রপজো নিজের ডেলিভারিকর্মীদের মাধ্যমে অনুমোদিত এলাকায় সেবা দেবে। বুকিংয়ের আগে এলাকা ও খরচ যাচাই করুন।",
+  "This delivery fee is below Stripe minimum; use another available payment method": "এই ডেলিভারি মাশুল Stripe-এর ন্যূনতম অর্থের সীমার নিচে। অন্য চালু অর্থপ্রদানের মাধ্যম ব্যবহার করুন।",
+  "Stripe could not create checkout; please try again": "Stripe-এর অর্থপ্রদানের পাতা তৈরি করা যায়নি। আবার চেষ্টা করুন।",
+  "Payment initiation is awaiting provider verification; check payment status before retrying": "অর্থপ্রদানের চেষ্টা প্রদানকারীর যাচাইয়ের অপেক্ষায় আছে। আবার চেষ্টা করার আগে অর্থপ্রদানের অবস্থা যাচাই করুন।"
 }

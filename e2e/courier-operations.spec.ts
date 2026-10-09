@@ -687,3 +687,42 @@ test("manual payout records the approved account version and an existing transfe
   await page.getByRole("button", { name: "Record completed payout" }).click();
   await expect.poll(() => called).toBe(true);
 });
+
+test("Bengali Stripe minimum-fee rejection explains the payment limitation", async ({
+  page,
+}) => {
+  await mock(page);
+  await page.route("**/api/backend/shipments?*", (route) =>
+    route.fulfill({
+      json: {
+        success: true,
+        data: [
+          {
+            ...shipment,
+            status: "PENDING",
+            paymentStatus: "UNPAID",
+            price: "60",
+          },
+        ],
+        meta: { page: 1, limit: 10, total: 1, totalPages: 1 },
+      },
+    }),
+  );
+  await page.route("**/api/backend/payments/stripe/initiate", (route) =>
+    route.fulfill({
+      status: 400,
+      json: {
+        success: false,
+        message:
+          "This delivery fee is below Stripe minimum; use another available payment method",
+      },
+    }),
+  );
+  await page.goto("/bn/dashboard/my-shipments");
+  await page.getByRole("button", { name: "স্ট্রাইপ দিয়ে পরিশোধ" }).click();
+  await expect(
+    page.getByText(
+      "এই ডেলিভারি মাশুল Stripe-এর ন্যূনতম অর্থের সীমার নিচে। অন্য চালু অর্থপ্রদানের মাধ্যম ব্যবহার করুন।",
+    ),
+  ).toBeVisible();
+});

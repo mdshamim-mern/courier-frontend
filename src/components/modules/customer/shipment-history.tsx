@@ -108,9 +108,10 @@ export default function ShipmentHistory() {
                                     },
                                     onError: (failure) =>
                                       toast.add({
-                                        title: "Payment Failed",
-                                        description:
+                                        title: ui("Payment Failed"),
+                                        description: display.error(
                                           getApiErrorMessage(failure),
+                                        ),
                                         type: "error",
                                       }),
                                   },

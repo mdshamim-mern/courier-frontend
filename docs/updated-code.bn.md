@@ -2,7 +2,7 @@
 
 মূল কাঠামো রেখে সংশোধিত ফাইলের বর্তমান কোড নিচে আছে। প্রতিটি কোডের আগে সম্পূর্ণ স্থানীয় পথ দেওয়া হয়েছে। বাস্তব শংসাপত্রের ফাইল অন্তর্ভুক্ত করা হয়নি। যেগুলোতে কার্যকর পরিবর্তনের বদলে টাইপের আমদানি, ভাষা-সচেতন লিংক বা প্রবেশযোগ্যতার সংশোধন হয়েছে, সেগুলোও অন্তর্ভুক্ত।
 
-মোট কোড ফাইল: 152।
+মোট কোড ফাইল: 153।
 
 অন্যান্য পরিবর্তিত ফাইল:
 
@@ -1174,7 +1174,10 @@ test("Bengali audit action captions are localized while raw event details stay i
   "Coverage": "সেবার এলাকা",
   "Merchant Registration": "ব্যবসায়িক নিবন্ধন",
   "Courier Application": "ডেলিভারিকর্মীর আবেদন",
-  "Dropzo serves approved areas through its own delivery team. Check coverage and pricing before booking.": "ড্রপজো নিজের ডেলিভারিকর্মীদের মাধ্যমে অনুমোদিত এলাকায় সেবা দেবে। বুকিংয়ের আগে এলাকা ও খরচ যাচাই করুন।"
+  "Dropzo serves approved areas through its own delivery team. Check coverage and pricing before booking.": "ড্রপজো নিজের ডেলিভারিকর্মীদের মাধ্যমে অনুমোদিত এলাকায় সেবা দেবে। বুকিংয়ের আগে এলাকা ও খরচ যাচাই করুন।",
+  "This delivery fee is below Stripe minimum; use another available payment method": "এই ডেলিভারি মাশুল Stripe-এর ন্যূনতম অর্থের সীমার নিচে। অন্য চালু অর্থপ্রদানের মাধ্যম ব্যবহার করুন।",
+  "Stripe could not create checkout; please try again": "Stripe-এর অর্থপ্রদানের পাতা তৈরি করা যায়নি। আবার চেষ্টা করুন।",
+  "Payment initiation is awaiting provider verification; check payment status before retrying": "অর্থপ্রদানের চেষ্টা প্রদানকারীর যাচাইয়ের অপেক্ষায় আছে। আবার চেষ্টা করার আগে অর্থপ্রদানের অবস্থা যাচাই করুন।"
 }
 ```
 
@@ -6599,9 +6602,10 @@ export default function ShipmentHistory() {
                                     },
                                     onError: (failure) =>
                                       toast.add({
-                                        title: "Payment Failed",
-                                        description:
+                                        title: ui("Payment Failed"),
+                                        description: display.error(
                                           getApiErrorMessage(failure),
+                                        ),
                                         type: "error",
                                       }),
                                   },
@@ -11943,6 +11947,45 @@ test("manual payout records the approved account version and an existing transfe
   await page.getByRole("button", { name: "Record completed payout" }).click();
   await expect.poll(() => called).toBe(true);
 });
+
+test("Bengali Stripe minimum-fee rejection explains the payment limitation", async ({
+  page,
+}) => {
+  await mock(page);
+  await page.route("**/api/backend/shipments?*", (route) =>
+    route.fulfill({
+      json: {
+        success: true,
+        data: [
+          {
+            ...shipment,
+            status: "PENDING",
+            paymentStatus: "UNPAID",
+            price: "60",
+          },
+        ],
+        meta: { page: 1, limit: 10, total: 1, totalPages: 1 },
+      },
+    }),
+  );
+  await page.route("**/api/backend/payments/stripe/initiate", (route) =>
+    route.fulfill({
+      status: 400,
+      json: {
+        success: false,
+        message:
+          "This delivery fee is below Stripe minimum; use another available payment method",
+      },
+    }),
+  );
+  await page.goto("/bn/dashboard/my-shipments");
+  await page.getByRole("button", { name: "স্ট্রাইপ দিয়ে পরিশোধ" }).click();
+  await expect(
+    page.getByText(
+      "এই ডেলিভারি মাশুল Stripe-এর ন্যূনতম অর্থের সীমার নিচে। অন্য চালু অর্থপ্রদানের মাধ্যম ব্যবহার করুন।",
+    ),
+  ).toBeVisible();
+});
 ```
 
 
@@ -11960,6 +12003,17 @@ export default function OperationsPage() {
 
 ```typescript
 export { default } from "../../../dashboard/my-shipments/[id]/page";
+```
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\coverage\page.tsx
+
+```typescript
+import CoverageList from "@/components/operations/coverage-list";
+
+export default function CoveragePage() {
+  return <CoverageList />;
+}
 ```
 
 
