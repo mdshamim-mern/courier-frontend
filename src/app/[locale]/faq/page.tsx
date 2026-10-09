@@ -3,6 +3,7 @@ import { useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useUiText } from "@/i18n/use-ui-text";
 import { legalOperator } from "@/content/legal";
+import { ArrowUpRight, CircleHelp, MessageCircleMore } from "lucide-react";
 
 const questions = {
   en: [
@@ -76,26 +77,69 @@ export async function generateMetadata({
 export default function FaqPage() {
   const locale = useLocale();
   const ui = useUiText();
+  const bengali = locale === "bn";
   return (
-    <article className="page-wrap space-y-8">
-      <h1 className="page-heading">{ui("FAQ")}</h1>
-      {questions[locale === "bn" ? "bn" : "en"].map(([question, answer]) => (
-        <section key={question} className="glass-panel space-y-3 p-6">
-          <h2 className="text-xl font-semibold">{question}</h2>
-          <p className="leading-8 text-muted-foreground">{answer}</p>
-        </section>
-      ))}
-      <nav className="flex flex-wrap gap-5">
-        <Link href="/track-shipment" className="underline">
-          {ui("Shipment Tracking")}
-        </Link>
-        <Link href="/contact" className="underline">
+    <article className="page-wrap space-y-8 sm:space-y-10">
+      <header className="faq-hero glass-panel p-6 text-center sm:p-10 lg:p-12">
+        <span className="icon-tile mx-auto">
+          <CircleHelp className="size-6" aria-hidden="true" />
+        </span>
+        <p className="eyebrow mt-5">{bengali ? "সহায়তা কেন্দ্র" : "Help Center"}</p>
+        <h1 className="text-4xl font-bold tracking-[-0.055em] sm:text-5xl">
+          {ui("FAQ")}
+        </h1>
+        <p className="mx-auto mt-4 max-w-2xl leading-7 text-muted-foreground sm:text-lg">
+          {bengali
+            ? "পার্সেল, পেমেন্ট ও সহায়তা নিয়ে দরকারি উত্তরগুলো এক জায়গায় পান।"
+            : "Quick, clear answers about parcels, payments, and getting help from Dropzo."}
+        </p>
+      </header>
+
+      <div className="grid gap-3">
+        {questions[bengali ? "bn" : "en"].map(([question, answer], index) => (
+          <details key={question} className="glass-panel faq-item group p-0">
+            <summary className="flex cursor-pointer list-none items-center gap-4 p-5 sm:p-6">
+              <span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <h2 className="flex-1 text-left text-lg font-bold tracking-[-0.02em] sm:text-xl">
+                {question}
+              </h2>
+              <span
+                className="faq-plus text-2xl leading-none text-primary"
+                aria-hidden="true"
+              >
+                +
+              </span>
+            </summary>
+            <div className="border-t border-border px-5 pb-6 pt-5 sm:px-6">
+              <p className="pl-12 leading-8 text-muted-foreground">{answer}</p>
+            </div>
+          </details>
+        ))}
+      </div>
+
+      <aside className="glass-panel flex flex-col gap-5 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
+        <div className="flex gap-4">
+          <span className="icon-tile">
+            <MessageCircleMore aria-hidden="true" />
+          </span>
+          <div>
+            <h2 className="text-lg font-bold">
+              {bengali ? "আরও সাহায্য লাগবে?" : "Need a little more help?"}
+            </h2>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">
+              {bengali
+                ? "আমাদের support team-এর সঙ্গে সরাসরি যোগাযোগ করুন।"
+                : "Reach our support team directly for assistance."}
+            </p>
+          </div>
+        </div>
+        <Link href="/contact" className="brand-button shrink-0">
           {ui("Contact")}
+          <ArrowUpRight className="size-4" aria-hidden="true" />
         </Link>
-        <Link href="/terms" className="underline">
-          {ui("Terms of Service")}
-        </Link>
-      </nav>
+      </aside>
     </article>
   );
 }

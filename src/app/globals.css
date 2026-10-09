@@ -625,3 +625,129 @@ h1.page-heading {
     break-after: auto;
   }
 }
+
+.legal-hero,
+.faq-hero,
+.contact-hero {
+  position: relative;
+  overflow: hidden;
+}
+.legal-hero {
+  background:
+    radial-gradient(
+      circle at 88% 22%,
+      rgb(190 147 232 / 28%),
+      transparent 20rem
+    ),
+    linear-gradient(135deg, rgb(255 255 255 / 92%), rgb(246 239 253 / 88%));
+}
+.legal-hero-orb {
+  position: absolute;
+  right: -4rem;
+  bottom: -5rem;
+  width: 19rem;
+  height: 19rem;
+  border: 1px solid rgb(113 53 184 / 14%);
+  border-radius: 999px;
+  box-shadow:
+    0 0 0 2.75rem rgb(113 53 184 / 4%),
+    0 0 0 5.5rem rgb(113 53 184 / 3%);
+}
+.legal-meta-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 0.75rem;
+  align-items: center;
+  min-width: 0;
+  padding: 1.15rem 1.25rem;
+}
+.legal-meta-card dt {
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+  line-height: 1.2;
+}
+.legal-meta-card dd {
+  grid-column: 2;
+  margin-top: 0.2rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.legal-section-card {
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s,
+    transform 0.2s;
+}
+.legal-section-card:hover {
+  border-color: rgb(113 53 184 / 28%);
+  box-shadow: 0 15px 42px rgb(66 26 104 / 8%);
+  transform: translateY(-2px);
+}
+.legal-section-number {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 2.45rem;
+  height: 2.45rem;
+  border: 1px solid rgb(113 53 184 / 15%);
+  border-radius: 0.8rem;
+  color: var(--primary);
+  background: rgb(113 53 184 / 7%);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+.faq-hero {
+  background:
+    radial-gradient(
+      circle at 50% -15%,
+      rgb(184 137 230 / 30%),
+      transparent 21rem
+    ),
+    rgb(255 255 255 / 68%);
+}
+.faq-item {
+  overflow: hidden;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+.faq-item:hover,
+.faq-item[open] {
+  border-color: rgb(113 53 184 / 28%);
+  box-shadow: 0 12px 35px rgb(66 26 104 / 7%);
+}
+.faq-plus {
+  transition: transform 0.2s;
+}
+.faq-item[open] .faq-plus {
+  transform: rotate(45deg);
+}
+.contact-hero {
+  background:
+    radial-gradient(
+      circle at 50% -25%,
+      rgb(184 137 230 / 34%),
+      transparent 23rem
+    ),
+    linear-gradient(135deg, rgb(255 255 255 / 86%), rgb(249 244 254 / 84%));
+}
+.contact-note {
+  background: linear-gradient(
+    115deg,
+    rgb(255 255 255 / 90%),
+    rgb(246 239 253 / 78%)
+  );
+}
+@media (max-width: 639px) {
+  .legal-section-number {
+    width: 2.15rem;
+    height: 2.15rem;
+  }
+  .legal-section-card .flex {
+    gap: 0.75rem;
+  }
+  .faq-item p {
+    padding-left: 0;
+  }
+}
