@@ -1,6 +1,7 @@
 "use client";
 
 import { useUiText } from "@/i18n/use-ui-text";
+import { authDestination } from "@/lib/auth-destination";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
 import {
@@ -50,7 +51,7 @@ export default function VerifyAccountForm() {
             description: "Your account is now verified.",
             type: "success",
           });
-          router.push("/dashboard");
+          router.push(authDestination("CUSTOMER", searchParams.get("next")));
         },
         onError: (err) => {
           setIsInvalid(true);

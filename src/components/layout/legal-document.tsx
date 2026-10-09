@@ -1,7 +1,12 @@
 import { useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useUiText } from "@/i18n/use-ui-text";
-import { getLegalDocument, type LegalKind } from "@/content/legal";
+import {
+  getLegalDocument,
+  legalOperator,
+  legalEffectiveDate,
+  type LegalKind,
+} from "@/content/legal";
 
 export default function LegalDocument({ kind }: { kind: LegalKind }) {
   const locale = useLocale();
@@ -27,19 +32,26 @@ export default function LegalDocument({ kind }: { kind: LegalKind }) {
         <dl className="grid gap-2 text-sm sm:grid-cols-2">
           <div>
             <dt className="font-semibold">{ui("Company")}</dt>
-            <dd>[Company Name]</dd>
+            <dd>{legalOperator.companyName}</dd>
           </div>
           <div>
             <dt className="font-semibold">{ui("Effective date")}</dt>
-            <dd>[Effective Date]</dd>
+            <dd>{legalEffectiveDate(locale)}</dd>
           </div>
           <div>
             <dt className="font-semibold">{ui("Legal address")}</dt>
-            <dd>[Address]</dd>
+            <dd>{legalOperator.address}</dd>
           </div>
           <div>
             <dt className="font-semibold">{ui("Contact")}</dt>
-            <dd>[Contact Email]</dd>
+            <dd>
+              <a
+                href={`mailto:${legalOperator.contactEmail}`}
+                className="underline"
+              >
+                {legalOperator.contactEmail}
+              </a>
+            </dd>
           </div>
         </dl>
       </header>

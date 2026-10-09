@@ -10,6 +10,7 @@ export const courierRoutes: SidebarItems = [
         title: "Overview",
         url: `${prefix}`,
       },
+      { title: "Cash Collections", url: `${prefix}/collections` },
       {
         title: "My Deliveries",
         url: `${prefix}/deliveries`,

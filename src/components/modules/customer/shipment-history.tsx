@@ -1,6 +1,8 @@
 "use client";
 
 import { useUiText, useUiFormat } from "@/i18n/use-ui-text";
+import { useMutation } from "@tanstack/react-query";
+import { initiateStripePayment } from "@/api/payment.api";
 import { useState } from "react";
 import {
   useGetAllShipments,
@@ -43,6 +45,7 @@ export default function ShipmentHistory() {
   const details = useGetSingleShipment(selectedId);
   const { mutate: cancel, isPending: canceling } = useCancelShipment();
   const { mutate: initiate, isPending: paying } = useInitiatePayment();
+  const stripe = useMutation({ mutationFn: initiateStripePayment });
   if (error)
     return (
       <QueryError
@@ -88,32 +91,66 @@ export default function ShipmentHistory() {
                         !["CANCELLED", "RETURNED"].includes(
                           shipment.status,
                         ) && (
-                          <Button
-                            size="sm"
-                            disabled={paying || canceling}
-                            onClick={() =>
-                              initiate(
-                                { shipmentId: shipment.id },
-                                {
-                                  onSuccess: (response) => {
-                                    const url = new URL(
-                                      response.data.paymentUrl,
-                                    );
-                                    if (url.protocol !== "https:") return;
-                                    window.location.assign(url.href);
+                          <>
+                            <Button
+                              size="sm"
+                              disabled={paying || stripe.isPending || canceling}
+                              onClick={() =>
+                                initiate(
+                                  { shipmentId: shipment.id },
+                                  {
+                                    onSuccess: (response) => {
+                                      const url = new URL(
+                                        response.data.paymentUrl,
+                                      );
+                                      if (url.protocol !== "https:") return;
+                                      window.location.assign(url.href);
+                                    },
+                                    onError: (failure) =>
+                                      toast.add({
+                                        title: "Payment Failed",
+                                        description:
+                                          getApiErrorMessage(failure),
+                                        type: "error",
+                                      }),
                                   },
-                                  onError: (failure) =>
-                                    toast.add({
-                                      title: "Payment Failed",
-                                      description: getApiErrorMessage(failure),
-                                      type: "error",
-                                    }),
-                                },
-                              )
-                            }
-                          >
-                            {ui("Pay Now")}
-                          </Button>
+                                )
+                              }
+                            >
+                              {ui("Pay Now")}
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              disabled={paying || stripe.isPending || canceling}
+                              onClick={() =>
+                                stripe.mutate(
+                                  { shipmentId: shipment.id },
+                                  {
+                                    onSuccess: (response) => {
+                                      const url = new URL(
+                                        response.data.paymentUrl,
+                                      );
+                                      if (
+                                        url.protocol === "https:" &&
+                                        url.hostname === "checkout.stripe.com"
+                                      )
+                                        window.location.assign(url.href);
+                                    },
+                                    onError: (failure) =>
+                                      toast.add({
+                                        title: "Payment Failed",
+                                        description:
+                                          getApiErrorMessage(failure),
+                                        type: "error",
+                                      }),
+                                  },
+                                )
+                              }
+                            >
+                              {ui("Pay with Stripe")}
+                            </Button>
+                          </>
                         )}
                       <Button
                         variant="outline"

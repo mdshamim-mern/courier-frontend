@@ -1,4 +1,9 @@
 import { test, expect, type Page } from "@playwright/test";
+import {
+  getLegalDocument,
+  legalOperator,
+  type LegalKind,
+} from "../src/content/legal";
 
 const shipmentId = "11111111-1111-4111-8111-111111111111";
 const shipment = {
@@ -88,6 +93,33 @@ async function mockRole(page: Page, role: string) {
 }
 
 for (const locale of ["en", "bn"]) {
+  test(`${locale} support contacts are configured and actionable`, async ({
+    page,
+  }) => {
+    await mockGuest(page);
+    await page.goto(`/${locale}/contact`);
+    await expect(page.locator('main a[href^="mailto:"]')).toHaveAttribute(
+      "href",
+      `mailto:${legalOperator.contactEmail}`,
+    );
+    await expect(page.locator('main a[href^="tel:"]')).toHaveAttribute(
+      "href",
+      `tel:${legalOperator.contactPhone.replaceAll("-", "")}`,
+    );
+    await expect(page.locator("main").first()).not.toContainText(
+      /not configured|প্লেসহোল্ডার/,
+    );
+    await page.goto(`/${locale}/faq`);
+    await expect(page.locator("article")).toContainText(
+      legalOperator.contactEmail,
+    );
+    await expect(page.locator("article")).toContainText(
+      legalOperator.contactPhone,
+    );
+    await expect(page.locator("article")).not.toContainText(
+      /operator must replace|পূরণ করতে হবে। এর আগে/,
+    );
+  });
   for (const [route, title] of [
     ["terms", locale === "bn" ? "ব্যবহারের শর্তাবলী" : "Terms of Service"],
     ["privacy", locale === "bn" ? "গোপনীয়তার নীতি" : "Privacy Policy"],
@@ -97,10 +129,10 @@ for (const locale of ["en", "bn"]) {
       locale +
         " " +
         route +
-        " is a clearly marked legal draft with editable placeholders",
+        " is a clearly marked legal draft with the configured operator",
       async ({ page }) => {
         await mockGuest(page);
-        await page.goto("/" + locale + "/" + route);
+        await page.goto(`/${locale}/${route}`);
         await expect(
           page.getByRole("heading", { name: title, exact: true }),
         ).toBeVisible();
@@ -115,41 +147,52 @@ for (const locale of ["en", "bn"]) {
           "[Address]",
           "[Effective Date]",
         ])
-          await expect(page.locator("article")).toContainText(placeholder);
+          await expect(page.locator("article")).not.toContainText(placeholder);
+        for (const value of [
+          legalOperator.companyName,
+          legalOperator.contactEmail,
+          legalOperator.address,
+        ])
+          await expect(page.locator("article")).toContainText(value);
+        await expect(page.locator("article")).toContainText(
+          getLegalDocument(locale, route as LegalKind).sections[0]
+            .paragraphs[0],
+        );
         await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
           "content",
           /noindex/,
         );
-        await expect(page.locator('a[href^="mailto:"]')).toHaveCount(0);
+        await expect(
+          page.locator('article a[href^="mailto:"]'),
+        ).toHaveAttribute("href", `mailto:${legalOperator.contactEmail}`);
       },
     );
   }
 
-  test(
-    locale + " footer links resolve and service anchors exist",
-    async ({ page }) => {
-      await mockGuest(page);
-      await page.goto("/" + locale);
-      await expect(page.locator("footer")).toBeVisible();
-      const links = await page
-        .locator("footer a")
-        .evaluateAll((nodes) =>
-          nodes.map((node) => node.getAttribute("href") || ""),
+  test(`${locale} footer links resolve and service anchors exist`, async ({
+    page,
+  }) => {
+    await mockGuest(page);
+    await page.goto(`/${locale}`);
+    await expect(page.locator("footer")).toBeVisible();
+    const links = await page
+      .locator("footer a")
+      .evaluateAll((nodes) =>
+        nodes.map((node) => node.getAttribute("href") || ""),
+      );
+    expect(links.length).toBeGreaterThan(10);
+    for (const href of [...new Set(links)]) {
+      expect(href).not.toBe("#");
+      expect(href).toMatch(new RegExp(`^/${locale}(?:/|#|$)`));
+      const url = new URL(href, page.url());
+      const response = await page.request.get(url.toString());
+      expect(response.status(), href).toBe(200);
+      if (url.hash)
+        expect(await response.text(), href).toContain(
+          `id="${url.hash.slice(1)}"`,
         );
-      expect(links.length).toBeGreaterThan(10);
-      for (const href of [...new Set(links)]) {
-        expect(href).not.toBe("#");
-        expect(href).toMatch(new RegExp("^/" + locale + "(?:/|#|$)"));
-        const url = new URL(href, page.url());
-        const response = await page.request.get(url.toString());
-        expect(response.status(), href).toBe(200);
-        if (url.hash)
-          expect(await response.text(), href).toContain(
-            'id="' + url.hash.slice(1) + '"',
-          );
-      }
-    },
-  );
+    }
+  });
 }
 
 for (const route of [
@@ -169,11 +212,13 @@ for (const route of [
       (route || "home"),
     async ({ page }) => {
       await mockGuest(page);
-      await page.goto("/bn" + route);
+      await page.goto(`/bn${route}`);
       await expect(page.locator("html")).toHaveAttribute("lang", "bn");
       const text = (await page.locator("main").first().innerText())
         .replace(/\[[^\]]+\]/g, "")
-        .replace(/user@example\.test|Dropzo|Google|Stripe|bKash/g, "");
+        .replace(/user@example\.test|Dropzo|Google|Stripe|bKash/g, "")
+        .replaceAll(legalOperator.contactEmail, "")
+        .replaceAll(legalOperator.address, "");
       expect(text).not.toMatch(/[A-Za-z]{2,}/);
     },
   );
@@ -217,7 +262,7 @@ test("Bengali courier actions are localized without changing API status values",
 }) => {
   await mockRole(page, "COURIER");
   await page.route(
-    "**/api/backend/shipments/" + shipmentId + "/status",
+    `**/api/backend/shipments/${shipmentId}/status`,
     async (route) => {
       expect(route.request().postDataJSON()).toEqual({
         status: "AT_ORIGIN_HUB",
@@ -311,19 +356,38 @@ test("language switching keeps reset-password query parameters", async ({
   await expect(page.locator("main").first()).toContainText("user@example.test");
 });
 
-test("Bengali audit action captions are localized while raw event details stay intact", async ({ page }) => {
+test("Bengali audit action captions are localized while raw event details stay intact", async ({
+  page,
+}) => {
   await mockRole(page, "ADMIN");
-  await page.route("**/api/backend/audit-logs*", route => route.fulfill({
-    status: 200,
-    contentType: "application/json",
-    body: JSON.stringify({
-      success: true,
-      data: [{ id: "event", action: "CREATE_SHIPMENT", entityType: "SHIPMENT", entityId: shipmentId, createdAt: shipment.createdAt, details: { status: "PENDING" } }],
-      meta: { page: 1, total: 1, limit: 10, totalPages: 1 },
+  await page.route("**/api/backend/audit-logs*", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: true,
+        data: [
+          {
+            id: "event",
+            action: "CREATE_SHIPMENT",
+            entityType: "SHIPMENT",
+            entityId: shipmentId,
+            createdAt: shipment.createdAt,
+            details: { status: "PENDING" },
+          },
+        ],
+        meta: { page: 1, total: 1, limit: 10, totalPages: 1 },
+      }),
     }),
-  }));
+  );
   await page.goto("/bn/admin/audit-logs");
-  await expect(page.getByText("পার্সেলের অনুরোধ তৈরি", { exact: true })).toBeVisible();
-  await expect(page.getByRole("cell", { name: "পার্সেল", exact: true })).toBeVisible();
-  await expect(page.getByText('{"status":"PENDING"}', { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("পার্সেলের অনুরোধ তৈরি", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("cell", { name: "পার্সেল", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText('{"status":"PENDING"}', { exact: true }),
+  ).toBeVisible();
 });

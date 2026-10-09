@@ -27,6 +27,24 @@ export interface ShipmentTracking {
 }
 
 export interface Shipment {
+  priceBreakdown?: import("./operations.type").Quote | null;
+  pickupAddress?: string | null;
+  senderPhone?: string | null;
+  pickupMode?: string;
+  productType?: string | null;
+  declaredValue?: number | string | null;
+  codAmount?: number | string;
+  codFee?: number | string;
+  requestedPickupAt?: string | null;
+  deliveryInstructions?: string | null;
+  serviceType?: string;
+  deliveryProof?: {
+    receiverName: string;
+    signature: string;
+    acknowledged: boolean;
+    createdAt: string;
+  } | null;
+  collection?: import("./operations.type").Collection | null;
   id: string;
   trackingId: string;
   senderId: string;

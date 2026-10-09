@@ -2,7 +2,7 @@
 
 মূল কাঠামো রেখে সংশোধিত ফাইলের বর্তমান কোড নিচে আছে। প্রতিটি কোডের আগে সম্পূর্ণ স্থানীয় পথ দেওয়া হয়েছে। বাস্তব শংসাপত্রের ফাইল অন্তর্ভুক্ত করা হয়নি। যেগুলোতে কার্যকর পরিবর্তনের বদলে টাইপের আমদানি, ভাষা-সচেতন লিংক বা প্রবেশযোগ্যতার সংশোধন হয়েছে, সেগুলোও অন্তর্ভুক্ত।
 
-মোট কোড ফাইল: 128।
+মোট কোড ফাইল: 152।
 
 অন্যান্য পরিবর্তিত ফাইল:
 
@@ -45,6 +45,7 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - run: npm run audit:security
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run build
@@ -285,6 +286,11 @@ test("payment recheck calls the provider reconciliation endpoint", async ({
 
 ```ts
 import { test, expect, type Page } from "@playwright/test";
+import {
+  getLegalDocument,
+  legalOperator,
+  type LegalKind,
+} from "../src/content/legal";
 
 const shipmentId = "11111111-1111-4111-8111-111111111111";
 const shipment = {
@@ -374,6 +380,33 @@ async function mockRole(page: Page, role: string) {
 }
 
 for (const locale of ["en", "bn"]) {
+  test(`${locale} support contacts are configured and actionable`, async ({
+    page,
+  }) => {
+    await mockGuest(page);
+    await page.goto(`/${locale}/contact`);
+    await expect(page.locator('main a[href^="mailto:"]')).toHaveAttribute(
+      "href",
+      `mailto:${legalOperator.contactEmail}`,
+    );
+    await expect(page.locator('main a[href^="tel:"]')).toHaveAttribute(
+      "href",
+      `tel:${legalOperator.contactPhone.replaceAll("-", "")}`,
+    );
+    await expect(page.locator("main").first()).not.toContainText(
+      /not configured|প্লেসহোল্ডার/,
+    );
+    await page.goto(`/${locale}/faq`);
+    await expect(page.locator("article")).toContainText(
+      legalOperator.contactEmail,
+    );
+    await expect(page.locator("article")).toContainText(
+      legalOperator.contactPhone,
+    );
+    await expect(page.locator("article")).not.toContainText(
+      /operator must replace|পূরণ করতে হবে। এর আগে/,
+    );
+  });
   for (const [route, title] of [
     ["terms", locale === "bn" ? "ব্যবহারের শর্তাবলী" : "Terms of Service"],
     ["privacy", locale === "bn" ? "গোপনীয়তার নীতি" : "Privacy Policy"],
@@ -383,10 +416,10 @@ for (const locale of ["en", "bn"]) {
       locale +
         " " +
         route +
-        " is a clearly marked legal draft with editable placeholders",
+        " is a clearly marked legal draft with the configured operator",
       async ({ page }) => {
         await mockGuest(page);
-        await page.goto("/" + locale + "/" + route);
+        await page.goto(`/${locale}/${route}`);
         await expect(
           page.getByRole("heading", { name: title, exact: true }),
         ).toBeVisible();
@@ -401,41 +434,52 @@ for (const locale of ["en", "bn"]) {
           "[Address]",
           "[Effective Date]",
         ])
-          await expect(page.locator("article")).toContainText(placeholder);
+          await expect(page.locator("article")).not.toContainText(placeholder);
+        for (const value of [
+          legalOperator.companyName,
+          legalOperator.contactEmail,
+          legalOperator.address,
+        ])
+          await expect(page.locator("article")).toContainText(value);
+        await expect(page.locator("article")).toContainText(
+          getLegalDocument(locale, route as LegalKind).sections[0]
+            .paragraphs[0],
+        );
         await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
           "content",
           /noindex/,
         );
-        await expect(page.locator('a[href^="mailto:"]')).toHaveCount(0);
+        await expect(
+          page.locator('article a[href^="mailto:"]'),
+        ).toHaveAttribute("href", `mailto:${legalOperator.contactEmail}`);
       },
     );
   }
 
-  test(
-    locale + " footer links resolve and service anchors exist",
-    async ({ page }) => {
-      await mockGuest(page);
-      await page.goto("/" + locale);
-      await expect(page.locator("footer")).toBeVisible();
-      const links = await page
-        .locator("footer a")
-        .evaluateAll((nodes) =>
-          nodes.map((node) => node.getAttribute("href") || ""),
+  test(`${locale} footer links resolve and service anchors exist`, async ({
+    page,
+  }) => {
+    await mockGuest(page);
+    await page.goto(`/${locale}`);
+    await expect(page.locator("footer")).toBeVisible();
+    const links = await page
+      .locator("footer a")
+      .evaluateAll((nodes) =>
+        nodes.map((node) => node.getAttribute("href") || ""),
+      );
+    expect(links.length).toBeGreaterThan(10);
+    for (const href of [...new Set(links)]) {
+      expect(href).not.toBe("#");
+      expect(href).toMatch(new RegExp(`^/${locale}(?:/|#|$)`));
+      const url = new URL(href, page.url());
+      const response = await page.request.get(url.toString());
+      expect(response.status(), href).toBe(200);
+      if (url.hash)
+        expect(await response.text(), href).toContain(
+          `id="${url.hash.slice(1)}"`,
         );
-      expect(links.length).toBeGreaterThan(10);
-      for (const href of [...new Set(links)]) {
-        expect(href).not.toBe("#");
-        expect(href).toMatch(new RegExp("^/" + locale + "(?:/|#|$)"));
-        const url = new URL(href, page.url());
-        const response = await page.request.get(url.toString());
-        expect(response.status(), href).toBe(200);
-        if (url.hash)
-          expect(await response.text(), href).toContain(
-            'id="' + url.hash.slice(1) + '"',
-          );
-      }
-    },
-  );
+    }
+  });
 }
 
 for (const route of [
@@ -455,11 +499,13 @@ for (const route of [
       (route || "home"),
     async ({ page }) => {
       await mockGuest(page);
-      await page.goto("/bn" + route);
+      await page.goto(`/bn${route}`);
       await expect(page.locator("html")).toHaveAttribute("lang", "bn");
       const text = (await page.locator("main").first().innerText())
         .replace(/\[[^\]]+\]/g, "")
-        .replace(/user@example\.test|Dropzo|Google|Stripe|bKash/g, "");
+        .replace(/user@example\.test|Dropzo|Google|Stripe|bKash/g, "")
+        .replaceAll(legalOperator.contactEmail, "")
+        .replaceAll(legalOperator.address, "");
       expect(text).not.toMatch(/[A-Za-z]{2,}/);
     },
   );
@@ -503,7 +549,7 @@ test("Bengali courier actions are localized without changing API status values",
 }) => {
   await mockRole(page, "COURIER");
   await page.route(
-    "**/api/backend/shipments/" + shipmentId + "/status",
+    `**/api/backend/shipments/${shipmentId}/status`,
     async (route) => {
       expect(route.request().postDataJSON()).toEqual({
         status: "AT_ORIGIN_HUB",
@@ -597,21 +643,40 @@ test("language switching keeps reset-password query parameters", async ({
   await expect(page.locator("main").first()).toContainText("user@example.test");
 });
 
-test("Bengali audit action captions are localized while raw event details stay intact", async ({ page }) => {
+test("Bengali audit action captions are localized while raw event details stay intact", async ({
+  page,
+}) => {
   await mockRole(page, "ADMIN");
-  await page.route("**/api/backend/audit-logs*", route => route.fulfill({
-    status: 200,
-    contentType: "application/json",
-    body: JSON.stringify({
-      success: true,
-      data: [{ id: "event", action: "CREATE_SHIPMENT", entityType: "SHIPMENT", entityId: shipmentId, createdAt: shipment.createdAt, details: { status: "PENDING" } }],
-      meta: { page: 1, total: 1, limit: 10, totalPages: 1 },
+  await page.route("**/api/backend/audit-logs*", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: true,
+        data: [
+          {
+            id: "event",
+            action: "CREATE_SHIPMENT",
+            entityType: "SHIPMENT",
+            entityId: shipmentId,
+            createdAt: shipment.createdAt,
+            details: { status: "PENDING" },
+          },
+        ],
+        meta: { page: 1, total: 1, limit: 10, totalPages: 1 },
+      }),
     }),
-  }));
+  );
   await page.goto("/bn/admin/audit-logs");
-  await expect(page.getByText("পার্সেলের অনুরোধ তৈরি", { exact: true })).toBeVisible();
-  await expect(page.getByRole("cell", { name: "পার্সেল", exact: true })).toBeVisible();
-  await expect(page.getByText('{"status":"PENDING"}', { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("পার্সেলের অনুরোধ তৈরি", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("cell", { name: "পার্সেল", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText('{"status":"PENDING"}', { exact: true }),
+  ).toBeVisible();
 });
 ```
 
@@ -1098,7 +1163,18 @@ test("Bengali audit action captions are localized while raw event details stay i
   "UPDATE_STATUS": "অবস্থা পরিবর্তন",
   "CANCEL_SHIPMENT": "পার্সেলের অনুরোধ বাতিল",
   "SHIPMENT": "পার্সেল",
-  "USER": "ব্যবহারকারী"
+  "USER": "ব্যবহারকারী",
+  "Operations": "সেবা ও কার্যক্রম",
+  "Business Account": "ব্যবসায়িক হিসাব",
+  "Cash Collections": "পণ্যের টাকা সংগ্রহ",
+  "Bulk Shipments": "একসঙ্গে একাধিক বুকিং",
+  "Pay with Stripe": "স্ট্রাইপ দিয়ে পরিশোধ",
+  "Send Parcel": "পার্সেল পাঠান",
+  "Pricing": "খরচ হিসাব",
+  "Coverage": "সেবার এলাকা",
+  "Merchant Registration": "ব্যবসায়িক নিবন্ধন",
+  "Courier Application": "ডেলিভারিকর্মীর আবেদন",
+  "Dropzo serves approved areas through its own delivery team. Check coverage and pricing before booking.": "ড্রপজো নিজের ডেলিভারিকর্মীদের মাধ্যমে অনুমোদিত এলাকায় সেবা দেবে। বুকিংয়ের আগে এলাকা ও খরচ যাচাই করুন।"
 }
 ```
 
@@ -1111,19 +1187,47 @@ import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n.ts");
-const upstream = process.env.API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1";
+const upstream =
+  process.env.API_BASE_URL ||
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  "http://localhost:5000/api/v1";
 const apiUrl = new URL(upstream);
-if (!["http:", "https:"].includes(apiUrl.protocol) || apiUrl.username || apiUrl.password) throw new Error("Invalid API_BASE_URL");
+if (
+  !["http:", "https:"].includes(apiUrl.protocol) ||
+  apiUrl.username ||
+  apiUrl.password
+)
+  throw new Error("Invalid API_BASE_URL");
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
   async rewrites() {
-    return [{ source: "/api/backend/:path*", destination: upstream.replace(/\/$/, "") + "/:path*" }];
+    return [
+      {
+        source: "/api/backend/:path*",
+        destination: `${upstream.replace(/\/$/, "")}/:path*`,
+      },
+    ];
   },
   async headers() {
     return [
-      { source: "/api/backend/:path*", headers: [{ key: "Cache-Control", value: "private, no-store" }] },
-      { source: "/:path*", headers: [{ key: "X-Content-Type-Options", value: "nosniff" }, { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" }] },
+      {
+        source: "/api/backend/:path*",
+        headers: [{ key: "Cache-Control", value: "private, no-store" }],
+      },
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "X-Frame-Options", value: "DENY" },
+          {
+            key: "Content-Security-Policy",
+            value: "frame-ancestors 'none'; object-src 'none'; base-uri 'self'",
+          },
+        ],
+      },
     ];
   },
 };
@@ -1140,13 +1244,17 @@ export default withNextIntl(nextConfig);
   "module": "index.ts",
   "type": "module",
   "private": true,
-  "engines": { "node": ">=22 <27" },
+  "engines": {
+    "node": ">=22 <27"
+  },
   "devDependencies": {
     "@biomejs/biome": "^2.5.15",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/bun": "latest",
     "@types/node": "^26.6.3",
+    "@types/papaparse": "^5.5.2",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "babel-plugin-react-compiler": "^1.0.0",
@@ -1170,6 +1278,8 @@ export default withNextIntl(nextConfig);
     "next": "^16.3.8",
     "next-intl": "^4.14.9",
     "ofetch": "^1.5.1",
+    "papaparse": "^5.7.0",
+    "qrcode": "^1.5.4",
     "react": "^19.3.0",
     "react-day-picker": "^10.0.2",
     "react-dom": "^19.3.0",
@@ -1184,7 +1294,8 @@ export default withNextIntl(nextConfig);
     "lint": "biome lint src",
     "format": "biome format --write",
     "typecheck": "next typegen && tsc --noEmit",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "audit:security": "npm audit --audit-level=high"
   }
 }
 ```
@@ -1722,10 +1833,9 @@ export default function ResetPasswordPage() {
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\about\page.tsx
 
 ```tsx
-import { useUiText } from "@/i18n/use-ui-text";
+import { useLocale } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import type { Metadata } from "next";
-import { ShieldCheck, MapPin, Clock3 } from "lucide-react";
-
 export async function generateMetadata({
   params,
 }: {
@@ -1733,94 +1843,68 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   return {
-    title: locale === "bn" ? "আমাদের সম্পর্কে | Dropzo" : "About Us | Dropzo",
-    description:
-      locale === "bn"
-        ? "ড্রপজোর লক্ষ্য, স্বপ্ন ও পণ্য পরিবহনব্যবস্থা সম্পর্কে জানুন।"
-        : "Learn about Dropzo, our mission, vision and delivery platform.",
+    title: locale === "bn" ? "ড্রপজো সম্পর্কে | Dropzo" : "About Dropzo | Dropzo",
   };
 }
-
 export default function AboutPage() {
-  const ui = useUiText();
+  const bn = useLocale() === "bn",
+    t = (en: string, bangla: string) => (bn ? bangla : en);
   return (
-    <div className="relative overflow-hidden">
-      <div className="pointer-events-none absolute -top-32 left-1/3 size-96 rounded-full bg-primary/10 blur-3xl" />
-      <div className="pointer-events-none absolute bottom-0 right-0 size-96 rounded-full bg-blue-500/10 blur-3xl" />
-
-      <div className="relative max-w-5xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl mb-4">
-            {ui("About Courier")}
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            {ui(
-              "Delivering trust and reliability across every mile. We are dedicated to providing seamless logistics solutions for businesses and individuals alike.",
-            )}{" "}
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start mb-16">
-          <div className="rounded-3xl border border-white/40 bg-white/60 p-8 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.06)] dark:border-white/10 dark:bg-white/4">
-            <h2 className="text-3xl font-bold mb-4">{ui("Our Mission")}</h2>
-            <p className="text-muted-foreground leading-relaxed mb-8">
-              {ui(
-                "At Dropzo, our mission is to simplify the delivery process through innovative technology and a dedicated network of professionals. We aim to ensure that every parcel, no matter how small or large, reaches its destination safely, securely, and on time.",
-              )}{" "}
-            </p>
-            <h2 className="text-3xl font-bold mb-4">{ui("Our Vision")}</h2>
-            <p className="text-muted-foreground leading-relaxed">
-              {ui(
-                "We envision a future where logistics barriers are completely eliminated, making commerce more accessible for everyone. By expanding our hub networks and integrating real-time AI-driven tracking, we strive to become the most trusted logistics partner in the region.",
-              )}{" "}
-            </p>
-          </div>
-
-          <div className="rounded-3xl border border-white/40 bg-white/60 p-8 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.06)] dark:border-white/10 dark:bg-white/4">
-            <h3 className="text-xl font-bold mb-6">{ui("Why Choose Us?")}</h3>
-            <ul className="space-y-6">
-              <li className="flex items-start gap-4">
-                <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-primary/15 to-blue-500/15 ring-1 ring-primary/10">
-                  <ShieldCheck className="size-5 text-primary" />
-                </div>
-                <div>
-                  <strong className="block">{ui("Fast & Secure")}</strong>
-                  <span className="text-sm text-muted-foreground">
-                    {ui(
-                      "Industry-leading delivery speeds with guaranteed item security.",
-                    )}
-                  </span>
-                </div>
-              </li>
-              <li className="flex items-start gap-4">
-                <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-primary/15 to-blue-500/15 ring-1 ring-primary/10">
-                  <MapPin className="size-5 text-primary" />
-                </div>
-                <div>
-                  <strong className="block">{ui("Real-time Tracking")}</strong>
-                  <span className="text-sm text-muted-foreground">
-                    {ui("Monitor your shipments at every step of the journey.")}
-                  </span>
-                </div>
-              </li>
-              <li className="flex items-start gap-4">
-                <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-primary/15 to-blue-500/15 ring-1 ring-primary/10">
-                  <Clock3 className="size-5 text-primary" />
-                </div>
-                <div>
-                  <strong className="block">{ui("24/7 Support")}</strong>
-                  <span className="text-sm text-muted-foreground">
-                    {ui(
-                      "Dedicated customer service team ready to assist you anytime.",
-                    )}
-                  </span>
-                </div>
-              </li>
-            </ul>
-          </div>
-        </div>
+    <article className="mx-auto max-w-5xl space-y-6 px-4 py-10">
+      <h1 className="text-3xl font-bold">
+        {t("About Dropzo", "ড্রপজো সম্পর্কে")}
+      </h1>
+      <p>
+        {t(
+          "Dropzo uses its own approved delivery workers. Customers book a parcel; administrators assign pickup, route hubs and delivery work.",
+          "ড্রপজো নিজের অনুমোদিত ডেলিভারিকর্মীদের দিয়ে পার্সেল সংগ্রহ ও পৌঁছে দেবে। গ্রাহক বুকিং করবেন; প্রশাসক সংগ্রহের দায়িত্ব, রুটের হাব ও ডেলিভারির কাজ বরাদ্দ করবেন।",
+        )}
+      </p>
+      <div className="grid gap-5 md:grid-cols-2">
+        {[
+          [
+            "Our service process",
+            "আমাদের কাজের ধাপ",
+            "Booking → pickup assignment → collection → hub → transit → destination hub → delivery and recipient acknowledgment.",
+            "বুকিং → সংগ্রহের কাজ বরাদ্দ → পার্সেল সংগ্রহ → হাব → পথে → গন্তব্যের হাব → ডেলিভারি ও প্রাপকের গ্রহণের নথি।",
+          ],
+          [
+            "What tracking shows",
+            "অনুসরণে যা দেখবেন",
+            "Tracking displays recorded status and timestamps, not a worker's live GPS location.",
+            "অনুসরণে নথিভুক্ত অবস্থা ও সময় দেখা যাবে; কর্মীর সরাসরি জিপিএস অবস্থান নয়।",
+          ],
+          [
+            "Business payments",
+            "ব্যবসায়ীর টাকার হিসাব",
+            "Delivery charges are paid separately. Product cash collections and administrator-confirmed remittances have their own ledger.",
+            "ডেলিভারি মাশুল আলাদা পরিশোধযোগ্য। পণ্যের টাকা সংগ্রহ ও প্রশাসকের নিশ্চিত করা টাকা হস্তান্তরের পৃথক হিসাব থাকবে।",
+          ],
+          [
+            "Service commitments",
+            "সেবার প্রতিশ্রুতি",
+            "Coverage, charges and estimated delivery time depend on approved route settings. Confirm support hours with our contact team.",
+            "অনুমোদিত রুটের সেটিং অনুযায়ী এলাকা, মাশুল ও সম্ভাব্য সময় নির্ধারিত হবে। সহায়তার সময় যোগাযোগ করে নিশ্চিত করুন।",
+          ],
+        ].map(([en, bangla, description, descriptionBn]) => (
+          <section className="space-y-3 rounded-xl border p-5" key={en}>
+            <h2 className="text-xl font-semibold">{t(en, bangla)}</h2>
+            <p>{t(description, descriptionBn)}</p>
+          </section>
+        ))}
       </div>
-    </div>
+      <nav className="flex flex-wrap gap-5">
+        <Link className="underline" href="/coverage">
+          {t("Check service coverage", "সেবার এলাকা যাচাই")}
+        </Link>
+        <Link className="underline" href="/pricing">
+          {t("Calculate charges", "খরচ হিসাব")}
+        </Link>
+        <Link className="underline" href="/contact">
+          {t("Contact support", "সহায়তার যোগাযোগ")}
+        </Link>
+      </nav>
+    </article>
   );
 }
 ```
@@ -1830,221 +1914,9 @@ export default function AboutPage() {
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\admin\all-shipments\page.tsx
 
 ```tsx
-"use client";
-
-import { useUiText, useUiFormat } from "@/i18n/use-ui-text";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import TablePagination from "@/components/ui/table-pagination";
-import { useGetAllShipments } from "@/hooks";
-import { useState, useEffect, Suspense } from "react";
-import type { Dispatch, SetStateAction } from "react";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
-
-function AllShipmentsContent() {
-  const ui = useUiText();
-  const display = useUiFormat();
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-
-  const initialPage = Number(searchParams.get("page")) || 1;
-  const initialSearch = searchParams.get("search") || "";
-
-  const [page, setPage] = useState(initialPage);
-  const [searchTerm, setSearchTerm] = useState(initialSearch);
-
-  const { data, isLoading } = useGetAllShipments({
-    page,
-    limit: 10,
-    searchTerm,
-  });
-  const shipments = data?.data || [];
-  const meta = data?.meta;
-
-  const handleSearch = (value: string) => {
-    setSearchTerm(value);
-    setPage(1);
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("search", value);
-    params.set("page", "1");
-    if (!value) params.delete("search");
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  };
-
-  const handlePageChange: Dispatch<SetStateAction<number>> = (value) => {
-    const newPage = typeof value === "function" ? value(page) : value;
-    setPage(newPage);
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("page", newPage.toString());
-    if (searchTerm) params.set("search", searchTerm);
-    router.push(`${pathname}?${params.toString()}`, { scroll: false });
-  };
-
-  useEffect(() => {
-    const urlPage = Number(searchParams.get("page")) || 1;
-    const urlSearch = searchParams.get("search") || "";
-    if (urlPage !== page) setPage(urlPage);
-    if (urlSearch !== searchTerm) setSearchTerm(urlSearch);
-  }, [searchParams, page, searchTerm]);
-
-  return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold tracking-tight">
-          {ui("All Shipments")}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {ui(
-            "Monitor all active and completed shipments across the platform.",
-          )}{" "}
-        </p>
-      </div>
-
-      <div className="flex flex-col gap-4">
-        <Input
-          placeholder={ui("Search by tracking ID or receiver name...")}
-          value={searchTerm}
-          onChange={(e) => handleSearch(e.target.value)}
-          className="max-w-md"
-        />
-
-        <div className="rounded-md border bg-card">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{ui("Tracking ID")}</TableHead>
-                <TableHead>{ui("Date")}</TableHead>
-                <TableHead>{ui("Customer")}</TableHead>
-                <TableHead>{ui("Receiver")}</TableHead>
-                <TableHead>{ui("Hubs")}</TableHead>
-                <TableHead>{ui("Status")}</TableHead>
-                <TableHead className="text-right">{ui("Actions")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                [
-                  "placeholder-a",
-                  "placeholder-b",
-                  "placeholder-c",
-                  "placeholder-d",
-                  "placeholder-e",
-                ].map((key) => (
-                  <TableRow key={key}>
-                    <TableCell>
-                      <Skeleton className="h-4 w-20" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-24" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-32" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-32" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-32" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-20" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-8 w-24 ml-auto" />
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : shipments.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={7}
-                    className="h-24 text-center text-muted-foreground"
-                  >
-                    {ui("No shipments found.")}{" "}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                shipments.map((shipment) => (
-                  <TableRow key={shipment.id}>
-                    <TableCell className="font-mono text-xs font-semibold">
-                      {shipment.trackingId}
-                    </TableCell>
-                    <TableCell>
-                      {display.date(new Date(shipment.createdAt))}
-                    </TableCell>
-                    <TableCell className="truncate max-w-37.5">
-                      {shipment.sender?.name || ui("Unknown")}
-                    </TableCell>
-                    <TableCell className="truncate max-w-37.5">
-                      <div className="flex flex-col">
-                        <span className="text-sm">{shipment.receiverName}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {shipment.receiverPhone}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col text-xs">
-                        <span className="truncate max-w-37.5">
-                          {ui("From:")} {shipment.originHub?.name || ui("N/A")}
-                        </span>
-                        <span className="truncate max-w-37.5">
-                          {ui("To:")}{" "}
-                          {shipment.destinationHub?.name || ui("N/A")}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="px-2 py-1 rounded-full text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20 tracking-wider">
-                        {ui(shipment.status.replace(/_/g, " "))}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {shipment.status === "PENDING" ? (
-                        <Button variant="default" size="sm">
-                          {ui("Assign Courier")}
-                        </Button>
-                      ) : (
-                        <Button variant="outline" size="sm">
-                          {ui("View Details")}
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-
-        {meta && meta.totalPages > 1 && (
-          <TablePagination
-            page={page}
-            totalPages={meta.totalPages}
-            handlePageChange={handlePageChange}
-          />
-        )}
-      </div>
-    </div>
-  );
-}
-
+import WorkBoard from "@/components/operations/work-board";
 export default function AllShipmentsPage() {
-  return (
-    <Suspense fallback={<Skeleton className="w-full h-150 rounded-xl" />}>
-      <AllShipmentsContent />
-    </Suspense>
-  );
+  return <WorkBoard admin />;
 }
 ```
 
@@ -2673,43 +2545,64 @@ export default function AdminDashboardPage() {
 import { Link } from "@/i18n/navigation";
 import { useUiText } from "@/i18n/use-ui-text";
 import { MapPin, Mail, Clock3 } from "lucide-react";
+import { useLocale } from "next-intl";
+import { legalOperator } from "@/content/legal";
 
 export default function ContactPage() {
   const ui = useUiText();
+  const bengali = useLocale() === "bn";
   return (
     <div className="mx-auto max-w-5xl space-y-10 px-4 py-16 sm:px-6">
       <header className="space-y-4 text-center">
         <h1 className="text-4xl font-bold">{ui("Contact Us")}</h1>
         <p className="text-muted-foreground">
-          {ui(
-            "Contact information is not configured yet. Replace the placeholders before accepting support requests.",
-          )}
+          {bengali
+            ? "সহায়তার জন্য নিচের ইমেইল বা ফোন নম্বরে যোগাযোগ করুন।"
+            : "For support, contact us using the email or phone number below."}
         </p>
       </header>
       <div className="grid gap-6 md:grid-cols-3">
         <section className="space-y-3 rounded-3xl border bg-card p-6">
           <MapPin aria-hidden="true" className="text-primary" />
           <h2 className="text-xl font-semibold">{ui("Head Office")}</h2>
-          <p>[Company Name]</p>
-          <p>[Address]</p>
+          <p>{legalOperator.companyName}</p>
+          <p>{legalOperator.address}</p>
         </section>
         <section className="space-y-3 rounded-3xl border bg-card p-6">
           <Mail aria-hidden="true" className="text-primary" />
           <h2 className="text-xl font-semibold">{ui("Contact Details")}</h2>
-          <p>[Contact Email]</p>
-          <p>[Contact Phone]</p>
+          <p>
+            <a
+              href={`mailto:${legalOperator.contactEmail}`}
+              className="underline"
+            >
+              {legalOperator.contactEmail}
+            </a>
+          </p>
+          <p>
+            <a
+              href={`tel:${legalOperator.contactPhone.replaceAll("-", "")}`}
+              className="underline"
+            >
+              {legalOperator.contactPhone}
+            </a>
+          </p>
         </section>
         <section className="space-y-3 rounded-3xl border bg-card p-6">
           <Clock3 aria-hidden="true" className="text-primary" />
           <h2 className="text-xl font-semibold">{ui("Business Hours")}</h2>
-          <p>[Business Hours]</p>
+          <p>
+            {bengali
+              ? "সহায়তার সময় ফোন বা ইমেইলে নিশ্চিত করুন।"
+              : "Please confirm support hours by phone or email."}
+          </p>
         </section>
       </div>
       <aside role="note" className="rounded-xl border p-6">
         <p>
-          {ui(
-            "Contact form is not available until a verified support address is configured.",
-          )}
+          {bengali
+            ? "এই সাইটে বার্তা পাঠানোর ফরম নেই। সহায়তার অনুরোধ ইমেইল বা ফোনে জানান।"
+            : "This site does not provide a contact form. Send support requests by email or phone."}
         </p>
         <div className="mt-4 flex flex-wrap gap-5">
           <Link href="/faq" className="text-primary underline">
@@ -3089,15 +2982,22 @@ export default function CustomerLayout({ children }: { children: ReactNode }) {
 
 import { useUiText } from "@/i18n/use-ui-text";
 import { useParams } from "next/navigation";
-import { useGetSingleShipment } from "@/hooks";
+import { Link } from "@/i18n/navigation";
+import { useGetMe, useGetSingleShipment } from "@/hooks";
 import { Spinner } from "@/components/ui/spinner";
 import QueryError from "@/components/ui/query-error";
 import TrackingTimeline from "@/components/modules/shipment-tracking/tracking-timeline";
+import ParcelLabel from "@/components/operations/parcel-label";
+import CollectionTable from "@/components/operations/collection-table";
+import Image from "next/image";
+import { useLocale } from "next-intl";
 
 export default function ShipmentDetailsPage() {
   const ui = useUiText();
+  const bn = useLocale() === "bn";
   const { id } = useParams<{ id: string }>();
   const result = useGetSingleShipment(id);
+  const user = useGetMe();
   if (result.isPending) return <Spinner />;
   if (result.isError)
     return (
@@ -3118,6 +3018,48 @@ export default function ShipmentDetailsPage() {
         {shipment.receiverName} · {shipment.receiverAddress}
       </p>
       <TrackingTimeline trackings={shipment.trackings || []} />
+      {user.data?.data.role === "CUSTOMER" && (
+        <Link className="inline-block underline" href="/dashboard/my-shipments">
+          {bn
+            ? "পার্সেলের তালিকা ও মাশুল পরিশোধ"
+            : "View parcels and pay delivery fee"}
+        </Link>
+      )}
+      <ParcelLabel shipment={shipment} />
+      {shipment.deliveryInstructions && (
+        <p>
+          {bn ? "বিশেষ নির্দেশনা: " : "Instructions: "}
+          {shipment.deliveryInstructions}
+        </p>
+      )}
+      {shipment.deliveryProof && (
+        <section className="space-y-3 rounded-xl border p-4">
+          <h2>{bn ? "প্রাপকের গ্রহণের নথি" : "Recipient acknowledgment"}</h2>
+          <p>
+            {shipment.deliveryProof.receiverName} ·{" "}
+            {new Intl.DateTimeFormat(bn ? "bn-BD" : "en-GB", {
+              dateStyle: "medium",
+              timeStyle: "short",
+            }).format(new Date(shipment.deliveryProof.createdAt))}
+          </p>
+          <Image
+            unoptimized
+            width={480}
+            height={160}
+            src={shipment.deliveryProof.signature}
+            alt={bn ? "প্রাপকের স্বাক্ষর" : "Recipient signature"}
+            className="max-w-full border bg-white"
+          />
+          <p>
+            {bn
+              ? "এটি গ্রহণের নথি; এককালীন সংকেত দিয়ে পরিচয় যাচাই নয়।"
+              : "This records receipt, not OTP-verified identity."}
+          </p>
+        </section>
+      )}
+      {shipment.collection && (
+        <CollectionTable records={[shipment.collection]} />
+      )}
     </div>
   );
 }
@@ -3154,26 +3096,9 @@ export default function MyShipmentsPage() {
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\dashboard\new-shipment\page.tsx
 
 ```tsx
-import { useUiText } from "@/i18n/use-ui-text";
 import CreateShipmentForm from "@/components/form/create-shipment-form";
-
 export default function NewShipmentPage() {
-  const ui = useUiText();
-  return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold tracking-tight">
-          {ui("New Shipment")}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {ui(
-            "Fill in the details below to create a new delivery request.",
-          )}{" "}
-        </p>
-      </div>
-      <CreateShipmentForm />
-    </div>
-  );
+  return <CreateShipmentForm />;
 }
 ```
 
@@ -3512,6 +3437,7 @@ import type { Metadata } from "next";
 import { useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useUiText } from "@/i18n/use-ui-text";
+import { legalOperator } from "@/content/legal";
 
 const questions = {
   en: [
@@ -3525,7 +3451,7 @@ const questions = {
     ],
     [
       "Can I cancel a shipment?",
-      "The customer dashboard offers cancellation only while a shipment is pending and unpaid. Refund and cancellation terms must be completed in [Payment and Refund Policy].",
+      "The customer dashboard offers cancellation only while a shipment is pending and unpaid. Paid cancellations require a separately reviewed refund; automatic refunds are not available.",
     ],
     [
       "How do I reset my password?",
@@ -3533,11 +3459,11 @@ const questions = {
     ],
     [
       "What are the delivery time and support hours?",
-      "Service areas, delivery estimates, restricted goods and support hours are not finalized here. Confirm [Delivery Terms] and [Business Hours] with [Company Name] before booking.",
+      "Check the coverage page and route calculator for approved areas and estimated delivery time. Confirm restricted items and support hours with Dropzo before booking.",
     ],
     [
       "How do I contact support?",
-      "The operator must replace [Contact Email], [Contact Phone] and [Address] on the Contact page. Until then, support messages cannot be submitted through this site.",
+      `Email ${legalOperator.contactEmail} or call ${legalOperator.contactPhone}. The Contact page lists the office address and support hours. This site does not provide a contact form.`,
     ],
   ],
   bn: [
@@ -3551,7 +3477,7 @@ const questions = {
     ],
     [
       "পার্সেলের অনুরোধ বাতিল করতে পারব?",
-      "পার্সেল অপেক্ষমাণ ও অপরিশোধিত থাকলে গ্রাহকের ড্যাশবোর্ডে বাতিলের সুযোগ থাকে। ফেরত ও বাতিলের শর্ত [Payment and Refund Policy] অংশে পূরণ করতে হবে।",
+      "পার্সেল অপেক্ষমাণ ও অপরিশোধিত থাকলে গ্রাহকের ড্যাশবোর্ডে বাতিলের সুযোগ থাকে। পরিশোধিত বুকিং বাতিলের আগে আলাদাভাবে ফেরত পর্যালোচনা প্রয়োজন; স্বয়ংক্রিয় টাকা ফেরত দেওয়া হয় না।",
     ],
     [
       "পাসওয়ার্ড কীভাবে বদলাব?",
@@ -3559,11 +3485,11 @@ const questions = {
     ],
     [
       "সরবরাহের সময় ও সহায়তার সময় কত?",
-      "সেবার আওতা, সম্ভাব্য সরবরাহের সময়, নিষিদ্ধ পণ্য ও সহায়তার সময় এখানে চূড়ান্ত নয়। বুকিংয়ের আগে [Company Name] থেকে [Delivery Terms] ও [Business Hours] নিশ্চিত করুন।",
+      "অনুমোদিত এলাকা ও সম্ভাব্য সময় সেবার এলাকা ও খরচ হিসাবের পাতায় দেখুন। নিষিদ্ধ পণ্য ও সহায়তার সময় বুকিংয়ের আগে ড্রপজোর সঙ্গে নিশ্চিত করুন।",
     ],
     [
       "সহায়তার জন্য কীভাবে যোগাযোগ করব?",
-      "প্রতিষ্ঠানকে যোগাযোগের পাতায় [Contact Email], [Contact Phone] ও [Address] পূরণ করতে হবে। এর আগে এই সাইট দিয়ে সহায়তার বার্তা পাঠানো যাবে না।",
+      `ইমেইল করুন ${legalOperator.contactEmail} ঠিকানায় অথবা ফোন করুন ${legalOperator.contactPhone} নম্বরে। যোগাযোগের পাতায় কার্যালয়ের ঠিকানা ও সহায়তার সময় পাবেন। এই সাইটে বার্তা পাঠানোর ফরম নেই।`,
     ],
   ],
 };
@@ -3722,38 +3648,9 @@ export default function NotFound() {
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\page.tsx
 
 ```tsx
-import { Link } from "@/i18n/navigation";
-import { getTranslations } from "next-intl/server";
-import { buttonVariants } from "@/components/ui/button-variants";
-import { cn } from "@/lib/utils";
-import FeaturesSection from "@/components/home/features-section";
-import HowItWorksSection from "@/components/home/how-it-works-section";
-import StatsSection from "@/components/home/stats-section";
-
-export default async function HomePage() {
-  const t = await getTranslations("HomePage");
-
-  return (
-    <div className="flex flex-col min-h-screen">
-      <main className="flex-1 flex flex-col items-center justify-center p-6 text-center pt-24 pb-20">
-        <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">{t("title")}</h1>
-        <p className="text-muted-foreground max-w-xl mb-10 text-lg">
-          {t("description")}
-        </p>
-        <div className="flex gap-4 justify-center">
-          <Link href="/login" className={cn(buttonVariants({ size: "lg" }))}>
-            {t("login")}
-          </Link>
-          <Link href="/register" className={cn(buttonVariants({ variant: "outline", size: "lg" }))}>
-            {t("register")}
-          </Link>
-        </div>
-      </main>
-      <FeaturesSection />
-      <HowItWorksSection />
-      <StatsSection />
-    </div>
-  );
+import ParcelHero from "@/components/home/parcel-hero";
+export default function HomePage() {
+  return <ParcelHero />;
 }
 ```
 
@@ -3896,9 +3793,9 @@ export default function Page() {
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\services\page.tsx
 
 ```tsx
-import { useUiText } from "@/i18n/use-ui-text";
+import { useLocale } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import type { Metadata } from "next";
-
 export async function generateMetadata({
   params,
 }: {
@@ -3907,104 +3804,90 @@ export async function generateMetadata({
   const { locale } = await params;
   return {
     title: locale === "bn" ? "আমাদের সেবাসমূহ | Dropzo" : "Our Services | Dropzo",
-    description:
-      locale === "bn"
-        ? "ড্রপজোর পণ্য পরিবহন ও সরবরাহের সেবা সম্পর্কে জানুন।"
-        : "Explore delivery and logistics services offered by Dropzo.",
   };
 }
-
 export default function ServicesPage() {
-  const ui = useUiText();
+  const bn = useLocale() === "bn",
+    t = (en: string, bangla: string) => (bn ? bangla : en);
   const services = [
-    {
-      id: "standard-delivery",
-      title: "Standard Delivery",
-      description:
-        "Reliable and cost-effective delivery for your everyday parcels. Expected delivery within 2-3 business days across major cities.",
-      icon: "📦",
-    },
-    {
-      id: "express-delivery",
-      title: "Express Delivery",
-      description:
-        "Urgent shipments require priority handling. Our express service guarantees next-day delivery for time-sensitive documents and goods.",
-      icon: "⚡",
-    },
-    {
-      id: "corporate-logistics",
-      title: "Corporate Logistics",
-      description:
-        "Tailored B2B logistics solutions for businesses of all sizes. Manage bulk shipments easily with our dedicated corporate dashboard.",
-      icon: "🏢",
-    },
-    {
-      id: "fragile-handling",
-      title: "Fragile Handling",
-      description:
-        "Specialized care and secure packaging for delicate items. We ensure your fragile goods arrive in pristine condition.",
-      icon: "🛡️",
-    },
-    {
-      id: "cash-on-delivery",
-      title: "Cash on Delivery (COD)",
-      description:
-        "Empower your e-commerce business with our seamless COD service. Fast remittance and transparent payment tracking.",
-      icon: "💵",
-    },
-    {
-      id: "ecommerce-fulfillment",
-      title: "E-commerce Fulfillment",
-      description:
-        "From warehouse storage to last-mile delivery, we handle the entire supply chain so you can focus on growing your business.",
-      icon: "🛒",
-    },
+    [
+      "standard-delivery",
+      "Standard Delivery",
+      "সাধারণ ডেলিভারি",
+      "Book only on an approved route. See the calculated fee and estimated delivery days before confirming.",
+      "অনুমোদিত রুটে বুকিং করুন। নিশ্চিত করার আগে হিসাব করা মাশুল ও সম্ভাব্য সরবরাহের দিন দেখুন।",
+    ],
+    [
+      "express-delivery",
+      "Express Delivery",
+      "জরুরি ডেলিভারি",
+      "Available only where an express rate is approved. There is no blanket next-day delivery guarantee.",
+      "জরুরি সেবার মূল্য অনুমোদিত রুটেই প্রযোজ্য। সব এলাকায় পরের দিন পৌঁছানোর নিশ্চয়তা নেই।",
+    ],
+    [
+      "corporate-logistics",
+      "Business Parcels",
+      "ব্যবসায়িক পার্সেল",
+      "Verified businesses can submit individual parcels or validated CSV batches and print labels.",
+      "যাচাইকৃত ব্যবসায়ীরা একক পার্সেল বা যাচাই করা সিএসভি ব্যাচ দিতে ও লেবেল ছাপাতে পারবেন।",
+    ],
+    [
+      "fragile-handling",
+      "Fragile Items",
+      "ভঙ্গুর পণ্য",
+      "Declare the item type and packing instructions. Confirm acceptance and handling requirements with support before booking.",
+      "পণ্যের ধরন ও মোড়কের নির্দেশনা দিন। বুকিংয়ের আগে গ্রহণযোগ্যতা ও বিশেষ ব্যবস্থার শর্ত সহায়তা দলের সঙ্গে নিশ্চিত করুন।",
+    ],
+    [
+      "cash-on-delivery",
+      "Cash on Delivery (COD)",
+      "পণ্য নেওয়ার সময় টাকা সংগ্রহ",
+      "Requires an approved business account. Exact collections and recorded payouts are tracked separately from delivery fees; transfers are not automatic.",
+      "অনুমোদিত ব্যবসায়িক হিসাব লাগবে। সংগৃহীত টাকা ও নথিভুক্ত পাওনা পরিশোধ ডেলিভারি মাশুলের বাইরে পৃথক হিসাব হবে; টাকা স্বয়ংক্রিয়ভাবে পাঠানো হয় না।",
+    ],
+    [
+      "ecommerce-fulfillment",
+      "Warehousing and Fulfillment",
+      "গুদাম ও পূর্ণাঙ্গ পণ্য ব্যবস্থাপনা",
+      "Not available for booking. Warehouse operations have not been launched.",
+      "বুকিংয়ের জন্য চালু নয়। গুদামের কার্যক্রম এখনো শুরু হয়নি।",
+    ],
   ];
-
   return (
-    <div className="relative overflow-hidden">
-      <div className="pointer-events-none absolute -top-24 right-0 size-96 rounded-full bg-primary/10 blur-3xl" />
-      <div className="pointer-events-none absolute bottom-0 left-0 size-96 rounded-full bg-blue-500/10 blur-3xl" />
-
-      <div className="relative max-w-7xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl mb-4">
-            {ui("Our Services")}
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            {ui(
-              "Comprehensive logistics solutions designed to meet the unique needs of individuals and modern businesses.",
-            )}{" "}
-          </p>
-        </div>
-
-        <p
-          role="note"
-          className="mb-8 rounded-xl border p-4 text-muted-foreground"
-        >
-          {ui(
-            "Service availability and delivery terms must be confirmed before booking.",
-          )}
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {services.map((service) => (
-            <div
-              key={service.title}
-              id={service.id}
-              className="group flex flex-col p-8 rounded-3xl border border-white/40 bg-white/60 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.06)] transition-all hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(0,0,0,0.1)] dark:border-white/10 dark:bg-white/4"
-            >
-              <div className="mb-5 flex size-14 items-center justify-center rounded-2xl bg-linear-to-br from-primary/15 to-blue-500/15 text-3xl ring-1 ring-primary/10 transition-transform group-hover:scale-110">
-                {service.icon}
-              </div>
-              <h3 className="text-xl font-bold mb-3">{ui(service.title)}</h3>
-              <p className="text-muted-foreground leading-relaxed grow">
-                {ui(service.description)}
-              </p>
-            </div>
-          ))}
-        </div>
+    <article className="mx-auto max-w-6xl space-y-6 px-4 py-10">
+      <h1 className="text-3xl font-bold">
+        {t("Our Services", "আমাদের সেবাসমূহ")}
+      </h1>
+      <p>
+        {t(
+          "Dropzo's own delivery team handles collection and delivery on approved routes. Check availability first.",
+          "ড্রপজোর নিজস্ব ডেলিভারিকর্মীরা অনুমোদিত রুটে সংগ্রহ ও সরবরাহের কাজ করবেন। আগে সেবার প্রাপ্যতা যাচাই করুন।",
+        )}
+      </p>
+      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+        {services.map(([id, en, bangla, description, descriptionBn]) => (
+          <section
+            id={id}
+            key={id}
+            className="scroll-mt-36 space-y-3 rounded-xl border p-5"
+          >
+            <h2 className="text-xl font-semibold">{t(en, bangla)}</h2>
+            <p>{t(description, descriptionBn)}</p>
+            {id !== "ecommerce-fulfillment" && (
+              <Link className="inline-block underline" href="/pricing">
+                {t("Check cost and availability", "খরচ ও প্রাপ্যতা যাচাই")}
+              </Link>
+            )}
+          </section>
+        ))}
       </div>
-    </div>
+      <Link
+        href="/dashboard/new-shipment"
+        className="inline-block rounded-lg bg-primary px-5 py-3 text-primary-foreground"
+      >
+        {t("Send parcel", "পার্সেল পাঠান")}
+      </Link>
+    </article>
   );
 }
 ```
@@ -4089,6 +3972,7 @@ export default async function TrackShipmentPage() {
 
 ```css
 @import "tailwindcss";
+
 @import "tw-animate-css";
 @import "../styles/shadcn.css";
 
@@ -4157,11 +4041,49 @@ export default async function TrackShipmentPage() {
   body {
     @apply bg-background text-foreground;
   }
-  button:not(:disabled), [role="button"]:not(:disabled) {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
     cursor: pointer;
   }
   html {
     @apply font-sans;
+  }
+}
+
+@media print {
+  @page {
+    margin: 10mm;
+  }
+  body:has(.parcel-label)
+    *:not(.parcel-label):not(.parcel-label *):not(:has(.parcel-label)) {
+    display: none;
+  }
+  body:has(.parcel-label),
+  body:has(.parcel-label) :has(.parcel-label) {
+    display: block;
+    position: static;
+    min-height: 0;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    background: white;
+  }
+  .parcel-label {
+    display: block;
+    max-width: 170mm;
+    padding: 8mm;
+    border: 1px solid black;
+    color: black;
+    background: white;
+    break-inside: avoid;
+    box-shadow: none;
+  }
+  .parcel-print-root:not(:has(.parcel-print-root)) {
+    break-after: page;
+  }
+  .parcel-print-root:not(:has(.parcel-print-root)):last-child {
+    break-after: auto;
   }
 }
 ```
@@ -4338,7 +4260,7 @@ export default function AccessDenied() {
 "use client";
 
 import { useGetMe } from "@/hooks";
-import { useRouter } from "@/i18n/navigation";
+import { useRouter, usePathname } from "@/i18n/navigation";
 import { getApiErrorStatus } from "@/lib/api-error";
 import type { ReactNode } from "react";
 import { useEffect } from "react";
@@ -4348,14 +4270,23 @@ import QueryError from "../ui/query-error";
 
 export default function AuthGuard({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { data, isPending, error, refetch } = useGetMe();
   const status = getApiErrorStatus(error);
   useEffect(() => {
-    if (status === 401) router.replace("/login");
-  }, [status, router]);
+    if (status === 401)
+      router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+  }, [status, router, pathname]);
   if (isPending || status === 401) return <AuthLoading />;
   if (status === 403) return <AccessDenied />;
-  if (error || !data?.data) return <QueryError retry={() => { void refetch(); }} />;
+  if (error || !data?.data)
+    return (
+      <QueryError
+        retry={() => {
+          void refetch();
+        }}
+      />
+    );
   return <>{children}</>;
 }
 ```
@@ -4520,277 +4451,391 @@ export function DashboardSidebar({ userRole }: { userRole: UserRole }) {
 
 ```tsx
 "use client";
-
-import { useUiText } from "@/i18n/use-ui-text";
-import { useForm } from "@tanstack/react-form";
-import { Input } from "../ui/input";
-import { Button } from "../ui/button";
-import { Field, FieldError, FieldGroup, FieldLabel } from "../ui/field";
-import { ShipmentValidation } from "@/validation";
-import { useCreateShipment, useGetAllHubs } from "@/hooks";
+import { useLocale } from "next-intl";
+import { useState, useRef } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRouter } from "@/i18n/navigation";
-import { toast } from "../ui/toast";
-import { Spinner } from "../ui/spinner";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../ui/card";
-
-interface Hub {
-  id: string;
-  name: string;
-  location: string;
-  address: string;
-}
-
+import apiClient from "@/lib/apiClient";
+import { Button } from "@/components/ui/button";
+import type { ApiResponse, Shipment } from "@/types";
+import type { ServiceArea, Quote } from "@/types/operations.type";
+import { BookingSchema } from "@/validation/shipment.validation";
 export default function CreateShipmentForm() {
-  const ui = useUiText();
-  const router = useRouter();
-  const { mutate: createShipment, isPending } = useCreateShipment();
-  const { data: hubsData, isLoading: hubsLoading } = useGetAllHubs({
-    limit: 100,
+  const bn = useLocale() === "bn",
+    t = (en: string, bangla: string) => (bn ? bangla : en),
+    router = useRouter();
+  const areas = useQuery({
+    queryKey: ["coverage"],
+    queryFn: () =>
+      apiClient<ApiResponse<ServiceArea[]>>("/operations/coverage"),
+    retry: false,
   });
-  const hubs = hubsData?.data || [];
-
-  const form = useForm({
-    defaultValues: {
-      receiverName: "",
-      receiverPhone: "",
-      receiverAddress: "",
-      weight: 1,
-      originHubId: "",
-      destinationHubId: "",
-    },
-    validators: {
-      onSubmit: ShipmentValidation.CreateShipmentSchema.shape.body,
-    },
-    onSubmit: ({ value }) => {
-      createShipment(value, {
-        onSuccess: () => {
-          toast.add({
-            title: "Shipment Created",
-            description: "Your shipment has been created successfully.",
-            type: "success",
-          });
-          router.push("/dashboard/my-shipments");
+  const [payload, setPayload] = useState<Record<string, string | number>>({
+    pickupAreaId: "",
+    receiverAreaId: "",
+    weight: 1,
+    codAmount: 0,
+    serviceType: "STANDARD",
+    pickupMode: "HOME",
+    senderPhone: "",
+    pickupAddress: "",
+    receiverName: "",
+    receiverPhone: "",
+    receiverAddress: "",
+    productType: "PARCEL",
+    declaredValue: 0,
+    requestedPickupAt: "",
+    deliveryInstructions: "",
+  });
+  const [accepted, setAccepted] = useState(false);
+  const requestId = useRef("");
+  const [invalid, setInvalid] = useState(false);
+  const quote = useMutation({
+    mutationFn: () =>
+      apiClient<ApiResponse<Quote>>("/operations/quote", {
+        method: "POST",
+        body: {
+          pickupAreaId: payload.pickupAreaId,
+          receiverAreaId: payload.receiverAreaId,
+          weight: payload.weight,
+          codAmount: payload.codAmount,
+          serviceType: payload.serviceType,
+          pickupMode: payload.pickupMode,
+          requestedPickupAt: new Date(
+            String(payload.requestedPickupAt),
+          ).toISOString(),
         },
-        onError: (err) => {
-          toast.add({
-            title: "Creation Failed",
-            description: err.message || "Could not create shipment",
-            type: "error",
-          });
+      }),
+  });
+  const create = useMutation({
+    mutationFn: () => {
+      if (!quote.data) throw new Error("Review pricing before booking");
+      if (!requestId.current) requestId.current = crypto.randomUUID();
+      return apiClient<ApiResponse<Shipment>>("/shipments", {
+        method: "POST",
+        body: {
+          ...payload,
+          requestId: requestId.current,
+          quoteVersion: quote.data?.data.rateUpdatedAt,
+          quotedDeliveryCharge: Number(quote.data?.data.deliveryCharge),
+          quotedCodFee: Number(quote.data?.data.codFee),
+          quotedServiceType:
+            quote.data.data.serviceType || String(payload.serviceType),
+          requestedPickupAt: new Date(
+            String(payload.requestedPickupAt),
+          ).toISOString(),
         },
       });
     },
+    onSuccess: (res) => router.push(`/dashboard/my-shipments/${res.data.id}`),
   });
-
+  const update = (key: string, value: string | number) => {
+    setPayload({
+      ...payload,
+      [key]: value,
+      ...(key === "pickupMode" ? { pickupAreaId: "" } : {}),
+    });
+    quote.reset();
+    setAccepted(false);
+    setInvalid(false);
+    requestId.current = "";
+  };
+  const style =
+    "mt-2 block min-h-11 w-full rounded-md border bg-background px-3 py-2";
+  const fields = [
+    ["senderPhone", "Sender phone", "প্রেরকের ফোন", "tel"],
+    [
+      "pickupAddress",
+      "Pickup address or branch instructions",
+      "সংগ্রহের ঠিকানা বা শাখায় জমার নির্দেশনা",
+      "text",
+    ],
+    ["receiverName", "Receiver name", "প্রাপকের নাম", "text"],
+    ["receiverPhone", "Receiver phone", "প্রাপকের ফোন", "tel"],
+    [
+      "receiverAddress",
+      "House, road and delivery address",
+      "বাড়ি, রাস্তা ও পৌঁছানোর ঠিকানা",
+      "text",
+    ],
+    ["weight", "Weight (kg)", "ওজন (কেজি)", "number"],
+    ["declaredValue", "Product value", "পণ্যের মূল্য", "number"],
+    [
+      "codAmount",
+      "Collect from receiver (COD)",
+      "প্রাপকের কাছ থেকে সংগ্রহযোগ্য টাকা",
+      "number",
+    ],
+    [
+      "requestedPickupAt",
+      "Requested pickup time",
+      "সংগ্রহের অনুরোধের সময়",
+      "datetime-local",
+    ],
+  ];
   return (
-    <Card className="max-w-2xl mx-auto shadow-sm">
-      <CardHeader>
-        <CardTitle className="text-2xl">{ui("Create New Shipment")}</CardTitle>
-        <CardDescription>
-          {ui(
-            "Enter receiver details and select origin/destination hubs to generate a shipment.",
+    <section className="mx-auto max-w-3xl space-y-5 rounded-2xl border bg-card p-6">
+      <h1 className="text-2xl font-bold">
+        {t("Book your parcel", "পার্সেল বুকিং করুন")}
+      </h1>
+      <p>
+        {t(
+          "Dropzo assigns the route and hubs. The delivery fee is paid separately online; COD is the product amount collected from the receiver.",
+          "ড্রপজো পথ ও হাব নির্ধারণ করবে। ডেলিভারি মাশুল অনলাইনে আলাদা পরিশোধযোগ্য; প্রাপকের কাছ থেকে পণ্যের টাকা সংগ্রহ আলাদা হিসাব।",
+        )}
+      </p>
+      {areas.isError && (
+        <p role="alert">
+          {t(
+            "Coverage unavailable. Please retry later.",
+            "এলাকার তথ্য পাওয়া যায়নি। পরে চেষ্টা করুন।",
           )}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            form.handleSubmit();
-          }}
+        </p>
+      )}
+      <form
+        className="grid gap-4 sm:grid-cols-2"
+        onSubmit={(event) => {
+          event.preventDefault();
+          const date = new Date(String(payload.requestedPickupAt));
+          const valid =
+            !Number.isNaN(date.getTime()) &&
+            BookingSchema.safeParse({
+              ...payload,
+              requestedPickupAt: date.toISOString(),
+            }).success;
+          setInvalid(!valid);
+          if (!valid) return;
+          if (!quote.data) quote.mutate();
+          else if (accepted) create.mutate();
+        }}
+      >
+        {(["pickupAreaId", "receiverAreaId"] as const).map((key) => (
+          <label key={key}>
+            {key === "pickupAreaId"
+              ? t(
+                  "Pickup area (district / upazila / locality)",
+                  "সংগ্রহের এলাকা (জেলা / উপজেলা / এলাকা)",
+                )
+              : t(
+                  "Delivery area (district / upazila / locality)",
+                  "প্রাপকের এলাকা (জেলা / উপজেলা / এলাকা)",
+                )}
+            <select
+              className={style}
+              value={payload[key]}
+              onChange={(e) => update(key, e.target.value)}
+              required
+            >
+              <option value="">{t("Select area", "এলাকা বাছুন")}</option>
+              {areas.data?.data
+                .filter((area) =>
+                  key === "pickupAreaId"
+                    ? payload.pickupMode === "BRANCH"
+                      ? area.dropoffEnabled
+                      : area.pickupEnabled
+                    : area.deliveryEnabled,
+                )
+                .map((area) => (
+                  <option key={area.id} value={area.id}>
+                    {area.district} / {area.upazila} / {area.name}
+                  </option>
+                ))}
+            </select>
+          </label>
+        ))}
+        {fields.map(([key, en, bangla, type]) => (
+          <label key={key}>
+            {t(en, bangla)}
+            <input
+              required
+              className={style}
+              name={key}
+              type={type}
+              value={payload[key]}
+              min={
+                type === "number"
+                  ? key === "weight"
+                    ? "0.01"
+                    : "0"
+                  : undefined
+              }
+              max={
+                type === "number"
+                  ? key === "weight"
+                    ? "100"
+                    : "1000000"
+                  : undefined
+              }
+              step={type === "number" ? "0.01" : undefined}
+              maxLength={
+                type === "text" ? 500 : type === "tel" ? 14 : undefined
+              }
+              onChange={(e) =>
+                update(
+                  key,
+                  type === "number" ? Number(e.target.value) : e.target.value,
+                )
+              }
+            />
+          </label>
+        ))}
+        <label>
+          {t("Product type", "পণ্যের ধরন")}
+          <select
+            className={style}
+            value={payload.productType}
+            onChange={(e) => update("productType", e.target.value)}
+          >
+            {[
+              ["PARCEL", "Parcel", "পার্সেল"],
+              ["DOCUMENT", "Document", "নথি"],
+              ["FRAGILE", "Fragile", "ভঙ্গুর"],
+            ].map(([value, en, bangla]) => (
+              <option key={value} value={value}>
+                {t(en, bangla)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          {t("Service", "সেবা")}
+          <select
+            className={style}
+            value={payload.serviceType}
+            onChange={(e) => update("serviceType", e.target.value)}
+          >
+            <option value="STANDARD">{t("Standard", "সাধারণ")}</option>
+            <option value="NEXT_DAY">
+              {t("Next day, if available", "পরের দিন, চালু থাকলে")}
+            </option>
+            <option value="SAME_DAY">
+              {t(
+                "Same day before noon, if available",
+                "দুপুর ১২টার আগে একই দিন, চালু থাকলে",
+              )}
+            </option>
+            <option value="EXPRESS">
+              {t("Express if approved", "অনুমোদিত জরুরি সেবা")}
+            </option>
+          </select>
+        </label>
+        <label>
+          {t("Pickup method", "সংগ্রহের পদ্ধতি")}
+          <select
+            className={style}
+            value={payload.pickupMode}
+            onChange={(e) => update("pickupMode", e.target.value)}
+          >
+            <option value="HOME">
+              {t("Collect from my address", "আমার ঠিকানা থেকে সংগ্রহ")}
+            </option>
+            <option value="BRANCH">
+              {t("Drop at assigned branch", "নির্ধারিত শাখায় জমা")}
+            </option>
+          </select>
+        </label>
+        <label>
+          {t("Special instructions", "বিশেষ নির্দেশনা")}
+          <textarea
+            className={style}
+            maxLength={500}
+            value={payload.deliveryInstructions}
+            onChange={(e) => update("deliveryInstructions", e.target.value)}
+          />
+        </label>
+        {quote.data && (
+          <div
+            className="space-y-2 rounded-xl border p-4 sm:col-span-2"
+            aria-live="polite"
+          >
+            <p role="status">
+              {t("Confirmed service: ", "নিশ্চিত সেবা: ")}
+              {
+                (
+                  {
+                    STANDARD: t("Standard", "সাধারণ"),
+                    EXPRESS: t("Express", "জরুরি"),
+                    SAME_DAY: t("Same day", "একই দিন"),
+                    NEXT_DAY: t("Next day", "পরের দিন"),
+                  } as Record<string, string>
+                )[quote.data?.data.serviceType || String(payload.serviceType)]
+              }
+            </p>
+            {payload.pickupMode === "BRANCH" && (
+              <p>
+                {t("Assigned branch: ", "নির্ধারিত শাখা: ")}
+                {quote.data.data.originHub.name} ·{" "}
+                {quote.data.data.originHub.address}
+              </p>
+            )}
+            {(
+              [
+                ["baseCharge", "Base charge", "মূল মাশুল"],
+                ["extraWeightCharge", "Extra weight", "বাড়তি ওজন"],
+                ["pickupFee", "Pickup fee", "সংগ্রহের মাশুল"],
+                ["deliveryCharge", "Total delivery fee", "মোট ডেলিভারি মাশুল"],
+                ["codFee", "COD fee", "টাকা সংগ্রহের মাশুল"],
+                ["merchantPayable", "Merchant receives", "ব্যবসায়ীর পাওনা"],
+              ] as const
+            ).map(([key, en, bangla]) => (
+              <p key={key}>
+                {t(en, bangla)}:{" "}
+                {new Intl.NumberFormat(bn ? "bn-BD" : "en-BD", {
+                  style: "currency",
+                  currency: "BDT",
+                }).format(Number(quote.data?.data[key]))}
+              </p>
+            ))}
+            <p>
+              {t("Estimated delivery days: ", "সম্ভাব্য সরবরাহের দিন: ")}
+              {new Intl.NumberFormat(bn ? "bn-BD" : "en-US").format(
+                quote.data.data.deliveryDays,
+              )}
+            </p>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={accepted}
+                onChange={(e) => setAccepted(e.target.checked)}
+              />
+              {t(
+                "I checked the addresses, charges and product details.",
+                "ঠিকানা, মাশুল ও পণ্যের তথ্য যাচাই করেছি।",
+              )}
+            </label>
+          </div>
+        )}
+        {(quote.isError || create.isError) && (
+          <p role="alert" className="sm:col-span-2">
+            {t(
+              "Booking failed. Check service availability, approved pricing, pickup time and business approval for COD.",
+              "বুকিং হয়নি। এলাকা, অনুমোদিত মূল্য, সংগ্রহের সময় এবং টাকা সংগ্রহের জন্য ব্যবসায়িক অনুমোদন যাচাই করুন।",
+            )}
+          </p>
+        )}
+        {invalid && (
+          <p role="alert" className="sm:col-span-2">
+            {t(
+              "Check phone numbers, addresses, value and a future pickup time within 30 days.",
+              "ফোন, ঠিকানা, মূল্য ও পরবর্তী ৩০ দিনের মধ্যে সংগ্রহের সময় যাচাই করুন।",
+            )}
+          </p>
+        )}
+        <Button
+          type="submit"
+          disabled={
+            quote.isPending ||
+            create.isPending ||
+            areas.isPending ||
+            (!!quote.data && !accepted)
+          }
         >
-          <FieldGroup className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <form.Field name="receiverName">
-                {(field) => {
-                  const isInvalid =
-                    field.state.meta.isTouched && !field.state.meta.isValid;
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>
-                        {ui("Receiver Name")}
-                      </FieldLabel>
-                      <Input
-                        id={field.name}
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        placeholder={ui("Alice Smith")}
-                        aria-invalid={isInvalid}
-                      />
-                      {isInvalid && (
-                        <FieldError errors={field.state.meta.errors} />
-                      )}
-                    </Field>
-                  );
-                }}
-              </form.Field>
-
-              <form.Field name="receiverPhone">
-                {(field) => {
-                  const isInvalid =
-                    field.state.meta.isTouched && !field.state.meta.isValid;
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>
-                        {ui("Receiver Phone")}
-                      </FieldLabel>
-                      <Input
-                        id={field.name}
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        placeholder="01XXXXXXXXX"
-                        aria-invalid={isInvalid}
-                      />
-                      {isInvalid && (
-                        <FieldError errors={field.state.meta.errors} />
-                      )}
-                    </Field>
-                  );
-                }}
-              </form.Field>
-            </div>
-
-            <form.Field name="receiverAddress">
-              {(field) => {
-                const isInvalid =
-                  field.state.meta.isTouched && !field.state.meta.isValid;
-                return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>
-                      {ui("Detailed Address")}
-                    </FieldLabel>
-                    <Input
-                      id={field.name}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder={ui("House, Road, Area, City")}
-                      aria-invalid={isInvalid}
-                    />
-                    {isInvalid && (
-                      <FieldError errors={field.state.meta.errors} />
-                    )}
-                  </Field>
-                );
-              }}
-            </form.Field>
-
-            <form.Field name="weight">
-              {(field) => {
-                const isInvalid =
-                  field.state.meta.isTouched && !field.state.meta.isValid;
-                return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>
-                      {ui("Weight (kg)")}
-                    </FieldLabel>
-                    <Input
-                      id={field.name}
-                      type="number"
-                      step="0.1"
-                      min="0.1"
-                      max="100"
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) =>
-                        field.handleChange(parseFloat(e.target.value) || 0)
-                      }
-                      aria-invalid={isInvalid}
-                    />
-                    {isInvalid && (
-                      <FieldError errors={field.state.meta.errors} />
-                    )}
-                  </Field>
-                );
-              }}
-            </form.Field>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <form.Field name="originHubId">
-                {(field) => {
-                  const isInvalid =
-                    field.state.meta.isTouched && !field.state.meta.isValid;
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>
-                        {ui("Origin Hub")}
-                      </FieldLabel>
-                      <select
-                        id={field.name}
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        disabled={hubsLoading}
-                      >
-                        <option value="" disabled>
-                          {ui("Select origin hub")}
-                        </option>
-                        {hubs.map((hub: Hub) => (
-                          <option key={hub.id} value={hub.id}>
-                            {hub.name} ({hub.location})
-                          </option>
-                        ))}
-                      </select>
-                      {isInvalid && (
-                        <FieldError errors={field.state.meta.errors} />
-                      )}
-                    </Field>
-                  );
-                }}
-              </form.Field>
-
-              <form.Field name="destinationHubId">
-                {(field) => {
-                  const isInvalid =
-                    field.state.meta.isTouched && !field.state.meta.isValid;
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>
-                        {ui("Destination Hub")}
-                      </FieldLabel>
-                      <select
-                        id={field.name}
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        disabled={hubsLoading}
-                      >
-                        <option value="" disabled>
-                          {ui("Select destination hub")}
-                        </option>
-                        {hubs.map((hub: Hub) => (
-                          <option key={hub.id} value={hub.id}>
-                            {hub.name} ({hub.location})
-                          </option>
-                        ))}
-                      </select>
-                      {isInvalid && (
-                        <FieldError errors={field.state.meta.errors} />
-                      )}
-                    </Field>
-                  );
-                }}
-              </form.Field>
-            </div>
-
-            <Button type="submit" disabled={isPending} className="w-full mt-4">
-              {isPending ? <Spinner className="mr-2" /> : null}
-              {isPending ? ui("Creating...") : ui("Create Shipment")}
-            </Button>
-          </FieldGroup>
-        </form>
-      </CardContent>
-    </Card>
+          {quote.data
+            ? t("Confirm booking", "বুকিং নিশ্চিত করুন")
+            : t("Review cost before booking", "বুকিংয়ের আগে মাশুল দেখুন")}
+        </Button>
+      </form>
+    </section>
   );
 }
 ```
@@ -4816,6 +4861,8 @@ import {
 } from "../ui/field";
 import { LoginZodSchema } from "@/validation";
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { authDestination } from "@/lib/auth-destination";
 import {
   Eye,
   EyeClosed,
@@ -4834,6 +4881,7 @@ import GoogleLoginComponent from "../modules/google-login/GoogleLogin";
 
 export default function LoginForm() {
   const ui = useUiText();
+  const next = useSearchParams().get("next");
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -4857,9 +4905,7 @@ export default function LoginForm() {
             type: "success",
           });
           const role = res.data.user.role;
-          if (role === "ADMIN") router.push("/admin");
-          else if (role === "COURIER") router.push("/courier");
-          else router.push("/dashboard");
+          router.push(authDestination(role, next));
         },
         onError: (err) => {
           toast.add({
@@ -5048,7 +5094,10 @@ export default function LoginForm() {
       <div className="text-center text-sm text-muted-foreground mt-2">
         {ui("Don't have an account?")}{" "}
         <Link
-          href="/register"
+          href={
+            "/register?next=" +
+            encodeURIComponent(authDestination("CUSTOMER", next))
+          }
           className="font-semibold text-primary hover:underline underline-offset-4"
         >
           {ui("Create Account")}{" "}
@@ -5079,6 +5128,8 @@ import {
 } from "../ui/field";
 import { RegisterCustomerZodSchema } from "@/validation";
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { authDestination } from "@/lib/auth-destination";
 import {
   Eye,
   EyeClosed,
@@ -5103,6 +5154,7 @@ interface IRegisterError {
 
 export default function RegisterForm() {
   const ui = useUiText();
+  const next = authDestination("CUSTOMER", useSearchParams().get("next"));
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
   const { mutate: register, isPending: registerPending } = useRegistration();
@@ -5142,7 +5194,7 @@ export default function RegisterForm() {
             description: "Please check your email for the OTP.",
             type: "success",
           });
-          const params = new URLSearchParams({ email: value.email });
+          const params = new URLSearchParams({ email: value.email, next });
           router.push(`/verify-account?${params.toString()}`);
         },
         onError: (err: IRegisterError) => {
@@ -5364,6 +5416,15 @@ export default function RegisterForm() {
         </FieldGroup>
       </form>
 
+      <p className="text-center text-sm">
+        <Link className="underline" href="/terms">
+          {ui("Terms of Service")}
+        </Link>{" "}
+        ·{" "}
+        <Link className="underline" href="/privacy">
+          {ui("Privacy Policy")}
+        </Link>
+      </p>
       <FieldSeparator>{ui("Or continue with")}</FieldSeparator>
 
       <div className="flex justify-center">
@@ -5373,7 +5434,7 @@ export default function RegisterForm() {
       <div className="text-center text-sm text-muted-foreground mt-2">
         {ui("Already have an account?")}{" "}
         <Link
-          href="/login"
+          href={`/login?next=${encodeURIComponent(next)}`}
           className="font-semibold text-primary hover:underline underline-offset-4"
         >
           {ui("Login here")}{" "}
@@ -5392,6 +5453,7 @@ export default function RegisterForm() {
 "use client";
 
 import { useUiText } from "@/i18n/use-ui-text";
+import { authDestination } from "@/lib/auth-destination";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
 import {
@@ -5441,7 +5503,7 @@ export default function VerifyAccountForm() {
             description: "Your account is now verified.",
             type: "success",
           });
-          router.push("/dashboard");
+          router.push(authDestination("CUSTOMER", searchParams.get("next")));
         },
         onError: (err) => {
           setIsInvalid(true);
@@ -5550,72 +5612,16 @@ export default function VerifyAccountForm() {
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\home\features-section.tsx
 
 ```tsx
-import { useUiText } from "@/i18n/use-ui-text";
-import { Truck, ShieldCheck, Clock, MapPin } from "lucide-react";
-
-const features = [
-  {
-    icon: <Truck className="size-8 text-primary" />,
-    title: "Fast Delivery",
-    description:
-      "We ensure your packages reach their destination in the shortest time possible.",
-  },
-  {
-    icon: <ShieldCheck className="size-8 text-primary" />,
-    title: "Secure Handling",
-    description:
-      "Your packages are handled with the utmost care and security at every step.",
-  },
-  {
-    icon: <MapPin className="size-8 text-primary" />,
-    title: "Live Tracking",
-    description:
-      "Track your shipments in real-time from our hubs directly to your doorstep.",
-  },
-  {
-    icon: <Clock className="size-8 text-primary" />,
-    title: "24/7 Support",
-    description:
-      "Our dedicated support team is available around the clock to assist you.",
-  },
-];
-
+import { useLocale } from "next-intl";
 export default function FeaturesSection() {
-  const ui = useUiText();
+  const bn = useLocale() === "bn";
   return (
-    <section className="relative overflow-hidden py-20">
-      <div className="pointer-events-none absolute top-0 left-1/4 size-72 rounded-full bg-primary/10 blur-3xl" />
-      <div className="pointer-events-none absolute bottom-0 right-1/4 size-72 rounded-full bg-blue-500/10 blur-3xl" />
-      <div className="container relative mx-auto px-4 md:px-6">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            {ui("Why Choose Dropzo?")}
-          </h2>
-          <p className="mt-4 text-muted-foreground text-lg">
-            {ui(
-              "We provide top-notch logistics solutions designed for businesses and individuals alike.",
-            )}{" "}
-          </p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {features.map((feature) => (
-            <div
-              key={feature.title}
-              className="group flex flex-col items-center text-center p-8 rounded-2xl border border-white/40 bg-white/60 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.06)] transition-all hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(0,0,0,0.1)] dark:border-white/10 dark:bg-white/4"
-            >
-              <div className="mb-6 flex size-16 items-center justify-center rounded-2xl bg-linear-to-br from-primary/15 to-blue-500/15 ring-1 ring-primary/10 transition-transform group-hover:scale-110">
-                {feature.icon}
-              </div>
-              <h3 className="text-xl font-semibold mb-3">
-                {ui(feature.title)}
-              </h3>
-              <p className="text-muted-foreground leading-relaxed">
-                {ui(feature.description)}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
+    <section className="px-4 py-8">
+      <h2>
+        {bn
+          ? "নিজস্ব কর্মী, অনুমোদিত রুট ও নথিভুক্ত অনুসরণ"
+          : "Own delivery team, approved routes and recorded tracking"}
+      </h2>
     </section>
   );
 }
@@ -5626,66 +5632,17 @@ export default function FeaturesSection() {
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\home\how-it-works-section.tsx
 
 ```tsx
-import { useUiText } from "@/i18n/use-ui-text";
-import { PackagePlus, Truck, Map as MapIcon, CheckCircle2 } from "lucide-react";
-
-const steps = [
-  {
-    icon: <PackagePlus className="size-7 text-primary" />,
-    title: "Create Shipment",
-    description: "Enter package details and destination.",
-  },
-  {
-    icon: <MapIcon className="size-7 text-primary" />,
-    title: "Hub Assignment",
-    description: "Package is routed through our network.",
-  },
-  {
-    icon: <Truck className="size-7 text-primary" />,
-    title: "In Transit",
-    description: "Assigned to a courier for delivery.",
-  },
-  {
-    icon: <CheckCircle2 className="size-7 text-primary" />,
-    title: "Delivered",
-    description: "Successfully handed over to receiver.",
-  },
-];
-
+import { useLocale } from "next-intl";
 export default function HowItWorksSection() {
-  const ui = useUiText();
+  const bn = useLocale() === "bn";
   return (
-    <section className="py-20 bg-muted/20">
-      <div className="container mx-auto px-4 md:px-6">
-        <div className="text-center max-w-3xl mx-auto mb-20">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            {ui("How It Works")}
-          </h2>
-          <p className="mt-4 text-muted-foreground text-lg">
-            {ui(
-              "A simple, streamlined process to get your package from A to B.",
-            )}{" "}
-          </p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-10 relative">
-          <div className="hidden md:block absolute top-10 left-[10%] w-[80%] h-px bg-linear-to-r from-transparent via-border to-transparent -z-10" />
-          {steps.map((step, index) => (
-            <div
-              key={step.title}
-              className="flex flex-col items-center text-center"
-            >
-              <div className="relative flex items-center justify-center size-20 rounded-2xl border border-white/40 bg-white/70 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.08)] mb-6 dark:border-white/10 dark:bg-white/4">
-                {step.icon}
-                <span className="absolute -top-2 -right-2 flex size-6 items-center justify-center rounded-full bg-linear-to-br from-primary to-blue-600 text-xs font-bold text-white shadow-md">
-                  {index + 1}
-                </span>
-              </div>
-              <h3 className="text-xl font-semibold mb-2">{ui(step.title)}</h3>
-              <p className="text-muted-foreground">{ui(step.description)}</p>
-            </div>
-          ))}
-        </div>
-      </div>
+    <section className="px-4 py-8">
+      <h2>{bn ? "কাজের ধাপ" : "How it works"}</h2>
+      <p>
+        {bn
+          ? "বুকিং → সংগ্রহের দায়িত্ব → সংগ্রহ → হাব → পথে → ডেলিভারি ও গ্রহণের নথি"
+          : "Booking → pickup assignment → collection → hub → transit → delivery and acknowledgment"}
+      </p>
     </section>
   );
 }
@@ -5696,37 +5653,15 @@ export default function HowItWorksSection() {
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\home\stats-section.tsx
 
 ```tsx
-import { useUiText } from "@/i18n/use-ui-text";
+import { Link } from "@/i18n/navigation";
+import { useLocale } from "next-intl";
 export default function StatsSection() {
-  const ui = useUiText();
-  const stats = [
-    { value: "50+", label: "Cities Covered" },
-    { value: "10K+", label: "Happy Customers" },
-    { value: "99.9%", label: "Delivery Success" },
-    { value: "24/7", label: "Customer Support" },
-  ];
-
+  const bn = useLocale() === "bn";
   return (
-    <section className="relative overflow-hidden py-20 bg-linear-to-br from-primary via-primary to-blue-700 text-primary-foreground">
-      <div className="pointer-events-none absolute -top-16 -left-16 size-72 rounded-full bg-white/10 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-16 -right-16 size-72 rounded-full bg-white/10 blur-3xl" />
-      <div className="container relative mx-auto px-4 md:px-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-          {stats.map((stat) => (
-            <div
-              key={stat.label}
-              className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 p-6 backdrop-blur-xl"
-            >
-              <h4 className="text-4xl md:text-5xl font-bold tracking-tight">
-                {stat.value}
-              </h4>
-              <p className="text-primary-foreground/80 font-medium text-lg">
-                {ui(stat.label)}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
+    <section className="px-4 py-8">
+      <Link href="/coverage" className="underline">
+        {bn ? "বাস্তব অনুমোদিত সেবার এলাকা দেখুন" : "View approved service coverage"}
+      </Link>
     </section>
   );
 }
@@ -5740,7 +5675,12 @@ export default function StatsSection() {
 import { useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useUiText } from "@/i18n/use-ui-text";
-import { getLegalDocument, type LegalKind } from "@/content/legal";
+import {
+  getLegalDocument,
+  legalOperator,
+  legalEffectiveDate,
+  type LegalKind,
+} from "@/content/legal";
 
 export default function LegalDocument({ kind }: { kind: LegalKind }) {
   const locale = useLocale();
@@ -5766,19 +5706,26 @@ export default function LegalDocument({ kind }: { kind: LegalKind }) {
         <dl className="grid gap-2 text-sm sm:grid-cols-2">
           <div>
             <dt className="font-semibold">{ui("Company")}</dt>
-            <dd>[Company Name]</dd>
+            <dd>{legalOperator.companyName}</dd>
           </div>
           <div>
             <dt className="font-semibold">{ui("Effective date")}</dt>
-            <dd>[Effective Date]</dd>
+            <dd>{legalEffectiveDate(locale)}</dd>
           </div>
           <div>
             <dt className="font-semibold">{ui("Legal address")}</dt>
-            <dd>[Address]</dd>
+            <dd>{legalOperator.address}</dd>
           </div>
           <div>
             <dt className="font-semibold">{ui("Contact")}</dt>
-            <dd>[Contact Email]</dd>
+            <dd>
+              <a
+                href={`mailto:${legalOperator.contactEmail}`}
+                className="underline"
+              >
+                {legalOperator.contactEmail}
+              </a>
+            </dd>
           </div>
         </dl>
       </header>
@@ -5828,6 +5775,11 @@ const groups = [
     title: "Quick Links",
     links: [
       { href: "/", label: "Home" },
+      { href: "/dashboard/new-shipment", label: "Send Parcel" },
+      { href: "/pricing", label: "Pricing" },
+      { href: "/coverage", label: "Coverage" },
+      { href: "/merchant-register", label: "Merchant Registration" },
+      { href: "/courier-apply", label: "Courier Application" },
       { href: "/about", label: "About Us" },
       { href: "/services", label: "Services" },
       { href: "/contact", label: "Contact" },
@@ -5869,7 +5821,7 @@ export default function Footer() {
             </Link>
             <p className="text-sm leading-relaxed text-muted-foreground">
               {ui(
-                "Fast, secure, and reliable parcel delivery services across the nation. We bridge the gap between businesses and their customers.",
+                "Dropzo serves approved areas through its own delivery team. Check coverage and pricing before booking.",
               )}
             </p>
           </div>
@@ -5916,267 +5868,142 @@ export default function Footer() {
 
 ```tsx
 "use client";
-
 import Logo from "@/assets/svg/Logo";
-import { Button } from "@/components/ui/button";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
-import { useTranslations, useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useGetMe, useLogout } from "@/hooks";
-import { toast } from "@/components/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
-import type { UserRole } from "@/types";
-import { Search, Menu, Globe } from "lucide-react";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-
+import { Button } from "@/components/ui/button";
 export default function Header() {
-  const t = useTranslations("Header");
-  const { data, isLoading } = useGetMe();
-  const { mutate: logout, isPending } = useLogout();
-  const queryClient = useQueryClient();
-  const user = data?.data;
-
-  const pathname = usePathname();
-  const router = useRouter();
-  const currentLocale = useLocale();
-
-  const dashboardRoute: Record<UserRole, string> = {
-    ADMIN: "/admin",
-    COURIER: "/courier",
-    CUSTOMER: "/dashboard",
-  };
-
-  const handleLogout = () => {
-    logout(undefined, {
-      onSuccess: () => {
-        toast.add({
-          title: "Logged Out",
-          description: "You have been successfully logged out.",
-          type: "success",
-        });
-        queryClient.removeQueries({ queryKey: ["user"] });
-        router.replace("/");
-        router.refresh();
-      },
-      onError: () => {
-        toast.add({
-          title: "Logout Failed",
-          description: "Something went wrong.",
-          type: "error",
-        });
-      },
-    });
-  };
-
-  const toggleLang = () => {
-    const nextLocale = currentLocale === "en" ? "bn" : "en";
-    router.replace(
-      `${pathname}${window.location.search}${window.location.hash}`,
-      { locale: nextLocale },
-    );
-  };
-
+  const locale = useLocale(),
+    bn = locale === "bn",
+    t = useTranslations("Header");
+  const pathname = usePathname(),
+    router = useRouter(),
+    query = useQueryClient();
+  const { data, isLoading } = useGetMe(),
+    user = data?.data,
+    logout = useLogout();
+  const links = [
+    ["/dashboard/new-shipment", "Send a parcel", "পার্সেল পাঠান"],
+    ["/track-shipment", "Track parcel", "পার্সেল অনুসরণ"],
+    ["/pricing", "Delivery cost", "খরচ হিসাব"],
+    ["/coverage", "Coverage", "সেবার এলাকা"],
+    ["/merchant-register", "For business", "ব্যবসায়িক নিবন্ধন"],
+    ["/about", "About", "পরিচিতি"],
+    ["/contact", "Contact", "যোগাযোগ"],
+  ];
+  const dashboard =
+    user?.role === "ADMIN"
+      ? "/admin"
+      : user?.role === "COURIER"
+        ? "/courier"
+        : "/dashboard";
+  const language = (
+    <button
+      type="button"
+      className="min-h-11 px-3 text-sm"
+      aria-label={t("switchLanguage")}
+      onClick={() =>
+        router.replace(
+          `${pathname}${window.location.search}${window.location.hash}`,
+          { locale: bn ? "en" : "bn" },
+        )
+      }
+    >
+      {bn ? "English" : "বাংলা"}
+    </button>
+  );
+  const accounts = (
+    <>
+      {!isLoading && !user && (
+        <>
+          <Link className="px-3 py-2" href="/login">
+            {t("login")}
+          </Link>
+          <Link
+            className="rounded-lg bg-primary px-4 py-2 text-primary-foreground"
+            href="/register"
+          >
+            {t("register")}
+          </Link>
+        </>
+      )}
+      {user && (
+        <>
+          <Link className="px-3 py-2" href={dashboard}>
+            {t("dashboard")}
+          </Link>
+          <Button
+            variant="outline"
+            disabled={logout.isPending}
+            onClick={() =>
+              logout.mutate(undefined, {
+                onSuccess: () => {
+                  query.clear();
+                  router.replace("/");
+                  router.refresh();
+                },
+              })
+            }
+          >
+            {t("logout")}
+          </Button>
+        </>
+      )}
+    </>
+  );
   return (
-    <header className="w-full h-16 border-b bg-background/70 backdrop-blur-xl sticky top-0 z-50 transition-all shadow-sm">
-      <div className="flex justify-between items-center h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <Link
-          href="/"
-          className="flex items-center gap-3 transition-transform hover:scale-105"
-        >
+    <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
+        <Link href="/" aria-label="Dropzo" className="flex items-center gap-2">
           <Logo className="size-8" />
-          <span className="font-bold tracking-tight text-xl hidden sm:block bg-linear-to-r from-primary to-blue-600 bg-clip-text text-transparent">
-            Dropzo
-          </span>
+          <span className="text-xl font-bold text-primary">Dropzo</span>
         </Link>
-
-        <div className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
-          <Link
-            href="/services"
-            className="hover:text-primary transition-colors"
-          >
-            {t("services")}
-          </Link>
-          <Link href="/about" className="hover:text-primary transition-colors">
-            {t("about")}
-          </Link>
-          <Link
-            href="/contact"
-            className="hover:text-primary transition-colors"
-          >
-            {t("contact")}
-          </Link>
+        <div className="hidden items-center gap-2 lg:flex">
+          {language}
+          {accounts}
         </div>
-
-        <nav className="hidden md:flex items-center gap-3">
-          <Button
-            variant="outline"
-            render={<Link href="/track-shipment" />}
-            nativeButton={false}
-            className="gap-2 border-primary/20 hover:bg-primary/5"
+        <details className="relative lg:hidden">
+          <summary className="cursor-pointer rounded-md border p-3">
+            {t("menu")}
+          </summary>
+          <nav
+            aria-label={t("menu")}
+            className="absolute right-0 top-full mt-2 flex max-h-[75vh] w-72 flex-col gap-2 overflow-auto rounded-xl border bg-background p-4 shadow-xl"
           >
-            <Search className="size-4" /> {t("track")}
-          </Button>
-
-          <Button
-            variant="ghost"
-            onClick={toggleLang}
-            className="gap-1 px-2 text-muted-foreground hover:text-foreground"
-            aria-label={t("switchLanguage")}
-          >
-            <Globe className="size-4" />{" "}
-            {currentLocale === "bn" ? "English" : "বাংলা"}
-          </Button>
-
-          {!isLoading && !user && (
-            <>
-              <Button
-                variant="ghost"
-                render={<Link href="/login" />}
-                nativeButton={false}
-              >
-                {t("login")}
-              </Button>
-              <Button
-                render={<Link href="/register" />}
-                nativeButton={false}
-                className="shadow-md"
-              >
-                {t("register")}
-              </Button>
-            </>
-          )}
-
-          {!isLoading && user && (
-            <>
-              <Button
-                variant="outline"
-                render={<Link href={dashboardRoute[user.role as UserRole]} />}
-                nativeButton={false}
-              >
-                {t("dashboard")}
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={handleLogout}
-                disabled={isPending}
-              >
-                {isPending ? t("loggingOut") : t("logout")}
-              </Button>
-            </>
-          )}
-        </nav>
-
-        <div className="flex md:hidden items-center gap-2">
-          <Button
-            variant="outline"
-            render={<Link href="/track-shipment" />}
-            nativeButton={false}
-            className="px-3 border-primary/20"
-            aria-label={t("track")}
-          >
-            <Search className="size-4" />
-          </Button>
-
-          <Sheet>
-            <SheetTrigger
-              render={
-                <Button
-                  variant="ghost"
-                  className="px-3"
-                  aria-label={t("menu")}
-                />
-              }
-            >
-              <Menu className="size-5" />
-            </SheetTrigger>
-            <SheetContent side="right">
-              <SheetHeader>
-                <SheetTitle className="text-left">{t("menu")}</SheetTitle>
-              </SheetHeader>
-              <div className="flex flex-col gap-4 mt-6">
-                <Link
-                  href="/services"
-                  className="text-lg font-medium hover:text-primary"
-                >
-                  {t("services")}
-                </Link>
-                <Link
-                  href="/about"
-                  className="text-lg font-medium hover:text-primary"
-                >
-                  {t("about")}
-                </Link>
-                <Link
-                  href="/contact"
-                  className="text-lg font-medium hover:text-primary"
-                >
-                  {t("contact")}
-                </Link>
-
-                <Button
-                  variant="ghost"
-                  className="justify-start px-0 text-lg font-medium"
-                  onClick={toggleLang}
-                  aria-label={t("switchLanguage")}
-                >
-                  <Globe className="size-5 mr-2" /> {t("language")}
-                  {currentLocale === "bn" ? "English" : "বাংলা"}
-                </Button>
-
-                <hr className="my-2 border-border" />
-
-                {!isLoading && !user && (
-                  <div className="flex flex-col gap-3">
-                    <Button
-                      variant="outline"
-                      render={<Link href="/login" />}
-                      nativeButton={false}
-                      className="w-full"
-                    >
-                      {t("login")}
-                    </Button>
-                    <Button
-                      render={<Link href="/register" />}
-                      nativeButton={false}
-                      className="w-full"
-                    >
-                      {t("register")}
-                    </Button>
-                  </div>
-                )}
-
-                {!isLoading && user && (
-                  <div className="flex flex-col gap-3">
-                    <Button
-                      variant="outline"
-                      render={
-                        <Link href={dashboardRoute[user.role as UserRole]} />
-                      }
-                      nativeButton={false}
-                      className="w-full"
-                    >
-                      {t("dashboard")}
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={handleLogout}
-                      disabled={isPending}
-                      className="w-full"
-                    >
-                      {isPending ? t("loggingOut") : t("logout")}
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </SheetContent>
-          </Sheet>
-        </div>
+            {links.map(([href, en, bangla]) => (
+              <Link key={href} className="rounded-md px-2 py-3" href={href}>
+                {bn ? bangla : en}
+              </Link>
+            ))}
+            <Link className="px-2 py-3" href="/courier-apply">
+              {bn ? "কর্মীর আবেদন" : "Worker application"}
+            </Link>
+            <Link className="px-2 py-3" href="/login?staff=1">
+              {bn ? "কর্মীদের প্রবেশ" : "Staff sign in"}
+            </Link>
+            {language}
+            {accounts}
+          </nav>
+        </details>
       </div>
+      <nav
+        aria-label={bn ? "প্রধান মেনু" : "Main navigation"}
+        className="mx-auto hidden max-w-7xl flex-wrap items-center gap-x-6 gap-y-2 px-4 pb-3 text-sm lg:flex"
+      >
+        {links.map(([href, en, bangla]) => (
+          <Link key={href} className="py-2 hover:text-primary" href={href}>
+            {bn ? bangla : en}
+          </Link>
+        ))}
+        <Link href="/courier-apply" className="py-2">
+          {bn ? "কর্মীর আবেদন" : "Join our team"}
+        </Link>
+        <Link href="/login?staff=1" className="py-2">
+          {bn ? "কর্মীদের প্রবেশ" : "Staff sign in"}
+        </Link>
+      </nav>
     </header>
   );
 }
@@ -6562,137 +6389,9 @@ export default function CourierOverview() {
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\modules\courier\delivery-tasks.tsx
 
 ```tsx
-"use client";
-
-import { useUiText } from "@/i18n/use-ui-text";
-import { useState } from "react";
-import { useGetAllShipments, useUpdateShipmentStatus } from "@/hooks";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
-import { toast } from "@/components/ui/toast";
-import QueryError from "@/components/ui/query-error";
-import TablePagination from "@/components/ui/table-pagination";
-import { getApiErrorMessage } from "@/lib/api-error";
-import type { ShipmentStatus } from "@/types";
-
-const labels: Partial<Record<ShipmentStatus, string>> = {
-  PICKED_UP: "Mark Picked Up",
-  AT_ORIGIN_HUB: "Arrived at Origin Hub",
-  IN_TRANSIT: "Start Hub Transfer",
-  AT_DESTINATION_HUB: "Arrived at Destination Hub",
-  OUT_FOR_DELIVERY: "Out for Delivery",
-  DELIVERED: "Mark Delivered",
-  DELIVERY_FAILED: "Delivery Failed",
-  RETURNED: "Mark Returned",
-};
+import WorkBoard from "@/components/operations/work-board";
 export default function DeliveryTasks() {
-  const ui = useUiText();
-  const [page, setPage] = useState(1);
-  const { data, isPending, error, refetch } = useGetAllShipments({
-    page,
-    limit: 10,
-  });
-  const { mutate: updateStatus, isPending: updating } =
-    useUpdateShipmentStatus();
-  if (error)
-    return (
-      <QueryError
-        retry={() => {
-          void refetch();
-        }}
-      />
-    );
-  if (isPending) return <Spinner />;
-  return (
-    <div className="space-y-4">
-      <div className="rounded-md border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{ui("Tracking ID")}</TableHead>
-              <TableHead>{ui("Receiver")}</TableHead>
-              <TableHead>{ui("Address")}</TableHead>
-              <TableHead>{ui("Status")}</TableHead>
-              <TableHead>{ui("Actions")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data?.data.length ? (
-              data.data.map((shipment) => (
-                <TableRow key={shipment.id}>
-                  <TableCell className="font-mono">
-                    {shipment.trackingId}
-                  </TableCell>
-                  <TableCell>{shipment.receiverName}</TableCell>
-                  <TableCell>{shipment.receiverAddress}</TableCell>
-                  <TableCell>
-                    {ui(shipment.status.replace(/_/g, " "))}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-2">
-                      {shipment.allowedNextStatuses.map((status) => (
-                        <Button
-                          key={status}
-                          size="sm"
-                          variant={
-                            status === "DELIVERY_FAILED"
-                              ? "destructive"
-                              : "outline"
-                          }
-                          disabled={updating}
-                          onClick={() =>
-                            updateStatus(
-                              { id: shipment.id, payload: { status } },
-                              {
-                                onSuccess: () =>
-                                  toast.add({
-                                    title: "Status Updated",
-                                    type: "success",
-                                  }),
-                                onError: (failure) =>
-                                  toast.add({
-                                    title: "Update Failed",
-                                    description: getApiErrorMessage(failure),
-                                    type: "error",
-                                  }),
-                              },
-                            )
-                          }
-                        >
-                          {ui(labels[status] || status.replace(/_/g, " "))}
-                        </Button>
-                      ))}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={5}>
-                  {ui("No delivery tasks found.")}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-      {data?.meta && data.meta.totalPages > 1 && (
-        <TablePagination
-          page={page}
-          totalPages={data.meta.totalPages}
-          handlePageChange={setPage}
-        />
-      )}
-    </div>
-  );
+  return <WorkBoard />;
 }
 ```
 
@@ -6793,6 +6492,8 @@ export default function CustomerOverview() {
 "use client";
 
 import { useUiText, useUiFormat } from "@/i18n/use-ui-text";
+import { useMutation } from "@tanstack/react-query";
+import { initiateStripePayment } from "@/api/payment.api";
 import { useState } from "react";
 import {
   useGetAllShipments,
@@ -6835,6 +6536,7 @@ export default function ShipmentHistory() {
   const details = useGetSingleShipment(selectedId);
   const { mutate: cancel, isPending: canceling } = useCancelShipment();
   const { mutate: initiate, isPending: paying } = useInitiatePayment();
+  const stripe = useMutation({ mutationFn: initiateStripePayment });
   if (error)
     return (
       <QueryError
@@ -6880,32 +6582,66 @@ export default function ShipmentHistory() {
                         !["CANCELLED", "RETURNED"].includes(
                           shipment.status,
                         ) && (
-                          <Button
-                            size="sm"
-                            disabled={paying || canceling}
-                            onClick={() =>
-                              initiate(
-                                { shipmentId: shipment.id },
-                                {
-                                  onSuccess: (response) => {
-                                    const url = new URL(
-                                      response.data.paymentUrl,
-                                    );
-                                    if (url.protocol !== "https:") return;
-                                    window.location.assign(url.href);
+                          <>
+                            <Button
+                              size="sm"
+                              disabled={paying || stripe.isPending || canceling}
+                              onClick={() =>
+                                initiate(
+                                  { shipmentId: shipment.id },
+                                  {
+                                    onSuccess: (response) => {
+                                      const url = new URL(
+                                        response.data.paymentUrl,
+                                      );
+                                      if (url.protocol !== "https:") return;
+                                      window.location.assign(url.href);
+                                    },
+                                    onError: (failure) =>
+                                      toast.add({
+                                        title: "Payment Failed",
+                                        description:
+                                          getApiErrorMessage(failure),
+                                        type: "error",
+                                      }),
                                   },
-                                  onError: (failure) =>
-                                    toast.add({
-                                      title: "Payment Failed",
-                                      description: getApiErrorMessage(failure),
-                                      type: "error",
-                                    }),
-                                },
-                              )
-                            }
-                          >
-                            {ui("Pay Now")}
-                          </Button>
+                                )
+                              }
+                            >
+                              {ui("Pay Now")}
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              disabled={paying || stripe.isPending || canceling}
+                              onClick={() =>
+                                stripe.mutate(
+                                  { shipmentId: shipment.id },
+                                  {
+                                    onSuccess: (response) => {
+                                      const url = new URL(
+                                        response.data.paymentUrl,
+                                      );
+                                      if (
+                                        url.protocol === "https:" &&
+                                        url.hostname === "checkout.stripe.com"
+                                      )
+                                        window.location.assign(url.href);
+                                    },
+                                    onError: (failure) =>
+                                      toast.add({
+                                        title: "Payment Failed",
+                                        description:
+                                          getApiErrorMessage(failure),
+                                        type: "error",
+                                      }),
+                                  },
+                                )
+                              }
+                            >
+                              {ui("Pay with Stripe")}
+                            </Button>
+                          </>
                         )}
                       <Button
                         variant="outline"
@@ -7010,25 +6746,45 @@ import { useGoogleOAuth } from "@/hooks";
 import { useRouter } from "@/i18n/navigation";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { GoogleLogin } from "@react-oauth/google";
+import { useSearchParams } from "next/navigation";
+import { authDestination } from "@/lib/auth-destination";
 
 export default function GoogleLoginComponent() {
   const router = useRouter();
+  const next = useSearchParams().get("next");
   const { mutate: googleLogin, isPending } = useGoogleOAuth();
   if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) return null;
-  return <div aria-busy={isPending}><GoogleLogin theme="outline" shape="pill" text="continue_with"
-    onSuccess={({ credential }) => {
-      if (!credential || isPending) return;
-      googleLogin({ idToken: credential }, {
-        onSuccess: result => {
-          const role = result.data.user.role;
-          toast.add({ title: "Logged in Successfully", type: "success" });
-          router.replace(role === "ADMIN" ? "/admin" : role === "COURIER" ? "/courier" : "/dashboard");
-        },
-        onError: error => toast.add({ title: "Google Login Failed", description: getApiErrorMessage(error), type: "error" }),
-      });
-    }}
-    onError={() => toast.add({ title: "Google Login Failed", type: "error" })}
-  /></div>;
+  return (
+    <div aria-busy={isPending}>
+      <GoogleLogin
+        theme="outline"
+        shape="pill"
+        text="continue_with"
+        onSuccess={({ credential }) => {
+          if (!credential || isPending) return;
+          googleLogin(
+            { idToken: credential },
+            {
+              onSuccess: (result) => {
+                const role = result.data.user.role;
+                toast.add({ title: "Logged in Successfully", type: "success" });
+                router.replace(authDestination(role, next));
+              },
+              onError: (error) =>
+                toast.add({
+                  title: "Google Login Failed",
+                  description: getApiErrorMessage(error),
+                  type: "error",
+                }),
+            },
+          );
+        }}
+        onError={() =>
+          toast.add({ title: "Google Login Failed", type: "error" })
+        }
+      />
+    </div>
+  );
 }
 ```
 
@@ -9609,6 +9365,23 @@ export type LegalKind = "terms" | "privacy" | "cookies";
 type Section = { title: string; paragraphs: string[] };
 type Document = { title: string; sections: Section[] };
 
+export const legalOperator = {
+  companyName: "Dropzo",
+  contactEmail: "mdshamim.mern@gmail.com",
+  contactPhone: "01865-190471",
+  address: "Love Road, Mirpur 2, Dhaka",
+  effectiveDate: "2026-10-08",
+};
+
+export function legalEffectiveDate(locale: string) {
+  return new Intl.DateTimeFormat(locale === "bn" ? "bn-BD" : "en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(`${legalOperator.effectiveDate}T00:00:00Z`));
+}
+
 const documents: Record<"en" | "bn", Record<LegalKind, Document>> = {
   en: {
     terms: {
@@ -9617,7 +9390,7 @@ const documents: Record<"en" | "bn", Record<LegalKind, Document>> = {
         {
           title: "1. Operator and scope",
           paragraphs: [
-            "[Company Name], located at [Address], operates this courier platform. These draft terms cover account access, parcel booking, tracking and payment. Effective date: [Effective Date]. Contact: [Contact Email].",
+            "Dropzo, located at Love Road, Mirpur 2, Dhaka, operates this courier platform. These draft terms cover account access, parcel booking, tracking and payment. Effective date: October 8, 2026. Contact: mdshamim.mern@gmail.com.",
           ],
         },
         {
@@ -9765,7 +9538,7 @@ const documents: Record<"en" | "bn", Record<LegalKind, Document>> = {
         {
           title: "১. পরিচালনাকারী ও প্রযোজ্য সেবা",
           paragraphs: [
-            "[Address] ঠিকানায় অবস্থিত [Company Name] এই পার্সেল পরিবহনব্যবস্থা পরিচালনা করে। অ্যাকাউন্ট ব্যবহার, পার্সেলের অনুরোধ, অনুসরণ ও অর্থপ্রদান এই খসড়ার আওতায় পড়ে। কার্যকর হওয়ার তারিখ: [Effective Date]। যোগাযোগ: [Contact Email]।",
+            "Love Road, Mirpur 2, Dhaka ঠিকানায় অবস্থিত Dropzo এই পার্সেল পরিবহনব্যবস্থা পরিচালনা করে। অ্যাকাউন্ট ব্যবহার, পার্সেলের অনুরোধ, অনুসরণ ও অর্থপ্রদান এই খসড়ার আওতায় পড়ে। কার্যকর হওয়ার তারিখ: October 8, 2026। যোগাযোগ: mdshamim.mern@gmail.com।",
           ],
         },
         {
@@ -9909,7 +9682,20 @@ const documents: Record<"en" | "bn", Record<LegalKind, Document>> = {
 };
 
 export function getLegalDocument(locale: string, kind: LegalKind) {
-  return documents[locale === "bn" ? "bn" : "en"][kind];
+  const document = documents[locale === "bn" ? "bn" : "en"][kind];
+  return {
+    ...document,
+    sections: document.sections.map((section) => ({
+      ...section,
+      paragraphs: section.paragraphs.map((paragraph) =>
+        paragraph
+          .replaceAll("[Company Name]", legalOperator.companyName)
+          .replaceAll("[Contact Email]", legalOperator.contactEmail)
+          .replaceAll("[Address]", legalOperator.address)
+          .replaceAll("[Effective Date]", legalEffectiveDate(locale)),
+      ),
+    })),
+  };
 }
 ```
 
@@ -10320,6 +10106,7 @@ export const adminRoutes: SidebarItems = [
         title: "Overview",
         url: `${prefix}`,
       },
+      { title: "Operations", url: `${prefix}/operations` },
       {
         title: "Manage Users",
         url: `${prefix}/manage-users`,
@@ -10358,6 +10145,7 @@ export const courierRoutes: SidebarItems = [
         title: "Overview",
         url: `${prefix}`,
       },
+      { title: "Cash Collections", url: `${prefix}/collections` },
       {
         title: "My Deliveries",
         url: `${prefix}/deliveries`,
@@ -10397,6 +10185,9 @@ export const customerRoutes: SidebarItems = [
         title: "Overview",
         url: `${prefix}`,
       },
+      { title: "Business Account", url: `${prefix}/business` },
+      { title: "Cash Collections", url: `${prefix}/collections` },
+      { title: "Bulk Shipments", url: `${prefix}/bulk` },
       {
         title: "New Shipment",
         url: `${prefix}/new-shipment`,
@@ -11207,6 +10998,24 @@ export interface ShipmentTracking {
 }
 
 export interface Shipment {
+  priceBreakdown?: import("./operations.type").Quote | null;
+  pickupAddress?: string | null;
+  senderPhone?: string | null;
+  pickupMode?: string;
+  productType?: string | null;
+  declaredValue?: number | string | null;
+  codAmount?: number | string;
+  codFee?: number | string;
+  requestedPickupAt?: string | null;
+  deliveryInstructions?: string | null;
+  serviceType?: string;
+  deliveryProof?: {
+    receiverName: string;
+    signature: string;
+    acknowledged: boolean;
+    createdAt: string;
+  } | null;
+  collection?: import("./operations.type").Collection | null;
   id: string;
   trackingId: string;
   senderId: string;
@@ -11407,3 +11216,3140 @@ export const ResetPasswordZodSchema = z.object({
 ```
 
 নথির সমাপ্তি।
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\e2e\security-headers.spec.ts
+
+```typescript
+import { test, expect } from "@playwright/test";
+
+for (const locale of ["en", "bn"]) {
+  test(
+    locale +
+      " production responses prevent framing and unsafe embedded objects",
+    async ({ request }) => {
+      for (const route of ["login", "privacy", "payment/success"]) {
+        const response = await request.get(`/${locale}/${route}`);
+        expect(response.status()).toBe(200);
+        const headers = response.headers();
+        expect(headers["x-frame-options"]).toBe("DENY");
+        expect(headers["x-content-type-options"]).toBe("nosniff");
+        expect(headers["referrer-policy"]).toBe(
+          "strict-origin-when-cross-origin",
+        );
+        expect(headers["content-security-policy"]).toContain(
+          "frame-ancestors 'none'",
+        );
+        expect(headers["content-security-policy"]).toContain(
+          "object-src 'none'",
+        );
+        expect(headers["content-security-policy"]).toContain("base-uri 'self'");
+      }
+    },
+  );
+}
+```
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\e2e\courier-operations.spec.ts
+
+```typescript
+import { test, expect, type Page } from "@playwright/test";
+const id = "11111111-1111-4111-8111-111111111111",
+  from = "22222222-2222-4222-8222-222222222222",
+  to = "33333333-3333-4333-8333-333333333333",
+  hub = "44444444-4444-4444-8444-444444444444";
+const user = {
+  id: from,
+  name: "Customer",
+  email: "test@example.test",
+  role: "CUSTOMER",
+  status: "ACTIVE",
+};
+const areas = [
+  {
+    id: from,
+    name: "Mirpur",
+    district: "Dhaka",
+    upazila: "Mirpur",
+    pickupEnabled: true,
+    dropoffEnabled: true,
+    deliveryEnabled: true,
+  },
+  {
+    id: to,
+    name: "Savar",
+    district: "Dhaka",
+    upazila: "Savar",
+    pickupEnabled: true,
+    dropoffEnabled: true,
+    deliveryEnabled: true,
+  },
+];
+const quote = {
+  baseCharge: "80",
+  extraWeightCharge: "20",
+  pickupFee: "10",
+  deliveryCharge: "110",
+  codFee: "1",
+  merchantPayable: "99",
+  deliveryDays: 2,
+  rateUpdatedAt: "2026-10-09T00:00:00.000Z",
+  originHub: { name: "Mirpur hub", address: "Branch address" },
+};
+const shipment = {
+  id,
+  trackingId: "TRK-TEST123456",
+  receiverName: "Receiver",
+  receiverPhone: "01712345678",
+  receiverAddress: "Savar address",
+  pickupAddress: "Mirpur pickup",
+  senderPhone: "01812345678",
+  price: "110",
+  weight: 2,
+  codAmount: "100",
+  status: "OUT_FOR_DELIVERY",
+  paymentStatus: "PAID",
+  allowedNextStatuses: ["DELIVERED", "DELIVERY_FAILED"],
+  createdAt: "2026-10-09T00:00:00.000Z",
+  trackings: [],
+};
+async function mock(page: Page, role = "CUSTOMER") {
+  await page.route("**/api/backend/**", (route) => {
+    const path = new URL(route.request().url()).pathname.replace(
+      "/api/backend",
+      "",
+    );
+    if ((path === "/users/me" || path.startsWith("/auth/")) && role === "GUEST")
+      return route.fulfill({ status: 401, json: { success: false } });
+    const data =
+      path === "/users/me"
+        ? { ...user, role }
+        : path === "/operations/coverage"
+          ? areas
+          : path === "/operations/quote"
+            ? quote
+            : path === "/operations/quotes"
+              ? [quote, quote]
+              : path === "/operations/mine"
+                ? { business: null, application: null, collections: [] }
+                : path === "/shipments"
+                  ? [shipment]
+                  : path.startsWith("/shipments/")
+                    ? shipment
+                    : {};
+    return route.fulfill({
+      json: {
+        success: true,
+        data,
+        meta: { page: 1, limit: 10, total: 1, totalPages: 1 },
+      },
+    });
+  });
+}
+async function fillBooking(page: Page) {
+  await page
+    .getByRole("combobox", {
+      name: "Pickup area (district / upazila / locality)",
+      exact: true,
+    })
+    .selectOption(from);
+  await page
+    .getByRole("combobox", {
+      name: "Delivery area (district / upazila / locality)",
+      exact: true,
+    })
+    .selectOption(to);
+  for (const [name, value] of [
+    ["senderPhone", "01812345678"],
+    ["pickupAddress", "Mirpur pickup"],
+    ["receiverName", "Receiver"],
+    ["receiverPhone", "01712345678"],
+    ["receiverAddress", "Savar address"],
+    ["weight", "2"],
+    ["declaredValue", "100"],
+    ["codAmount", "100"],
+    [
+      "requestedPickupAt",
+      new Date(Date.now() + 86400000).toISOString().slice(0, 16),
+    ],
+  ])
+    await page.locator(`input[name="${name}"]`).fill(value);
+}
+test("mobile Bengali home exposes booking, tracking and functional menu without invented statistics", async ({
+  page,
+}) => {
+  await mock(page, "GUEST");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/bn");
+  await expect(
+    page.getByRole("heading", { name: "পার্সেল পাঠান। প্রতিটি ধাপ জানুন।" }),
+  ).toBeVisible();
+  await expect(
+    page.locator('main a[href="/bn/dashboard/new-shipment"]'),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("textbox", { name: "পার্সেলের অনুসন্ধানসংখ্যা" }),
+  ).toBeVisible();
+  await expect(page.locator("main")).not.toContainText(/99.9%|10K|50\+|24\/7/);
+  await page.locator("header summary").click();
+  await expect(
+    page.locator('header a[href="/bn/pricing"]').first(),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+});
+test("booking login preserves the requested customer destination", async ({
+  page,
+}) => {
+  await mock(page, "GUEST");
+  let loggedIn = false;
+  await page.route("**/api/backend/users/me", (route) =>
+    route.fulfill({
+      status: loggedIn ? 200 : 401,
+      json: { success: loggedIn, data: loggedIn ? user : undefined },
+    }),
+  );
+  await page.route("**/api/backend/auth/login", (route) => {
+    loggedIn = true;
+    return route.fulfill({
+      json: { success: true, data: { user, role: "CUSTOMER" } },
+    });
+  });
+  await page.goto("/en/dashboard/new-shipment");
+  await expect(page).toHaveURL(/login\?next=%2Fdashboard%2Fnew-shipment/);
+  await page.getByLabel("Email Address").fill(user.email);
+  await page.locator("#password").fill("Valid@12345");
+  await page
+    .locator("form")
+    .getByRole("button", { name: "Login", exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/en\/dashboard\/new-shipment$/);
+  await expect(
+    page.getByRole("heading", { name: "Book your parcel" }),
+  ).toBeVisible();
+});
+test("booking shows cost before submission and sends area data without customer hub selection", async ({
+  page,
+}) => {
+  await mock(page);
+  let submitted = false;
+  await page.route("**/api/backend/shipments", (route) => {
+    const body = route.request().postDataJSON();
+    expect(body.originHubId).toBeUndefined();
+    expect(body.destinationHubId).toBeUndefined();
+    expect(body.pickupAddress).toBe("Mirpur pickup");
+    expect(body.requestId).toMatch(/^[a-f0-9-]{36}$/);
+    expect(body.quoteVersion).toBe(quote.rateUpdatedAt);
+    expect(body.quotedDeliveryCharge).toBe(110);
+    submitted = true;
+    return route.fulfill({ json: { success: true, data: shipment } });
+  });
+  await page.goto("/en/dashboard/new-shipment");
+  await fillBooking(page);
+  await page
+    .getByRole("button", { name: "Review cost before booking" })
+    .click();
+  await expect(
+    page.getByText("Total delivery fee:", { exact: false }),
+  ).toBeVisible();
+  expect(submitted).toBe(false);
+  await expect(
+    page.getByRole("button", { name: "Confirm booking" }),
+  ).toBeDisabled();
+  await page
+    .getByLabel("I checked the addresses, charges and product details.")
+    .check();
+  await page.getByRole("button", { name: "Confirm booking" }).click();
+  await expect(page).toHaveURL(new RegExp(`/my-shipments/${id}`));
+  expect(submitted).toBe(true);
+  await expect(page.getByLabel("Tracking QR code")).toBeVisible();
+});
+test("inactive pricing blocks booking rather than using a fallback price", async ({
+  page,
+}) => {
+  await mock(page);
+  await page.route("**/api/backend/operations/quote", (route) =>
+    route.fulfill({ status: 409, json: { success: false } }),
+  );
+  await page.goto("/en/dashboard/new-shipment");
+  await fillBooking(page);
+  await page
+    .getByRole("button", { name: "Review cost before booking" })
+    .click();
+  await expect(
+    page.getByRole("alert").filter({ hasText: "Booking failed" }),
+  ).toContainText("Booking failed");
+  await expect(
+    page.getByRole("button", { name: "Confirm booking" }),
+  ).toHaveCount(0);
+});
+test("courier delivery requires a drawn recipient signature and exact collection input", async ({
+  page,
+}) => {
+  await mock(page, "COURIER");
+  let submitted = false;
+  await page.route(`**/api/backend/shipments/${id}/status`, (route) => {
+    const body = route.request().postDataJSON();
+    expect(body.status).toBe("DELIVERED");
+    expect(body.proof.signature).toMatch(/^data:image\/png;base64,/);
+    expect(body.proof.acknowledged).toBe(true);
+    expect(body.collectedAmount).toBe(100);
+    submitted = true;
+    return route.fulfill({
+      json: { success: true, data: { ...shipment, status: "DELIVERED" } },
+    });
+  });
+  await page.goto("/en/courier/deliveries");
+  await page
+    .getByRole("button", { name: "Mark Delivered", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Confirm recorded action" }),
+  ).toBeDisabled();
+  await page.getByLabel("Recipient name").fill("Receiver");
+  await page.getByLabel("Exact cash collected").fill("100");
+  const canvas = page.getByLabel("Recipient signature area"),
+    box = await canvas.boundingBox();
+  if (!box) throw Error("Missing signature surface");
+  await page.mouse.move(box.x + 20, box.y + 30);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 130, box.y + 60, { steps: 10 });
+  await page.mouse.up();
+  await page
+    .getByLabel("The recipient confirmed receipt and signed here.")
+    .check();
+  await page.getByRole("button", { name: "Confirm recorded action" }).click();
+  await expect(page.getByText("Status Updated", { exact: true })).toBeVisible();
+  expect(submitted).toBe(true);
+});
+test("courier failure records the stated reason instead of a silent status update", async ({
+  page,
+}) => {
+  await mock(page, "COURIER");
+  let sent = false;
+  await page.route(`**/api/backend/shipments/${id}/status`, (route) => {
+    expect(route.request().postDataJSON()).toEqual({
+      status: "DELIVERY_FAILED",
+      note: "Receiver unavailable",
+    });
+    sent = true;
+    return route.fulfill({ json: { success: true, data: shipment } });
+  });
+  await page.goto("/en/courier/deliveries");
+  await page
+    .getByRole("button", { name: "Delivery Failed", exact: true })
+    .click();
+  await page
+    .getByLabel("Reason for failure or return")
+    .fill("Receiver unavailable");
+  await page.getByRole("button", { name: "Confirm recorded action" }).click();
+  await expect(page.getByText("Status Updated", { exact: true })).toBeVisible();
+  expect(sent).toBe(true);
+});
+test("administrator allocation only offers available matching-hub workers with capacity", async ({
+  page,
+}) => {
+  await mock(page, "ADMIN");
+  await page.route("**/api/backend/shipments?*", (route) =>
+    route.fulfill({
+      json: {
+        success: true,
+        data: [
+          {
+            ...shipment,
+            status: "PENDING",
+            originHubId: hub,
+            allowedNextStatuses: [],
+          },
+        ],
+        meta: { page: 1, totalPages: 1 },
+      },
+    }),
+  );
+  const workers = [
+    ["Eligible", hub, true, 1],
+    ["Wrong hub", from, true, 1],
+    ["At capacity", hub, true, 5],
+    ["Unavailable", hub, false, 0],
+  ].map(([name, currentHubId, isAvailable, deliveries], i) => ({
+    userId: `worker-${i}`,
+    currentHubId,
+    isAvailable,
+    user: { name, _count: { deliveries } },
+  }));
+  await page.route("**/api/backend/operations/admin", (route) =>
+    route.fulfill({
+      json: {
+        success: true,
+        data: {
+          couriers: workers,
+          areas: [],
+          rates: [],
+          applications: [],
+          businesses: [],
+          collections: [],
+        },
+      },
+    }),
+  );
+  await page.goto("/en/admin/all-shipments");
+  await expect(
+    page.getByRole("button", { name: "Assign pickup worker" }),
+  ).toBeVisible();
+  const select = page.getByLabel("Available worker and current load");
+  await expect(select.locator("option")).toHaveCount(2);
+  await expect(select).toContainText("Eligible");
+  await expect(select).not.toContainText("Wrong hub");
+});
+test("CSV booking previews charges and prints a label for each confirmed parcel", async ({
+  page,
+}) => {
+  await mock(page);
+  const base = {
+    pickupAreaId: from,
+    receiverAreaId: to,
+    senderPhone: "01812345678",
+    pickupAddress: "Mirpur pickup",
+    receiverName: "Receiver",
+    receiverPhone: "01712345678",
+    receiverAddress: "Savar address",
+    weight: 2,
+    pickupMode: "HOME",
+    serviceType: "STANDARD",
+    productType: "PARCEL",
+    declaredValue: 100,
+    codAmount: 100,
+    requestedPickupAt: new Date(Date.now() + 86400000).toISOString(),
+    deliveryInstructions: "Careful",
+  };
+  const fields = Object.keys(base);
+  const csv = `${fields.join(",")}\n${[base, { ...base, receiverName: "Receiver Two" }].map((row) => fields.map((key) => String(row[key as keyof typeof row])).join(",")).join("\n")}`;
+  await page.route("**/api/backend/shipments/bulk", (route) => {
+    const body = route.request().postDataJSON();
+    expect(body).toHaveLength(2);
+    expect(body[0].quotedDeliveryCharge).toBe(110);
+    expect(body[0].requestId).not.toBe(body[1].requestId);
+    return route.fulfill({
+      json: {
+        success: true,
+        data: [shipment, { ...shipment, id: to, trackingId: "TRK-TESTSECOND" }],
+      },
+    });
+  });
+  await page.goto("/en/dashboard/bulk");
+  await page.getByLabel("CSV file").setInputFiles({
+    name: "parcels.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from(csv),
+  });
+  await expect(
+    page.getByRole("button", { name: "Confirm all bookings" }),
+  ).toBeDisabled();
+  await page
+    .getByRole("button", { name: "Calculate every parcel charge" })
+    .click();
+  await expect(
+    page.getByText("Total delivery fee:", { exact: false }),
+  ).toHaveCount(2);
+  await page
+    .getByLabel("I have checked each parcel and its displayed charges.")
+    .check();
+  await page.getByRole("button", { name: "Confirm all bookings" }).click();
+  await expect(page.locator("article.parcel-label")).toHaveCount(2);
+  await page.emulateMedia({ media: "print" });
+  const pdf = await page.pdf({ format: "A4", printBackground: true });
+  expect([
+    ...pdf.toString("latin1").matchAll(/\/Type\s*\/Page\b/g),
+  ]).toHaveLength(2);
+});
+test("courier applications require account verification and do not promise automatic access", async ({
+  page,
+}) => {
+  await mock(page, "GUEST");
+  await page.goto("/bn/courier-apply");
+  await expect(
+    page.getByText("আগে ব্যক্তিগত অ্যাকাউন্ট তৈরি ও যাচাই করুন। এরপর আবেদন পূরণ করুন।"),
+  ).toBeVisible();
+  await expect(page.locator('main a[href*="/register?next="]')).toBeVisible();
+  await mock(page);
+  await page.goto("/en/courier-apply");
+  await expect(
+    page.getByText("Approval does not happen automatically.", { exact: false }),
+  ).toBeVisible();
+});
+test("registration exposes terms and privacy before account creation", async ({
+  page,
+}) => {
+  await mock(page, "GUEST");
+  await page.goto("/bn/register");
+  await expect(page.locator('main a[href="/bn/terms"]')).toBeVisible();
+  await expect(page.locator('main a[href="/bn/privacy"]')).toBeVisible();
+});
+
+test("Stripe delivery fee button uses the existing Stripe checkout route without invoking bKash", async ({
+  page,
+}) => {
+  await mock(page);
+  let called = false;
+  await page.route("**/api/backend/payments/stripe/initiate", (route) => {
+    expect(route.request().postDataJSON()).toEqual({ shipmentId: id });
+    called = true;
+    return route.fulfill({
+      status: 503,
+      json: { success: false, message: "Provider unavailable" },
+    });
+  });
+  await page.route("**/api/backend/shipments?*", (route) =>
+    route.fulfill({
+      json: {
+        success: true,
+        data: [{ ...shipment, paymentStatus: "UNPAID" }],
+        meta: { page: 1, totalPages: 1 },
+      },
+    }),
+  );
+  await page.goto("/bn/dashboard/my-shipments");
+  await page
+    .getByRole("button", { name: "স্ট্রাইপ দিয়ে পরিশোধ", exact: true })
+    .click();
+  await expect.poll(() => called).toBe(true);
+  await expect(
+    page.getByText("অর্থপ্রদান ব্যর্থ হয়েছে", { exact: true }),
+  ).toBeVisible();
+});
+
+test("business onboarding submits payout details for review without granting approval", async ({
+  page,
+}) => {
+  await mock(page);
+  let called = false;
+  const body = {
+    shopName: "Test Shop",
+    pickupAddress: "Mirpur shop address",
+    contactNumber: "01812345678",
+    accountName: "Test Owner",
+    accountNumber: "123456789012",
+    payoutMethod: "BANK",
+  };
+  await page.route("**/api/backend/operations/business", (route) => {
+    expect(route.request().method()).toBe("PUT");
+    expect(route.request().postDataJSON()).toEqual(body);
+    called = true;
+    return route.fulfill({
+      json: { success: true, data: { id, ...body, approved: false } },
+    });
+  });
+  await page.goto("/en/dashboard/business");
+  for (const [key, value] of Object.entries(body).filter(
+    ([key]) => key !== "payoutMethod",
+  ))
+    await page.locator('input[name="' + key + '"]').fill(value);
+  await page.getByRole("button", { name: "Submit for review" }).click();
+  await expect(
+    page.getByText("Application saved for administrator review.", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  expect(called).toBe(true);
+});
+test("verified customer can submit a staff application without choosing a hub or role", async ({
+  page,
+}) => {
+  await mock(page);
+  let called = false;
+  await page.route("**/api/backend/operations/applications", (route) => {
+    expect(route.request().postDataJSON()).toEqual({
+      contactNumber: "01812345678",
+      area: "Mirpur",
+      vehicleType: "MOTORBIKE",
+    });
+    called = true;
+    return route.fulfill({
+      json: { success: true, data: { id, status: "PENDING" } },
+    });
+  });
+  await page.goto("/en/courier-apply");
+  await page.locator('input[name="contactNumber"]').fill("01812345678");
+  await page.locator('input[name="area"]').fill("Mirpur");
+  await page.locator('select[name="vehicleType"]').selectOption("MOTORBIKE");
+  await page.getByRole("button", { name: "Submit for review" }).click();
+  await expect(
+    page.getByText("Application saved for administrator review.", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  expect(called).toBe(true);
+});
+async function adminOperationsMock(
+  page: Page,
+  extra: Record<string, unknown> = {},
+) {
+  await mock(page, "ADMIN");
+  await page.route("**/api/backend/operations/admin", (route) =>
+    route.fulfill({
+      json: {
+        success: true,
+        data: {
+          couriers: [],
+          areas,
+          rates: [],
+          applications: [],
+          businesses: [],
+          collections: [],
+          payoutAccounts: [],
+          ...extra,
+        },
+      },
+    }),
+  );
+  await page.route("**/api/backend/hubs?*", (route) =>
+    route.fulfill({
+      json: {
+        success: true,
+        data: [
+          {
+            id: hub,
+            name: "Mirpur hub",
+            address: "Branch address",
+            isActive: true,
+          },
+        ],
+      },
+    }),
+  );
+}
+test("administrator explicitly configures service availability and approved tariffs", async ({
+  page,
+}) => {
+  await adminOperationsMock(page);
+  let areaSent = false,
+    rateSent = false;
+  const areaBody = {
+    name: "Mirpur new",
+    district: "Dhaka",
+    upazila: "Mirpur",
+    hubId: hub,
+    pickupEnabled: true,
+    dropoffEnabled: true,
+    deliveryEnabled: true,
+  };
+  const rateBody = {
+    pickupAreaId: from,
+    receiverAreaId: to,
+    serviceType: "STANDARD",
+    baseWeight: 1,
+    baseCharge: 80,
+    extraPerKg: 20,
+    pickupFee: 10,
+    codPercent: 1,
+    deliveryDays: 2,
+    cutoffMinutes: 0,
+    active: true,
+  };
+  await page.route("**/api/backend/operations/areas", (route) => {
+    expect(route.request().postDataJSON()).toEqual(areaBody);
+    areaSent = true;
+    return route.fulfill({
+      json: { success: true, data: { id, ...areaBody } },
+    });
+  });
+  await page.route("**/api/backend/operations/rates", (route) => {
+    expect(route.request().postDataJSON()).toEqual(rateBody);
+    rateSent = true;
+    return route.fulfill({
+      json: { success: true, data: { id, ...rateBody } },
+    });
+  });
+  await page.goto("/en/admin/operations");
+  const areaForm = page.locator("form").filter({
+    has: page.getByRole("heading", { name: "Service area", exact: true }),
+  });
+  for (const [key, value] of Object.entries(areaBody)) {
+    const field = areaForm.locator('[name="' + key + '"]');
+    if (typeof value === "boolean") await field.check();
+    else if (key === "hubId") await field.selectOption(value);
+    else await field.fill(value);
+  }
+  await areaForm.getByRole("button", { name: "Save", exact: true }).click();
+  await expect.poll(() => areaSent).toBe(true);
+  const rateForm = page.locator("form").filter({
+    has: page.getByRole("heading", {
+      name: "Approved rate plan",
+      exact: true,
+    }),
+  });
+  for (const [key, value] of Object.entries(rateBody)) {
+    const field = rateForm.locator('[name="' + key + '"]');
+    if (typeof value === "boolean") await field.check();
+    else if (typeof value === "number") await field.fill(String(value));
+    else await field.selectOption(value);
+  }
+  await rateForm.getByRole("button", { name: "Save", exact: true }).click();
+  await expect.poll(() => rateSent).toBe(true);
+});
+test("manual payout records the approved account version and an existing transfer reference", async ({
+  page,
+}) => {
+  const account = {
+    id: to,
+    userId: from,
+    updatedAt: "2026-10-09T00:00:00.000Z",
+    shopName: "Test Shop",
+    pickupAddress: "Shop address",
+    contactNumber: "01812345678",
+    payoutMethod: "BANK",
+    accountName: "Verified Owner",
+    accountNumber: "123456789012",
+    approved: true,
+  };
+  await adminOperationsMock(page, {
+    payoutAccounts: [account],
+    collections: [
+      {
+        id,
+        shipmentId: to,
+        merchantId: from,
+        courierId: hub,
+        amount: "100",
+        fee: "1",
+        payable: "99",
+        status: "RECEIVED",
+      },
+    ],
+  });
+  let called = false;
+  await page.route("**/api/backend/operations/collections/" + id, (route) => {
+    expect(route.request().postDataJSON()).toEqual({
+      action: "PAY",
+      reference: "COMPLETED-TRANSFER-123",
+      accountVersion: account.updatedAt,
+    });
+    called = true;
+    return route.fulfill({
+      json: { success: true, data: { id, status: "PAID" } },
+    });
+  });
+  await page.goto("/en/admin/operations");
+  await expect(
+    page.getByText("Verify completed transfer to this approved account:", {
+      exact: false,
+    }),
+  ).toContainText(account.accountNumber);
+  await page.locator('input[name="reference"]').fill("COMPLETED-TRANSFER-123");
+  await page.getByRole("button", { name: "Record completed payout" }).click();
+  await expect.poll(() => called).toBe(true);
+});
+```
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\admin\operations\page.tsx
+
+```typescript
+import AdminSettings from "@/components/operations/admin-settings";
+export default function OperationsPage() {
+  return <AdminSettings />;
+}
+```
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\admin\shipments\[id]\page.tsx
+
+```typescript
+export { default } from "../../../dashboard/my-shipments/[id]/page";
+```
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\types\operations.type.ts
+
+```typescript
+export interface ServiceArea {
+  id: string;
+  name: string;
+  district: string;
+  upazila: string;
+  pickupEnabled: boolean;
+  dropoffEnabled?: boolean;
+  deliveryEnabled: boolean;
+  hubId?: string;
+}
+export interface Quote {
+  serviceType?: string;
+  requestedServiceType?: string;
+  baseCharge: string;
+  extraWeightCharge: string;
+  pickupFee: string;
+  deliveryCharge: string;
+  codFee: string;
+  merchantPayable: string;
+  deliveryDays: number;
+  rateUpdatedAt: string;
+  originHub: { name: string; address: string };
+}
+export interface Collection {
+  id: string;
+  shipmentId: string;
+  merchantId: string;
+  courierId: string;
+  amount: string;
+  fee: string;
+  payable: string;
+  status: string;
+  receiptReference?: string;
+  payoutReference?: string;
+  createdAt?: string;
+  receivedAt?: string;
+  paidAt?: string;
+}
+export interface Business {
+  id: string;
+  shopName: string;
+  pickupAddress: string;
+  contactNumber: string;
+  payoutMethod: string;
+  accountName: string;
+  accountNumber: string;
+  approved: boolean;
+  reviewNote?: string;
+  user?: { name: string; email: string };
+}
+export interface Application {
+  id: string;
+  contactNumber: string;
+  area: string;
+  vehicleType: string;
+  status: string;
+  reviewNote?: string;
+  user?: { name: string; email: string };
+}
+export interface OperationsMine {
+  business: Business | null;
+  application: Application | null;
+  collections: Collection[];
+  totals?: {
+    expected: string;
+    collected: string;
+    payable: string;
+    paid: string;
+    pending: string;
+    awaitingCollection: string;
+    heldByWorker: string;
+  };
+}
+export interface OperationsAdmin {
+  payoutAccounts: Array<Business & { userId: string; updatedAt: string }>;
+  areas: ServiceArea[];
+  rates: Array<Record<string, string | number | boolean>>;
+  applications: Application[];
+  businesses: Business[];
+  collections: Collection[];
+  couriers: Array<{
+    userId: string;
+    currentHubId: string | null;
+    isAvailable: boolean;
+    user: { name: string; _count: { deliveries: number } };
+  }>;
+}
+```
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\lib\auth-destination.ts
+
+```typescript
+export function authDestination(role: string, next?: string | null) {
+  if (role === "ADMIN") return "/admin";
+  if (role === "COURIER") return "/courier";
+  const allowed = [
+    "/dashboard/new-shipment",
+    "/dashboard/business",
+    "/dashboard/bulk",
+    "/courier-apply",
+  ];
+  return next && allowed.includes(next) ? next : "/dashboard";
+}
+```
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\operations\work-board.tsx
+
+```typescript
+"use client";
+import { useState } from "react";
+import { useLocale } from "next-intl";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import apiClient from "@/lib/apiClient";
+import { useGetAllShipments } from "@/hooks";
+import type { ApiResponse } from "@/types";
+import type { OperationsAdmin } from "@/types/operations.type";
+import { Link } from "@/i18n/navigation";
+import { Button } from "@/components/ui/button";
+import ShipmentActions from "./shipment-actions";
+export default function WorkBoard({ admin = false }: { admin?: boolean }) {
+  const bn = useLocale() === "bn",
+    t = (en: string, bangla: string) => (bn ? bangla : en);
+  const [task, setTask] = useState(""),
+    [page, setPage] = useState(1),
+    [search, setSearch] = useState("");
+  const records = useGetAllShipments({
+    page,
+    limit: 10,
+    ...(task ? { task } : {}),
+    searchTerm: search,
+  });
+  const workers = useQuery({
+    queryKey: ["operations-admin"],
+    queryFn: () => apiClient<ApiResponse<OperationsAdmin>>("/operations/admin"),
+    enabled: admin,
+  });
+  const assign = useMutation({
+    mutationFn: ({
+      id,
+      courierId,
+      status,
+    }: {
+      id: string;
+      courierId: string;
+      status: string;
+    }) =>
+      apiClient(
+        `/shipments/${id}${status === "PENDING" ? "/assign" : "/handoff"}`,
+        { method: "PATCH", body: { courierId } },
+      ),
+    onSuccess: () => {
+      void records.refetch();
+      void workers.refetch();
+    },
+  });
+  return (
+    <section className="space-y-5">
+      <h1 className="text-2xl font-bold">
+        {admin
+          ? t("Parcel work allocation", "পার্সেলের কাজ বরাদ্দ")
+          : t("My pickup and delivery tasks", "আমার সংগ্রহ ও ডেলিভারির কাজ")}
+      </h1>
+      <div className="flex flex-wrap gap-3">
+        <label>
+          {t("Task filter", "কাজের ধরন")}
+          <select
+            className="ml-2 min-h-11 rounded-md border p-2"
+            value={task}
+            onChange={(e) => {
+              setTask(e.target.value);
+              setPage(1);
+            }}
+          >
+            {[
+              ["", "All", "সব"],
+              ["TODAY", "Today", "আজকের কাজ"],
+              ...(admin ? [["UNASSIGNED", "Unassigned", "বরাদ্দ বাকি"]] : []),
+              ["PICKUP", "Pickup", "সংগ্রহ"],
+              ["DELIVERY", "Delivery", "পৌঁছানো"],
+              ["FAILED", "Failed delivery", "ব্যর্থ ডেলিভারি"],
+              ["LATE", "Late", "দেরি হয়েছে"],
+              ["URGENT", "Urgent", "জরুরি"],
+            ].map(([value, en, bangla]) => (
+              <option key={value} value={value}>
+                {t(en, bangla)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <input
+          className="min-h-11 rounded-md border px-3"
+          aria-label={t("Search parcel", "পার্সেল খুঁজুন")}
+          placeholder={t("Tracking number or receiver", "অনুসন্ধানসংখ্যা বা প্রাপক")}
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
+        />
+      </div>
+      {records.isError && (
+        <p role="alert">{t("Tasks unavailable.", "কাজের তালিকা পাওয়া যায়নি।")}</p>
+      )}
+      {!records.isPending && !records.isError && !records.data?.data.length && (
+        <p>{t("No matching tasks.", "এই ধরনের কোনো কাজ নেই।")}</p>
+      )}
+      {records.data?.data.map((shipment) => (
+        <article
+          key={shipment.id}
+          className="space-y-3 rounded-xl border bg-card p-5"
+        >
+          <h2 className="break-all font-semibold">{shipment.trackingId}</h2>
+          <p>
+            {t("Pickup: ", "সংগ্রহ: ")}
+            {shipment.pickupAddress ||
+              shipment.originHub?.address ||
+              t("View assigned hub", "নির্ধারিত হাব দেখুন")}{" "}
+            · {shipment.senderPhone}
+          </p>
+          <p>
+            {t("Receiver: ", "প্রাপক: ")}
+            {shipment.receiverName} · {shipment.receiverPhone}
+          </p>
+          <p>{shipment.receiverAddress}</p>
+          {shipment.requestedPickupAt && (
+            <p>
+              {t("Requested collection time: ", "সংগ্রহের অনুরোধের সময়: ")}
+              {new Intl.DateTimeFormat(bn ? "bn-BD" : "en-GB", {
+                dateStyle: "medium",
+                timeStyle: "short",
+              }).format(new Date(shipment.requestedPickupAt))}
+            </p>
+          )}
+          {shipment.estimatedDelivery && (
+            <p>
+              {t("Estimated delivery: ", "সম্ভাব্য সরবরাহ: ")}
+              {new Intl.DateTimeFormat(bn ? "bn-BD" : "en-GB", {
+                dateStyle: "medium",
+              }).format(new Date(shipment.estimatedDelivery))}
+            </p>
+          )}
+          <Link
+            className="inline-block underline"
+            href={
+              admin
+                ? `/admin/shipments/${shipment.id}`
+                : `/courier/shipments/${shipment.id}`
+            }
+          >
+            {t("Details and label", "বিস্তারিত ও লেবেল")}
+          </Link>
+          {admin &&
+            ["PENDING", "AT_ORIGIN_HUB", "AT_DESTINATION_HUB"].includes(
+              shipment.status,
+            ) && (
+              <form
+                className="flex flex-wrap gap-3"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  assign.mutate({
+                    id: shipment.id,
+                    courierId: String(
+                      new FormData(e.currentTarget).get("courierId"),
+                    ),
+                    status: shipment.status,
+                  });
+                }}
+              >
+                <label>
+                  {t(
+                    "Available worker and current load",
+                    "কর্মী ও বর্তমান কাজের চাপ",
+                  )}
+                  <select
+                    required
+                    name="courierId"
+                    className="ml-2 min-h-11 rounded-md border p-2"
+                  >
+                    <option value="">{t("Choose worker", "কর্মী বাছুন")}</option>
+                    {workers.data?.data.couriers
+                      .filter(
+                        (worker) =>
+                          worker.userId !== shipment.courierId &&
+                          worker.isAvailable &&
+                          worker.user._count.deliveries < 5 &&
+                          worker.currentHubId ===
+                            (shipment.status === "AT_DESTINATION_HUB"
+                              ? shipment.destinationHubId
+                              : shipment.originHubId),
+                      )
+                      .map((worker) => (
+                        <option key={worker.userId} value={worker.userId}>
+                          {worker.user.name} ·{" "}
+                          {new Intl.NumberFormat(bn ? "bn-BD" : "en-US").format(
+                            worker.user._count.deliveries,
+                          )}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+                <Button type="submit" disabled={assign.isPending}>
+                  {shipment.status === "PENDING"
+                    ? t("Assign pickup worker", "সংগ্রহের কর্মী বরাদ্দ")
+                    : t("Handover at hub", "হাবে কর্মী হস্তান্তর")}
+                </Button>
+              </form>
+            )}
+          <ShipmentActions
+            shipment={shipment}
+            onSuccess={() => {
+              void records.refetch();
+            }}
+          />
+        </article>
+      ))}
+      {assign.isError && (
+        <p role="alert">
+          {t(
+            "Assignment rejected. Check the worker hub and current workload.",
+            "বরাদ্দ গ্রহণ হয়নি। কর্মীর হাব ও বর্তমান কাজের চাপ যাচাই করুন।",
+          )}
+        </p>
+      )}
+      {records.data?.meta && (
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            disabled={page <= 1}
+            onClick={() => setPage(page - 1)}
+          >
+            {t("Previous", "আগের পাতা")}
+          </Button>
+          <span>
+            {new Intl.NumberFormat(bn ? "bn-BD" : "en-US").format(page)}
+          </span>
+          <Button
+            variant="outline"
+            disabled={page >= records.data.meta.totalPages}
+            onClick={() => setPage(page + 1)}
+          >
+            {t("Next", "পরের পাতা")}
+          </Button>
+        </div>
+      )}
+    </section>
+  );
+}
+```
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\operations\shipment-actions.tsx
+
+```typescript
+"use client";
+import { useRef, useState } from "react";
+import { useLocale } from "next-intl";
+import { useMutation } from "@tanstack/react-query";
+import apiClient from "@/lib/apiClient";
+import type { Shipment, ShipmentStatus } from "@/types";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/toast";
+import { useUiText } from "@/i18n/use-ui-text";
+export default function ShipmentActions({
+  shipment,
+  onSuccess,
+}: {
+  shipment: Shipment;
+  onSuccess: () => void;
+}) {
+  const bn = useLocale() === "bn",
+    ui = useUiText(),
+    t = (en: string, bangla: string) => (bn ? bangla : en);
+  const canvas = useRef<HTMLCanvasElement>(null),
+    drawing = useRef(false),
+    [signed, setSigned] = useState(false),
+    [target, setTarget] = useState<ShipmentStatus | null>(null);
+  const mutation = useMutation({
+    mutationFn: (body: Record<string, unknown>) =>
+      apiClient(`/shipments/${shipment.id}/status`, {
+        method: "PATCH",
+        body,
+      }),
+    onSuccess: () => {
+      setTarget(null);
+      setSigned(false);
+      toast.add({ type: "success", title: ui("Status Updated") });
+      onSuccess();
+    },
+  });
+  const move = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!drawing.current) return;
+    const surface = canvas.current,
+      ctx = surface?.getContext("2d");
+    if (!surface || !ctx) return;
+    const box = surface.getBoundingClientRect();
+    ctx.lineTo(
+      ((event.clientX - box.left) * surface.width) / box.width,
+      ((event.clientY - box.top) * surface.height) / box.height,
+    );
+    ctx.stroke();
+    setSigned(true);
+  };
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap gap-2">
+        {shipment.allowedNextStatuses
+          .filter((status) => status !== "CANCELLED")
+          .map((status) => (
+            <Button
+              key={status}
+              variant="outline"
+              disabled={mutation.isPending}
+              onClick={() => {
+                if (
+                  ["DELIVERED", "DELIVERY_FAILED", "RETURNED"].includes(status)
+                ) {
+                  setTarget(status);
+                  setSigned(false);
+                } else mutation.mutate({ status });
+              }}
+            >
+              {ui(
+                (
+                  {
+                    PICKED_UP: "Mark Picked Up",
+                    AT_ORIGIN_HUB: "Arrived at Origin Hub",
+                    IN_TRANSIT: "Start Hub Transfer",
+                    AT_DESTINATION_HUB: "Arrived at Destination Hub",
+                    OUT_FOR_DELIVERY: "Out for Delivery",
+                    DELIVERED: "Mark Delivered",
+                    DELIVERY_FAILED: "Delivery Failed",
+                    RETURNED: "Mark Returned",
+                  } as Record<string, string>
+                )[status] || status,
+              )}
+            </Button>
+          ))}
+      </div>
+      {target && (
+        <form
+          className="space-y-4 rounded-xl border p-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const form = new FormData(e.currentTarget);
+            if (target === "DELIVERED") {
+              if (!signed || !canvas.current) return;
+              mutation.mutate({
+                status: target,
+                proof: {
+                  receiverName: String(form.get("receiverName")),
+                  signature: canvas.current.toDataURL("image/png"),
+                  acknowledged: form.has("acknowledged"),
+                },
+                collectedAmount: Number(form.get("collectedAmount") || 0),
+              });
+            } else
+              mutation.mutate({
+                status: target,
+                note: String(form.get("note")),
+              });
+          }}
+        >
+          {target === "DELIVERED" ? (
+            <>
+              <p>
+                {t(
+                  "Ask the recipient to sign after receiving the parcel. This is a recorded acknowledgment, not OTP identity verification.",
+                  "পার্সেল পাওয়ার পরে প্রাপককে স্বাক্ষর করতে বলুন। এটি গ্রহণের নথিভুক্ত প্রমাণ, পরিচয়ের যাচাইসংকেত পরীক্ষা নয়।",
+                )}
+              </p>
+              <label>
+                {t("Recipient name", "গ্রহণকারীর নাম")}
+                <input
+                  required
+                  minLength={2}
+                  name="receiverName"
+                  className="mt-2 block min-h-11 w-full rounded-md border px-3"
+                />
+              </label>
+              <canvas
+                ref={canvas}
+                width={480}
+                height={160}
+                aria-label={t("Recipient signature area", "প্রাপকের স্বাক্ষরের স্থান")}
+                className="h-40 w-full touch-none rounded-lg border bg-white"
+                onPointerDown={(e) => {
+                  const ctx = e.currentTarget.getContext("2d"),
+                    box = e.currentTarget.getBoundingClientRect();
+                  if (!ctx) return;
+                  drawing.current = true;
+                  e.currentTarget.setPointerCapture(e.pointerId);
+                  ctx.strokeStyle = "#111";
+                  ctx.lineWidth = 2;
+                  ctx.beginPath();
+                  ctx.moveTo(
+                    ((e.clientX - box.left) * 480) / box.width,
+                    ((e.clientY - box.top) * 160) / box.height,
+                  );
+                }}
+                onPointerMove={move}
+                onPointerUp={() => {
+                  drawing.current = false;
+                }}
+                onPointerCancel={() => {
+                  drawing.current = false;
+                }}
+              />
+              <Button
+                variant="outline"
+                type="button"
+                onClick={() => {
+                  canvas.current?.getContext("2d")?.clearRect(0, 0, 480, 160);
+                  setSigned(false);
+                }}
+              >
+                {t("Clear signature", "স্বাক্ষর মুছুন")}
+              </Button>
+              {Number(shipment.codAmount || 0) > 0 && (
+                <label className="block">
+                  {t("Exact cash collected", "সংগৃহীত সঠিক নগদ টাকা")}
+                  <input
+                    required
+                    name="collectedAmount"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="mt-2 block min-h-11 w-full rounded-md border px-3"
+                  />
+                </label>
+              )}
+              <label className="flex items-start gap-2">
+                <input required type="checkbox" name="acknowledged" />
+                {t(
+                  "The recipient confirmed receipt and signed here.",
+                  "প্রাপক গ্রহণ নিশ্চিত করে এখানে স্বাক্ষর করেছেন।",
+                )}
+              </label>
+            </>
+          ) : (
+            <label>
+              {t("Reason for failure or return", "ব্যর্থতা বা ফেরতের কারণ")}
+              <textarea
+                required
+                minLength={5}
+                maxLength={500}
+                name="note"
+                className="mt-2 block w-full rounded-md border p-3"
+              />
+            </label>
+          )}
+          <div className="flex gap-3">
+            <Button
+              type="submit"
+              disabled={
+                mutation.isPending || (target === "DELIVERED" && !signed)
+              }
+            >
+              {t("Confirm recorded action", "নথিভুক্ত কাজ নিশ্চিত করুন")}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setTarget(null)}
+            >
+              {t("Close", "বন্ধ করুন")}
+            </Button>
+          </div>
+        </form>
+      )}
+      {mutation.isError && (
+        <p role="alert">
+          {t(
+            "Update rejected. Check permissions, current state, delivery payment and required proof.",
+            "পরিবর্তন গ্রহণ হয়নি। অনুমতি, বর্তমান ধাপ, ডেলিভারি মাশুল ও প্রয়োজনীয় প্রমাণ যাচাই করুন।",
+          )}
+        </p>
+      )}
+    </div>
+  );
+}
+```
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\operations\quote-calculator.tsx
+
+```typescript
+"use client";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocale } from "next-intl";
+import { useState } from "react";
+import apiClient from "@/lib/apiClient";
+import type { ApiResponse } from "@/types";
+import type { Quote, ServiceArea } from "@/types/operations.type";
+import { Button } from "@/components/ui/button";
+export default function QuoteCalculator() {
+  const bn = useLocale() === "bn",
+    t = (en: string, bangla: string) => (bn ? bangla : en);
+  const [input, setInput] = useState({
+    pickupAreaId: "",
+    receiverAreaId: "",
+    weight: 1,
+    codAmount: 0,
+    serviceType: "STANDARD",
+    pickupMode: "HOME",
+  });
+  const areas = useQuery({
+    queryKey: ["coverage"],
+    queryFn: () =>
+      apiClient<ApiResponse<ServiceArea[]>>("/operations/coverage"),
+    retry: false,
+  });
+  const quote = useMutation({
+    mutationFn: () =>
+      apiClient<ApiResponse<Quote>>("/operations/quote", {
+        method: "POST",
+        body: input,
+      }),
+  });
+  const money = (value: string) =>
+    new Intl.NumberFormat(bn ? "bn-BD" : "en-BD", {
+      style: "currency",
+      currency: "BDT",
+    }).format(Number(value));
+  return (
+    <section className="space-y-5 rounded-2xl border bg-card p-6">
+      <h2 className="text-2xl font-bold">
+        {t("Calculate delivery cost", "ডেলিভারির খরচ হিসাব করুন")}
+      </h2>
+      {areas.isError ? (
+        <p role="alert">
+          {t("Coverage could not be loaded.", "সেবার এলাকার তথ্য পাওয়া যায়নি।")}
+        </p>
+      ) : (
+        <form
+          className="grid gap-4 sm:grid-cols-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            quote.mutate();
+          }}
+        >
+          {(["pickupAreaId", "receiverAreaId"] as const).map((key) => (
+            <label key={key} className="space-y-2">
+              {key === "pickupAreaId"
+                ? t("Pickup area", "সংগ্রহের এলাকা")
+                : t("Delivery area", "পৌঁছানোর এলাকা")}
+              <select
+                required
+                className="block h-11 w-full rounded-md border px-3"
+                value={input[key]}
+                onChange={(e) => {
+                  setInput({ ...input, [key]: e.target.value });
+                  quote.reset();
+                }}
+              >
+                <option value="">{t("Choose area", "এলাকা বাছুন")}</option>
+                {areas.data?.data
+                  .filter((area) =>
+                    key === "pickupAreaId"
+                      ? input.pickupMode === "BRANCH"
+                        ? area.dropoffEnabled
+                        : area.pickupEnabled
+                      : area.deliveryEnabled,
+                  )
+                  .map((area) => (
+                    <option key={area.id} value={area.id}>
+                      {area.name} — {area.district}
+                    </option>
+                  ))}
+              </select>
+            </label>
+          ))}
+          <label>
+            {t("Weight (kg)", "ওজন (কেজি)")}
+            <input
+              required
+              type="number"
+              step="0.01"
+              min="0.01"
+              max="100"
+              value={input.weight}
+              className="block h-11 w-full rounded-md border px-3"
+              onChange={(e) => {
+                setInput({ ...input, weight: Number(e.target.value) });
+                quote.reset();
+              }}
+            />
+          </label>
+          <label>
+            {t("COD amount", "প্রাপকের কাছ থেকে সংগ্রহের টাকা")}
+            <input
+              required
+              type="number"
+              step="0.01"
+              min="0"
+              max="1000000"
+              value={input.codAmount}
+              className="block h-11 w-full rounded-md border px-3"
+              onChange={(e) => {
+                setInput({ ...input, codAmount: Number(e.target.value) });
+                quote.reset();
+              }}
+            />
+          </label>
+          <label>
+            {t("Service", "সেবা")}
+            <select
+              className="block h-11 w-full rounded-md border px-3"
+              value={input.serviceType}
+              onChange={(e) => {
+                setInput({ ...input, serviceType: e.target.value });
+                quote.reset();
+              }}
+            >
+              <option value="STANDARD">{t("Standard", "সাধারণ")}</option>
+              <option value="NEXT_DAY">
+                {t("Next day, if available", "পরের দিন, চালু থাকলে")}
+              </option>
+              <option value="SAME_DAY">
+                {t(
+                  "Same day before noon, if available",
+                  "দুপুর ১২টার আগে একই দিন, চালু থাকলে",
+                )}
+              </option>
+              <option value="EXPRESS">
+                {t("Express, if available", "জরুরি, চালু থাকলে")}
+              </option>
+            </select>
+          </label>
+          <label>
+            {t("Collection method", "পার্সেল জমা দেওয়ার পদ্ধতি")}
+            <select
+              className="block h-11 w-full rounded-md border px-3"
+              value={input.pickupMode}
+              onChange={(e) => {
+                setInput({
+                  ...input,
+                  pickupMode: e.target.value,
+                  pickupAreaId: "",
+                });
+                quote.reset();
+              }}
+            >
+              <option value="HOME">
+                {t("Collect from address", "ঠিকানা থেকে সংগ্রহ")}
+              </option>
+              <option value="BRANCH">
+                {t("Drop at assigned branch", "নির্ধারিত শাখায় জমা")}
+              </option>
+            </select>
+          </label>
+          <Button disabled={quote.isPending || areas.isPending} type="submit">
+            {t("Calculate", "হিসাব দেখুন")}
+          </Button>
+        </form>
+      )}
+      {quote.isError && (
+        <p role="alert">
+          {t(
+            "Approved pricing is unavailable for this route. Booking is not available.",
+            "এই পথে অনুমোদিত মূল্যতালিকা নেই। এখন বুকিং করা যাবে না।",
+          )}
+        </p>
+      )}
+      {quote.data && (
+        <dl aria-live="polite" className="grid gap-2">
+          <div>
+            <p role="status">
+              {t("Confirmed service: ", "নিশ্চিত সেবা: ")}
+              {
+                (
+                  {
+                    STANDARD: t("Standard", "সাধারণ"),
+                    EXPRESS: t("Express", "জরুরি"),
+                    SAME_DAY: t("Same day", "একই দিন"),
+                    NEXT_DAY: t("Next day", "পরের দিন"),
+                  } as Record<string, string>
+                )[quote.data?.data.serviceType || input.serviceType]
+              }
+            </p>
+          </div>
+          {(
+            [
+              ["baseCharge", "Base delivery charge", "মূল মাশুল"],
+              ["extraWeightCharge", "Extra weight charge", "বাড়তি ওজনের মাশুল"],
+              ["pickupFee", "Pickup charge", "সংগ্রহের মাশুল"],
+              [
+                "deliveryCharge",
+                "Delivery fee payable separately",
+                "আলাদা পরিশোধযোগ্য ডেলিভারি মাশুল",
+              ],
+              ["codFee", "COD handling charge", "টাকা সংগ্রহের মাশুল"],
+              [
+                "merchantPayable",
+                "Merchant receives from COD",
+                "সংগৃহীত টাকা থেকে ব্যবসায়ীর পাওনা",
+              ],
+            ] as const
+          ).map(([key, en, bangla]) => (
+            <div key={key} className="flex justify-between gap-3">
+              <dt>{t(en, bangla)}</dt>
+              <dd>{money(quote.data?.data[key])}</dd>
+            </div>
+          ))}
+          <div className="flex justify-between">
+            <dt>
+              {t(
+                "Estimated delivery days after pickup",
+                "সংগ্রহের পর সম্ভাব্য সরবরাহের দিন",
+              )}
+            </dt>
+            <dd>
+              {new Intl.NumberFormat(bn ? "bn-BD" : "en-US").format(
+                quote.data.data.deliveryDays,
+              )}
+            </dd>
+          </div>
+        </dl>
+      )}
+      <p className="text-sm text-muted-foreground">
+        {t(
+          "Estimate only. Final pricing is recalculated by the server when you book. No GPS location is shown.",
+          "এটি সম্ভাব্য হিসাব। বুকিংয়ের সময় সার্ভারে আবার মাশুল যাচাই হবে। সরাসরি অবস্থান-মানচিত্র দেখানো হয় না।",
+        )}
+      </p>
+    </section>
+  );
+}
+```
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\operations\profile-forms.tsx
+
+```typescript
+"use client";
+import { useLocale } from "next-intl";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useGetMe } from "@/hooks";
+import { Link } from "@/i18n/navigation";
+import apiClient from "@/lib/apiClient";
+import type { ApiResponse } from "@/types";
+import type { OperationsMine } from "@/types/operations.type";
+import { Button } from "@/components/ui/button";
+import CollectionTable from "./collection-table";
+export default function ProfileForms({
+  kind,
+}: {
+  kind: "business" | "application" | "collections";
+}) {
+  const bn = useLocale() === "bn",
+    t = (en: string, bangla: string) => (bn ? bangla : en),
+    user = useGetMe();
+  const mine = useQuery({
+    queryKey: ["operations-mine"],
+    queryFn: () => apiClient<ApiResponse<OperationsMine>>("/operations/mine"),
+    enabled: !!user.data?.data && user.data.data.role !== "ADMIN",
+  });
+  const submit = useMutation({
+    mutationFn: (body: Record<string, string>) =>
+      apiClient(
+        `/operations/${kind === "business" ? "business" : "applications"}`,
+        { method: kind === "business" ? "PUT" : "POST", body },
+      ),
+    onSuccess: () => {
+      void mine.refetch();
+    },
+  });
+  if (user.isPending) return <p>{t("Loading…", "তথ্য আসছে…")}</p>;
+  if (!user.data?.data)
+    return (
+      <div className="space-y-4">
+        <p>
+          {t(
+            "Create and verify your personal account first. Then complete your application.",
+            "আগে ব্যক্তিগত অ্যাকাউন্ট তৈরি ও যাচাই করুন। এরপর আবেদন পূরণ করুন।",
+          )}
+        </p>
+        <Link
+          className="inline-block rounded-lg bg-primary px-5 py-3 text-primary-foreground"
+          href={
+            kind === "business"
+              ? "/register?next=/dashboard/business"
+              : "/register?next=/courier-apply"
+          }
+        >
+          {t("Create account", "অ্যাকাউন্ট তৈরি")}
+        </Link>
+        <Link
+          className="ml-4 underline"
+          href={
+            kind === "business"
+              ? "/login?next=/dashboard/business"
+              : "/login?next=/courier-apply"
+          }
+        >
+          {t("Already registered? Sign in", "অ্যাকাউন্ট আছে? প্রবেশ করুন")}
+        </Link>
+      </div>
+    );
+  if (kind === "collections")
+    return mine.isError ? (
+      <p role="alert">{t("Records unavailable.", "হিসাব পাওয়া যায়নি।")}</p>
+    ) : (
+      <CollectionTable
+        totals={mine.data?.data.totals}
+        records={mine.data?.data.collections || []}
+      />
+    );
+  if (user.data.data.role !== "CUSTOMER")
+    return (
+      <p>
+        {t(
+          "This application is for verified customer accounts. Staff cannot apply here.",
+          "এই আবেদন যাচাইকৃত গ্রাহকের জন্য। কর্মীরা এখানে আবেদন করতে পারবেন না।",
+        )}
+      </p>
+    );
+  if (mine.isPending) return <p>{t("Loading…", "তথ্য আসছে…")}</p>;
+  if (mine.isError)
+    return (
+      <p role="alert">
+        {t(
+          "Records unavailable. Please retry.",
+          "হিসাব পাওয়া যায়নি। আবার চেষ্টা করুন।",
+        )}
+      </p>
+    );
+  const record =
+    kind === "business"
+      ? mine.data?.data.business
+      : mine.data?.data.application;
+  const fields =
+    kind === "business"
+      ? [
+          ["shopName", "Shop name", "দোকানের নাম"],
+          ["pickupAddress", "Pickup address", "সংগ্রহের ঠিকানা"],
+          ["contactNumber", "Phone", "ফোন"],
+          ["accountName", "Payout account holder", "টাকা পাওয়ার অ্যাকাউন্টের মালিক"],
+          ["accountNumber", "Payout account number", "টাকা পাওয়ার অ্যাকাউন্ট নম্বর"],
+        ]
+      : [
+          ["contactNumber", "Phone", "ফোন"],
+          ["area", "Working area", "কাজের এলাকা"],
+        ];
+  return (
+    <div className="space-y-5">
+      {record && (
+        <p role="status">
+          {t("Review status: ", "যাচাইয়ের অবস্থা: ")}
+          {kind === "business"
+            ? mine.data?.data.business?.approved
+              ? t("Approved", "অনুমোদিত")
+              : t("Awaiting review", "যাচাইয়ের অপেক্ষায়")
+            : mine.data?.data.application?.status === "APPROVED"
+              ? t("Approved", "অনুমোদিত")
+              : mine.data?.data.application?.status === "REJECTED"
+                ? t(
+                    "Rejected; you may update and reapply",
+                    "অননুমোদিত; তথ্য বদলে আবার আবেদন করতে পারেন",
+                  )
+                : t("Awaiting review", "যাচাইয়ের অপেক্ষায়")}
+        </p>
+      )}
+      <p className="text-sm text-muted-foreground">
+        {kind === "business"
+          ? t(
+              "Payout details require administrator verification. Editing them removes approval until reviewed. Delivery charges are paid separately; this is not an instant withdrawal facility.",
+              "টাকা পাওয়ার তথ্য প্রশাসক যাচাই করবেন। তথ্য বদলালে পুনরায় অনুমোদন লাগবে। ডেলিভারি মাশুল আলাদা পরিশোধযোগ্য; এটি তাৎক্ষণিক টাকা তোলার ব্যবস্থা নয়।",
+            )
+          : t(
+              "Approval does not happen automatically. A hub is assigned after review; sign in again after approval.",
+              "স্বয়ংক্রিয় অনুমোদন হয় না। যাচাইয়ের পরে হাব বরাদ্দ হবে; অনুমোদনের পরে আবার প্রবেশ করতে হবে।",
+            )}
+      </p>
+      <form
+        key={record?.id || kind}
+        className="grid gap-4 sm:grid-cols-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit.mutate(
+            Object.fromEntries(
+              new FormData(e.currentTarget).entries(),
+            ) as Record<string, string>,
+          );
+        }}
+      >
+        {fields.map(([key, en, bangla]) => (
+          <label key={key}>
+            {t(en, bangla)}
+            <input
+              className="mt-2 block min-h-11 w-full rounded-md border px-3"
+              name={key}
+              required
+              minLength={key === "accountNumber" ? 8 : 2}
+              maxLength={key === "pickupAddress" ? 500 : 255}
+              defaultValue={
+                record && key in record
+                  ? String(record[key as keyof typeof record] ?? "")
+                  : ""
+              }
+            />
+          </label>
+        ))}
+        <label>
+          {kind === "business"
+            ? t("Payout method", "টাকা পাওয়ার মাধ্যম")
+            : t("Vehicle", "যানবাহন")}
+          <select
+            defaultValue={
+              kind === "business"
+                ? (mine.data?.data.business?.payoutMethod ?? "BANK")
+                : (mine.data?.data.application?.vehicleType ?? "BICYCLE")
+            }
+            name={kind === "business" ? "payoutMethod" : "vehicleType"}
+            className="mt-2 block min-h-11 w-full rounded-md border px-3"
+          >
+            {(kind === "business"
+              ? [
+                  ["BANK", "Bank", "ব্যাংক"],
+                  ["BKASH", "bKash", "বিকাশ"],
+                ]
+              : [
+                  ["BICYCLE", "Bicycle", "সাইকেল"],
+                  ["MOTORBIKE", "Motorbike", "মোটরসাইকেল"],
+                  ["VAN", "Van", "ভ্যান"],
+                ]
+            ).map(([value, en, bangla]) => (
+              <option key={value} value={value}>
+                {t(en, bangla)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <Button
+          type="submit"
+          disabled={
+            submit.isPending ||
+            (kind === "application" &&
+              !!record &&
+              mine.data?.data.application?.status !== "REJECTED")
+          }
+        >
+          {t("Submit for review", "যাচাইয়ের জন্য পাঠান")}
+        </Button>
+      </form>
+      {submit.isError && (
+        <p role="alert">
+          {t(
+            "Submission failed. Check the details or existing application.",
+            "আবেদন পাঠানো যায়নি। তথ্য বা আগের আবেদনের অবস্থা যাচাই করুন।",
+          )}
+        </p>
+      )}
+      {submit.isSuccess && (
+        <p role="status">
+          {t(
+            "Application saved for administrator review.",
+            "প্রশাসকের যাচাইয়ের জন্য আবেদন সংরক্ষিত হয়েছে।",
+          )}
+        </p>
+      )}
+    </div>
+  );
+}
+```
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\operations\parcel-label.tsx
+
+```typescript
+"use client";
+import { useRef, useEffect } from "react";
+import { useLocale } from "next-intl";
+import QRCode from "qrcode";
+import type { Shipment } from "@/types";
+import { useUiText } from "@/i18n/use-ui-text";
+import { Button } from "@/components/ui/button";
+export default function ParcelLabel({ shipment }: { shipment: Shipment }) {
+  const ui = useUiText();
+  const bn = useLocale() === "bn",
+    qr = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    if (qr.current)
+      void QRCode.toCanvas(qr.current, shipment.trackingId, {
+        width: 160,
+        errorCorrectionLevel: "M",
+      }).catch(() => undefined);
+  }, [shipment.trackingId]);
+  const money = (value: string | number) =>
+    new Intl.NumberFormat(bn ? "bn-BD" : "en-BD", {
+      style: "currency",
+      currency: "BDT",
+    }).format(Number(value));
+  return (
+    <section className="parcel-print-root space-y-4">
+      <Button variant="outline" onClick={() => window.print()}>
+        {bn ? "রসিদ ও লেবেল ছাপান" : "Print receipt and label"}
+      </Button>
+      <article className="parcel-label space-y-3 rounded-xl border bg-white p-6 text-black">
+        <h2 className="text-2xl font-bold">Dropzo</h2>
+        <p>
+          {bn ? "মাশুলের অবস্থা: " : "Delivery fee status: "}
+          {ui(shipment.paymentStatus)}
+        </p>
+        <p>
+          {new Intl.DateTimeFormat(bn ? "bn-BD" : "en-GB", {
+            dateStyle: "medium",
+            timeStyle: "short",
+          }).format(new Date(shipment.createdAt))}
+        </p>
+        {shipment.priceBreakdown && (
+          <div>
+            {(
+              [
+                ["baseCharge", "Base charge", "মূল মাশুল"],
+                ["extraWeightCharge", "Extra weight", "বাড়তি ওজন"],
+                ["pickupFee", "Pickup fee", "সংগ্রহের মাশুল"],
+              ] as const
+            ).map(([key, en, bangla]) => (
+              <p key={key}>
+                {bn ? bangla : en}: {money(shipment.priceBreakdown?.[key] ?? 0)}
+              </p>
+            ))}
+          </div>
+        )}
+        <p className="break-all font-mono">{shipment.trackingId}</p>
+        <canvas
+          ref={qr}
+          aria-label={bn ? "অনুসন্ধানসংখ্যার কিউআর" : "Tracking QR code"}
+        />
+        <p>
+          {bn ? "প্রাপক: " : "Receiver: "}
+          {shipment.receiverName}
+        </p>
+        <p>{shipment.receiverPhone}</p>
+        <p>{shipment.receiverAddress}</p>
+        <p>
+          {bn ? "সংগ্রহের ঠিকানা: " : "Pickup address: "}
+          {shipment.pickupAddress}
+        </p>
+        <p>{shipment.senderPhone}</p>
+        <p>
+          {bn ? "ডেলিভারি মাশুল: " : "Delivery fee: "}
+          {money(shipment.price)}
+        </p>
+        <p>
+          {bn ? "প্রাপকের কাছ থেকে পণ্যের টাকা: " : "Product COD: "}
+          {money(shipment.codAmount || 0)}
+        </p>
+        <p>
+          {bn ? "ওজন (কেজি): " : "Weight (kg): "}
+          {new Intl.NumberFormat(bn ? "bn-BD" : "en-US").format(
+            Number(shipment.weight),
+          )}
+        </p>
+      </article>
+    </section>
+  );
+}
+```
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\operations\coverage-list.tsx
+
+```typescript
+"use client";
+import { useQuery } from "@tanstack/react-query";
+import { useLocale } from "next-intl";
+import { useState } from "react";
+import apiClient from "@/lib/apiClient";
+import type { ApiResponse } from "@/types";
+import type { ServiceArea } from "@/types/operations.type";
+import QuoteCalculator from "./quote-calculator";
+export default function CoverageList() {
+  const bn = useLocale() === "bn",
+    [search, setSearch] = useState("");
+  const result = useQuery({
+    queryKey: ["coverage"],
+    queryFn: () =>
+      apiClient<ApiResponse<ServiceArea[]>>("/operations/coverage"),
+    retry: false,
+  });
+  return (
+    <div className="mx-auto max-w-5xl space-y-6 px-4 py-10">
+      <h1 className="text-3xl font-bold">
+        {bn ? "সেবার এলাকা" : "Service coverage"}
+      </h1>
+      <label>
+        {bn ? "জেলা, উপজেলা বা এলাকা খুঁজুন" : "Search district, upazila or area"}
+        <input
+          className="mt-2 block h-11 w-full rounded-md border px-3"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </label>
+      {result.isPending && <p>{bn ? "তথ্য আসছে…" : "Loading…"}</p>}
+      {result.isError && (
+        <p role="alert">
+          {bn ? "এলাকার তথ্য পাওয়া যায়নি।" : "Coverage unavailable."}
+        </p>
+      )}
+      {!result.isPending && !result.isError && !result.data?.data.length && (
+        <p>
+          {bn
+            ? "এখনো কোনো সেবার এলাকা অনুমোদিত হয়নি।"
+            : "No service area has been approved yet."}
+        </p>
+      )}
+      <div className="grid gap-4 sm:grid-cols-2">
+        {result.data?.data
+          .filter((area) =>
+            [area.name, area.district, area.upazila]
+              .join(" ")
+              .toLowerCase()
+              .includes(search.toLowerCase()),
+          )
+          .map((area) => (
+            <article className="rounded-xl border p-5" key={area.id}>
+              <h2 className="font-semibold">{area.name}</h2>
+              <p>
+                {area.district} · {area.upazila}
+              </p>
+              <p>
+                {bn ? "সংগ্রহ: " : "Pickup: "}
+                {area.pickupEnabled
+                  ? bn
+                    ? "চালু"
+                    : "Available"
+                  : bn
+                    ? "বন্ধ"
+                    : "Unavailable"}
+              </p>
+              <p>
+                {bn ? "হাবে জমা: " : "Branch drop-off: "}
+                {area.dropoffEnabled
+                  ? bn
+                    ? "চালু"
+                    : "Available"
+                  : bn
+                    ? "বন্ধ"
+                    : "Unavailable"}
+              </p>
+              <p>
+                {bn ? "পৌঁছানো: " : "Delivery: "}
+                {area.deliveryEnabled
+                  ? bn
+                    ? "চালু"
+                    : "Available"
+                  : bn
+                    ? "বন্ধ"
+                    : "Unavailable"}
+              </p>
+            </article>
+          ))}
+      </div>
+      <p className="text-sm">
+        {bn
+          ? "একাধিক বুকিংয়ের জন্য এলাকার পরিচয়সংখ্যা জানতে এলাকার নামের উপরে চাপুন।"
+          : "For bulk booking, expand an area to copy its ID."}
+      </p>
+      {result.data?.data.map((area) => (
+        <details key={area.id}>
+          <summary>{area.name}</summary>
+          <code className="break-all">{area.id}</code>
+        </details>
+      ))}
+      <QuoteCalculator />
+    </div>
+  );
+}
+```
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\operations\collection-table.tsx
+
+```typescript
+"use client";
+import { useLocale } from "next-intl";
+import type { Collection, OperationsMine } from "@/types/operations.type";
+export default function CollectionTable({
+  records,
+  totals,
+}: {
+  records: Collection[];
+  totals?: OperationsMine["totals"];
+}) {
+  const bn = useLocale() === "bn",
+    money = (value: string) =>
+      new Intl.NumberFormat(bn ? "bn-BD" : "en-BD", {
+        style: "currency",
+        currency: "BDT",
+      }).format(Number(value));
+  const captions: Record<string, string> = {
+    COLLECTED: bn ? "কর্মীর কাছে সংগৃহীত" : "Collected by worker",
+    RECEIVED: bn ? "প্রতিষ্ঠান গ্রহণ করেছে" : "Received by operator",
+    PAID: bn ? "ব্যবসায়ীকে দেওয়া হয়েছে" : "Paid to merchant",
+  };
+  return (
+    <section className="space-y-4">
+      <h2 className="text-2xl font-bold">
+        {bn ? "পণ্যের টাকা সংগ্রহের হিসাব" : "Product cash collection ledger"}
+      </h2>
+      <p className="text-sm">
+        {bn
+          ? "ডেলিভারি মাশুলের অনলাইন অর্থপ্রদান এই হিসাবের অংশ নয়। এখানে প্রাপকের কাছ থেকে সংগৃহীত পণ্যের টাকা দেখানো হয়।"
+          : "Online delivery-fee payments are separate. This ledger tracks product cash collected from the receiver."}
+      </p>
+      {totals && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {(
+            [
+              ["expected", "Booked product COD", "বুকিংয়ে সংগ্রহযোগ্য পণ্যের টাকা"],
+              [
+                "collected",
+                "Collected from recipients",
+                "প্রাপকদের কাছ থেকে সংগৃহীত",
+              ],
+              ["awaitingCollection", "Not yet collected", "এখনো সংগ্রহ হয়নি"],
+              ["heldByWorker", "Cash held by workers", "কর্মীদের কাছে নগদ"],
+              ["payable", "Net merchant payable", "মোট ব্যবসায়ীর নিট পাওনা"],
+              ["paid", "Paid to merchants", "ব্যবসায়ীকে দেওয়া হয়েছে"],
+              ["pending", "Remaining payable", "ব্যবসায়ীর বাকি পাওনা"],
+            ] as const
+          ).map(([key, en, bangla]) => (
+            <p key={key} className="rounded-md border p-3">
+              {bn ? bangla : en}: {money(totals[key])}
+            </p>
+          ))}
+        </div>
+      )}
+      {!records.length && (
+        <p>
+          {bn ? "এখনো কোনো সংগ্রহের হিসাব নেই।" : "No cash collections recorded."}
+        </p>
+      )}
+      <div className="grid gap-4 sm:grid-cols-2">
+        {records.map((record) => (
+          <article key={record.id} className="space-y-2 rounded-xl border p-4">
+            <p className="break-all text-sm">
+              {bn ? "পার্সেল: " : "Shipment: "}
+              {record.shipmentId}
+            </p>
+            <p>
+              {bn ? "সংগৃহীত: " : "Collected: "}
+              {money(record.amount)}
+            </p>
+            <p>
+              {bn ? "সংগ্রহের মাশুল: " : "Handling fee: "}
+              {money(record.fee)}
+            </p>
+            <p>
+              {bn ? "ব্যবসায়ীর পাওনা: " : "Merchant payable: "}
+              {money(record.payable)}
+            </p>
+            <p>{captions[record.status] || record.status}</p>
+            {record.createdAt && (
+              <p>
+                {bn ? "সংগ্রহের সময়: " : "Collection time: "}
+                {new Intl.DateTimeFormat(bn ? "bn-BD" : "en-GB", {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                }).format(new Date(record.createdAt))}
+              </p>
+            )}
+            {record.receiptReference && (
+              <p>
+                {bn ? "গ্রহণের রসিদ: " : "Cash receipt: "}
+                {record.receiptReference}
+              </p>
+            )}
+            {record.payoutReference && (
+              <p>
+                {bn ? "টাকা দেওয়ার প্রমাণ: " : "Payout reference: "}
+                {record.payoutReference}
+              </p>
+            )}
+          </article>
+        ))}
+      </div>
+      {records.length >= 200 && (
+        <p>
+          {bn
+            ? "সাম্প্রতিক ২০০টি হিসাব দেখানো হচ্ছে।"
+            : "Showing the latest 200 records."}
+        </p>
+      )}
+    </section>
+  );
+}
+```
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\operations\bulk-bookings.tsx
+
+```typescript
+"use client";
+import Papa from "papaparse";
+import { useState } from "react";
+import { useLocale } from "next-intl";
+import { useMutation } from "@tanstack/react-query";
+import apiClient from "@/lib/apiClient";
+import { BookingSchema } from "@/validation/shipment.validation";
+import type { ApiResponse, Shipment } from "@/types";
+import type { Quote } from "@/types/operations.type";
+import ParcelLabel from "./parcel-label";
+import { Button } from "@/components/ui/button";
+const columns = [
+  "pickupAreaId",
+  "receiverAreaId",
+  "senderPhone",
+  "pickupAddress",
+  "receiverName",
+  "receiverPhone",
+  "receiverAddress",
+  "weight",
+  "pickupMode",
+  "serviceType",
+  "productType",
+  "declaredValue",
+  "codAmount",
+  "requestedPickupAt",
+  "deliveryInstructions",
+];
+export default function BulkBookings() {
+  const bn = useLocale() === "bn",
+    t = (en: string, bangla: string) => (bn ? bangla : en);
+  const [rows, setRows] = useState<Array<Record<string, unknown>>>([]),
+    [errors, setErrors] = useState<string[]>([]),
+    [approved, setApproved] = useState(false);
+  const quotes = useMutation({
+    mutationFn: () =>
+      apiClient<ApiResponse<Quote[]>>("/operations/quotes", {
+        method: "POST",
+        body: rows.map((row) =>
+          Object.fromEntries(
+            [
+              "pickupAreaId",
+              "receiverAreaId",
+              "weight",
+              "codAmount",
+              "serviceType",
+              "pickupMode",
+              "requestedPickupAt",
+            ].map((key) => [key, row[key]]),
+          ),
+        ),
+      }),
+  });
+  const save = useMutation({
+    mutationFn: () =>
+      apiClient<ApiResponse<Shipment[]>>("/shipments/bulk", {
+        method: "POST",
+        body: rows.map((row, i) => ({
+          ...row,
+          quoteVersion: quotes.data?.data[i].rateUpdatedAt,
+          quotedDeliveryCharge: Number(quotes.data?.data[i].deliveryCharge),
+          quotedCodFee: Number(quotes.data?.data[i].codFee),
+          quotedServiceType:
+            quotes.data?.data[i].serviceType || row.serviceType,
+        })),
+      }),
+  });
+  function load(file?: File) {
+    setRows([]);
+    setErrors([]);
+    setApproved(false);
+    save.reset();
+    quotes.reset();
+    if (!file) return;
+    if (file.size > 1024 * 1024 || !file.name.toLowerCase().endsWith(".csv")) {
+      setErrors([
+        t("Use a CSV file under 1 MB.", "১ মেগাবাইটের কম আকারের সিএসভি ফাইল দিন।"),
+      ]);
+      return;
+    }
+    Papa.parse<Record<string, string>>(file, {
+      header: true,
+      skipEmptyLines: "greedy",
+      complete: (result) => {
+        const problems: string[] = [],
+          valid: Array<Record<string, unknown>> = [];
+        if (
+          result.errors.length ||
+          result.data.length < 1 ||
+          result.data.length > 100 ||
+          columns.some((key) => !result.meta.fields?.includes(key)) ||
+          (result.meta.fields ?? []).some((key) => !columns.includes(key))
+        )
+          problems.push(
+            t(
+              "Use the exact template columns and 1–100 rows.",
+              "নমুনার সব কলাম অপরিবর্তিত রেখে ১–১০০টি সারি দিন।",
+            ),
+          );
+        for (const [i, row] of result.data.slice(0, 100).entries()) {
+          const parsed = BookingSchema.safeParse({
+            ...row,
+            weight: Number(row.weight),
+            declaredValue: Number(row.declaredValue),
+            codAmount: Number(row.codAmount),
+          });
+          if (!parsed.success)
+            problems.push(
+              t("Row ", "সারি ") +
+                (i + 2) +
+                ": " +
+                parsed.error.issues
+                  .map((issue) => issue.path.join("."))
+                  .join(", "),
+            );
+          else valid.push({ ...parsed.data, requestId: crypto.randomUUID() });
+        }
+        setErrors(problems);
+        if (!problems.length) setRows(valid);
+      },
+      error: () => setErrors([t("File could not be read.", "ফাইল পড়া যায়নি।")]),
+    });
+  }
+  return (
+    <section className="space-y-5">
+      <h1 className="text-2xl font-bold">
+        {t("Bulk parcel booking", "একসঙ্গে একাধিক পার্সেল বুকিং")}
+      </h1>
+      <p>
+        {t(
+          "Use area IDs from the coverage page. Dates must be future ISO timestamps within 30 days. All rows are validated and booked together; one invalid route rejects the whole batch. Approved business accounts are required for COD.",
+          "এলাকার পাতা থেকে পরিচয়সংখ্যা নিন। সময় পরবর্তী ৩০ দিনের মধ্যে আইএসও তারিখ হবে। সব সারি একসঙ্গে যাচাই ও বুকিং হবে; একটি রুট ভুল হলেও পুরো ব্যাচ বাতিল হবে। পণ্যের টাকা সংগ্রহে অনুমোদিত ব্যবসায়িক হিসাব লাগবে।",
+        )}
+      </p>
+      <a
+        download="dropzo-booking-template.csv"
+        className="inline-block underline"
+        href={
+          "data:text/csv;charset=utf-8," +
+          encodeURIComponent(`${columns.join(",")}\n`)
+        }
+      >
+        {t("Download blank CSV template", "খালি সিএসভি নমুনা নামান")}
+      </a>
+      <label className="block">
+        {t("CSV file", "সিএসভি ফাইল")}
+        <input
+          className="block max-w-full p-3"
+          type="file"
+          accept=".csv,text/csv"
+          disabled={save.isPending || save.isSuccess}
+          onChange={(e) => load(e.target.files?.[0])}
+        />
+      </label>
+      {errors.length > 0 && (
+        <ul role="alert" className="list-disc pl-5">
+          {errors.map((error, i) => (
+            <li key={String(i)}>{error}</li>
+          ))}
+        </ul>
+      )}
+      {rows.length > 0 && !save.isSuccess && (
+        <div className="space-y-4">
+          <h2>{t("Review before booking", "বুকিংয়ের আগে যাচাই করুন")}</h2>
+          {rows.map((row, i) => (
+            <p className="break-words rounded-md border p-3" key={String(i)}>
+              {i + 1}. {String(row.receiverName)} ·{" "}
+              {String(row.receiverAddress)} · {String(row.weight)}{" "}
+              {t("kg", "কেজি")} · {String(row.codAmount)} {t("COD", "পণ্যের টাকা")}
+            </p>
+          ))}
+          <Button
+            disabled={quotes.isPending || save.isPending}
+            onClick={() => {
+              setApproved(false);
+              quotes.mutate();
+            }}
+          >
+            {t("Calculate every parcel charge", "প্রতিটি পার্সেলের খরচ হিসাব করুন")}
+          </Button>
+          {quotes.data?.data.map((quote, i) => (
+            <div key={String(i)} className="rounded-md border p-3">
+              <p>
+                {t("Confirmed service: ", "নিশ্চিত সেবা: ")}
+                {
+                  (
+                    {
+                      STANDARD: t("Standard", "সাধারণ"),
+                      EXPRESS: t("Express", "জরুরি"),
+                      SAME_DAY: t("Same day", "একই দিন"),
+                      NEXT_DAY: t("Next day", "পরের দিন"),
+                    } as Record<string, string>
+                  )[quote.serviceType || String(rows[i].serviceType)]
+                }
+              </p>
+              <h3>
+                {t("Parcel ", "পার্সেল ")}
+                {i + 1}
+              </h3>
+              {(
+                [
+                  ["baseCharge", "Base charge", "মূল মাশুল"],
+                  ["extraWeightCharge", "Extra weight", "বাড়তি ওজন"],
+                  ["pickupFee", "Pickup fee", "সংগ্রহের মাশুল"],
+                  ["deliveryCharge", "Total delivery fee", "মোট ডেলিভারি মাশুল"],
+                  ["codFee", "COD fee", "টাকা সংগ্রহের মাশুল"],
+                  ["merchantPayable", "Merchant receives", "ব্যবসায়ীর পাওনা"],
+                ] as const
+              ).map(([key, en, bangla]) => (
+                <p key={key}>
+                  {t(en, bangla)}:{" "}
+                  {new Intl.NumberFormat(bn ? "bn-BD" : "en-BD", {
+                    style: "currency",
+                    currency: "BDT",
+                  }).format(Number(quote[key]))}
+                </p>
+              ))}
+            </div>
+          ))}
+          <label className="flex items-start gap-3">
+            <input
+              disabled={!quotes.data}
+              type="checkbox"
+              checked={approved}
+              onChange={(e) => setApproved(e.target.checked)}
+            />
+            {t(
+              "I have checked each parcel and its displayed charges.",
+              "প্রতিটি পার্সেলের তথ্য ও উপরের মাশুল যাচাই ও অনুমোদন করেছি।",
+            )}
+          </label>
+          <Button
+            disabled={!approved || !quotes.data || save.isPending}
+            onClick={() => save.mutate()}
+          >
+            {t("Confirm all bookings", "সব বুকিং নিশ্চিত করুন")}
+          </Button>
+        </div>
+      )}
+      {quotes.isError && (
+        <p role="alert">
+          {t(
+            "Pricing unavailable. No bookings were submitted.",
+            "মাশুল পাওয়া যায়নি। কোনো বুকিং পাঠানো হয়নি।",
+          )}
+        </p>
+      )}
+      {save.isError && (
+        <p role="alert">
+          {t(
+            "Batch was not confirmed. Check pricing, coverage and account approval. Review your shipments before retrying after a connection error.",
+            "ব্যাচ নিশ্চিত হয়নি। মূল্য, এলাকা ও অনুমোদন যাচাই করুন। সংযোগে ত্রুটি হলে পুনরায় চেষ্টার আগে নিজের বুকিং তালিকা দেখুন।",
+          )}
+        </p>
+      )}
+      {save.data && (
+        <section className="parcel-print-root space-y-5">
+          <h2>{t("Confirmed bookings and labels", "নিশ্চিত বুকিং ও লেবেল")}</h2>
+          {save.data.data.map((shipment) => (
+            <ParcelLabel key={shipment.id} shipment={shipment} />
+          ))}
+        </section>
+      )}
+    </section>
+  );
+}
+```
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\operations\admin-settings.tsx
+
+```typescript
+"use client";
+import { useState } from "react";
+import { useLocale } from "next-intl";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import apiClient from "@/lib/apiClient";
+import type { ApiResponse, Hub } from "@/types";
+import type { OperationsAdmin } from "@/types/operations.type";
+import { Button } from "@/components/ui/button";
+import CollectionTable from "./collection-table";
+type Field = {
+  key: string;
+  en: string;
+  bn: string;
+  type?: string;
+  options?: Array<[string, string]>;
+};
+function SettingForm({
+  title,
+  fields,
+  endpoint,
+  value,
+  refresh,
+}: {
+  title: string;
+  fields: Field[];
+  endpoint: string;
+  value?: Record<string, unknown>;
+  refresh: () => void;
+}) {
+  const bn = useLocale() === "bn";
+  const mutation = useMutation({
+    mutationFn: (body: Record<string, unknown>) =>
+      apiClient(endpoint, { method: value?.id ? "PATCH" : "POST", body }),
+    onSuccess: refresh,
+  });
+  return (
+    <form
+      className="space-y-4 rounded-xl border p-5"
+      onSubmit={(e) => {
+        e.preventDefault();
+        const data = new FormData(e.currentTarget),
+          body: Record<string, unknown> = {};
+        for (const field of fields)
+          body[field.key] =
+            field.type === "checkbox"
+              ? data.has(field.key)
+              : field.type === "number"
+                ? Number(data.get(field.key))
+                : String(data.get(field.key));
+        mutation.mutate(body);
+      }}
+    >
+      <h2 className="text-xl font-bold">{title}</h2>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {fields.map((field) => (
+          <label
+            htmlFor={`${title}-${field.key}`}
+            key={field.key}
+            className="block"
+          >
+            {bn ? field.bn : field.en}
+            {field.options ? (
+              <select
+                required
+                id={`${title}-${field.key}`}
+                name={field.key}
+                defaultValue={String(value?.[field.key] ?? "")}
+                className="mt-2 block min-h-11 w-full rounded-md border px-3"
+              >
+                <option value="">{bn ? "বাছুন" : "Choose"}</option>
+                {field.options.map(([id, label]) => (
+                  <option value={id} key={id}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                required={
+                  field.type !== "checkbox" && field.key !== "cutoffMinutes"
+                }
+                type={field.type || "text"}
+                id={`${title}-${field.key}`}
+                name={field.key}
+                defaultValue={
+                  field.type === "checkbox"
+                    ? undefined
+                    : String(value?.[field.key] ?? "")
+                }
+                defaultChecked={
+                  field.type === "checkbox"
+                    ? Boolean(value?.[field.key])
+                    : undefined
+                }
+                step={field.type === "number" ? "0.01" : undefined}
+                min={field.type === "number" ? "0" : undefined}
+                maxLength={field.type === "number" ? undefined : 255}
+                className={
+                  field.type === "checkbox"
+                    ? "ml-3"
+                    : "mt-2 block min-h-11 w-full rounded-md border px-3"
+                }
+              />
+            )}
+          </label>
+        ))}
+      </div>
+      <Button type="submit" disabled={mutation.isPending}>
+        {bn ? "সংরক্ষণ করুন" : "Save"}
+      </Button>
+      {mutation.isError && (
+        <p role="alert">
+          {bn
+            ? "সংরক্ষণ হয়নি। তথ্য ও অনুমতি যাচাই করুন।"
+            : "Not saved. Check values and permissions."}
+        </p>
+      )}
+      {mutation.isSuccess && (
+        <p role="status">{bn ? "সংরক্ষিত হয়েছে।" : "Saved."}</p>
+      )}
+    </form>
+  );
+}
+export default function AdminSettings() {
+  const bn = useLocale() === "bn",
+    t = (en: string, bangla: string) => (bn ? bangla : en);
+  const [editingArea, setArea] = useState<
+      Record<string, unknown> | undefined
+    >(),
+    [editingRate, setRate] = useState<Record<string, unknown> | undefined>();
+  const query = useQuery({
+    queryKey: ["operations-admin"],
+    queryFn: () => apiClient<ApiResponse<OperationsAdmin>>("/operations/admin"),
+  });
+  const hubs = useQuery({
+    queryKey: ["hubs"],
+    queryFn: () =>
+      apiClient<ApiResponse<Hub[]>>("/hubs", { params: { limit: 100 } }),
+  });
+  const mutation = useMutation({
+    mutationFn: ({
+      endpoint,
+      body,
+    }: {
+      endpoint: string;
+      body: Record<string, unknown>;
+    }) => apiClient(endpoint, { method: "PATCH", body }),
+    onSuccess: () => {
+      void query.refetch();
+    },
+  });
+  const areas = query.data?.data.areas || [],
+    options = areas.map((area) => [area.id, area.name] as [string, string]),
+    hubOptions =
+      hubs.data?.data.map((hub) => [hub.id, hub.name] as [string, string]) ||
+      [];
+  const refresh = () => {
+    void query.refetch();
+    setArea(undefined);
+    setRate(undefined);
+  };
+  const review = (
+    e: React.FormEvent<HTMLFormElement>,
+    endpoint: string,
+    courier: boolean,
+  ) => {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    mutation.mutate({
+      endpoint,
+      body: {
+        approved: data.has("approved"),
+        note: String(data.get("note")),
+        ...(courier && data.get("hubId")
+          ? { hubId: String(data.get("hubId")) }
+          : {}),
+      },
+    });
+  };
+  if (query.isError)
+    return <p role="alert">{t("Settings unavailable.", "সেটিংস পাওয়া যায়নি।")}</p>;
+  return (
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold">
+        {t("Operations settings and approvals", "কার্যক্রমের সেটিংস ও অনুমোদন")}
+      </h1>
+      <p>
+        {t(
+          "No rates or service areas are invented. Review and activate only services you can deliver. Payout references record transfers already completed outside this app; these controls do not send money.",
+          "কোনো মূল্য বা এলাকা কল্পনা করে বসানো হয়নি। বাস্তবে দিতে পারবেন এমন সেবাই যাচাই করে চালু করুন। টাকা দেওয়ার প্রমাণ দিয়ে অ্যাপের বাইরে ইতোমধ্যে সম্পন্ন হস্তান্তর নথিভুক্ত হবে; এই বোতাম টাকা পাঠায় না।",
+        )}
+      </p>
+      <SettingForm
+        key={String(editingArea?.id || "new-area")}
+        title={t("Service area", "সেবার এলাকা")}
+        endpoint={`/operations/areas${editingArea?.id ? `/${editingArea.id}` : ""}`}
+        value={editingArea}
+        refresh={refresh}
+        fields={[
+          { key: "name", en: "Area name", bn: "এলাকার নাম" },
+          { key: "district", en: "District", bn: "জেলা" },
+          { key: "upazila", en: "Upazila", bn: "উপজেলা" },
+          {
+            key: "hubId",
+            en: "Assigned hub",
+            bn: "নির্ধারিত হাব",
+            options: hubOptions,
+          },
+          {
+            key: "pickupEnabled",
+            en: "Pickup available",
+            bn: "সংগ্রহ চালু",
+            type: "checkbox",
+          },
+          {
+            key: "dropoffEnabled",
+            en: "Branch drop-off available",
+            bn: "হাবে জমা চালু",
+            type: "checkbox",
+          },
+          {
+            key: "deliveryEnabled",
+            en: "Delivery available",
+            bn: "পৌঁছানো চালু",
+            type: "checkbox",
+          },
+        ]}
+      />
+      <div className="flex flex-wrap gap-3">
+        {areas.map((area) => (
+          <button
+            type="button"
+            className="rounded-md border p-3"
+            key={area.id}
+            onClick={() => setArea({ ...area })}
+          >
+            {t("Edit area: ", "এলাকা সম্পাদনা: ")}
+            {area.name}
+          </button>
+        ))}
+      </div>
+      <SettingForm
+        key={String(editingRate?.id || "new-rate")}
+        title={t("Approved rate plan", "অনুমোদিত মূল্যতালিকা")}
+        endpoint={`/operations/rates${editingRate?.id ? `/${editingRate.id}` : ""}`}
+        value={editingRate}
+        refresh={refresh}
+        fields={[
+          {
+            key: "pickupAreaId",
+            en: "Pickup area",
+            bn: "সংগ্রহের এলাকা",
+            options,
+          },
+          {
+            key: "receiverAreaId",
+            en: "Delivery area",
+            bn: "পৌঁছানোর এলাকা",
+            options,
+          },
+          {
+            key: "serviceType",
+            en: "Service",
+            bn: "সেবা",
+            options: [
+              ["STANDARD", t("Standard", "সাধারণ")],
+              ["SAME_DAY", t("Same day", "একই দিন")],
+              ["NEXT_DAY", t("Next day", "পরের দিন")],
+              ["EXPRESS", t("Express", "জরুরি")],
+            ],
+          },
+          ...[
+            ["baseWeight", "Included weight (kg)", "মূল মাশুলের অন্তর্ভুক্ত ওজন"],
+            ["baseCharge", "Base delivery fee", "মূল ডেলিভারি মাশুল"],
+            [
+              "extraPerKg",
+              "Per additional started kg",
+              "বাড়তি প্রতি শুরু হওয়া কেজির মাশুল",
+            ],
+            ["pickupFee", "Pickup fee", "সংগ্রহের মাশুল"],
+            ["codPercent", "COD handling percentage", "টাকা সংগ্রহের শতকরা মাশুল"],
+            ["deliveryDays", "Estimated delivery days", "সম্ভাব্য সরবরাহের দিন"],
+            [
+              "cutoffMinutes",
+              "Same-day cutoff minutes after midnight (noon: 720)",
+              "একই দিনের শেষ সময়: মধ্যরাতের পর মিনিট (দুপুর: ৭২০)",
+            ],
+          ].map(([key, en, bangla]) => ({
+            key,
+            en,
+            bn: bangla,
+            type: "number",
+          })),
+          {
+            key: "active",
+            en: "Approve and activate pricing",
+            bn: "মূল্য অনুমোদন করে চালু করুন",
+            type: "checkbox",
+          },
+        ]}
+      />
+      <div className="flex flex-wrap gap-3">
+        {query.data?.data.rates.map((rate) => (
+          <button
+            className="rounded-md border p-3"
+            type="button"
+            key={String(rate.id)}
+            onClick={() => setRate(rate)}
+          >
+            {t("Edit rate: ", "মূল্য সম্পাদনা: ")}
+            {areas.find((area) => area.id === rate.pickupAreaId)?.name} →{" "}
+            {areas.find((area) => area.id === rate.receiverAreaId)?.name}
+          </button>
+        ))}
+      </div>
+      <h2 className="text-2xl font-bold">
+        {t("Pending applications", "যাচাইয়ের অপেক্ষায় আবেদন")}
+      </h2>
+      {query.data?.data.applications.map((application) => (
+        <form
+          className="space-y-3 rounded-xl border p-5"
+          key={application.id}
+          onSubmit={(e) =>
+            review(e, `/operations/applications/${application.id}/review`, true)
+          }
+        >
+          <h3>
+            {application.user?.name} · {application.area} ·{" "}
+            {application.contactNumber}
+          </h3>
+          <label>
+            {t("Hub", "হাব")}
+            <select name="hubId" className="ml-3 rounded-md border p-3">
+              <option value="">
+                {t("Select hub for approval", "অনুমোদনের জন্য হাব বাছুন")}
+              </option>
+              {hubOptions.map(([id, name]) => (
+                <option key={id} value={id}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <input type="checkbox" name="approved" />{" "}
+            {t("Verified and approve", "যাচাই শেষে অনুমোদন")}
+          </label>
+          <input
+            required
+            minLength={2}
+            name="note"
+            className="block min-h-11 w-full rounded-md border px-3"
+            aria-label={t("Review reason", "যাচাইয়ের কারণ")}
+            placeholder={t("Review reason", "যাচাইয়ের কারণ")}
+          />
+          <Button type="submit" disabled={mutation.isPending}>
+            {t("Record decision", "সিদ্ধান্ত নথিভুক্ত করুন")}
+          </Button>
+        </form>
+      ))}
+      {query.data?.data.businesses.map((business) => (
+        <form
+          className="space-y-3 rounded-xl border p-5"
+          key={business.id}
+          onSubmit={(e) =>
+            review(e, `/operations/business/${business.id}/review`, false)
+          }
+        >
+          <h3>
+            {business.shopName} · {business.user?.name}
+          </h3>
+          <p>
+            {business.pickupAddress} · {business.contactNumber}
+          </p>
+          <p>
+            {business.payoutMethod} · {business.accountName} ·{" "}
+            {business.accountNumber}
+          </p>
+          <label>
+            <input type="checkbox" name="approved" />{" "}
+            {t(
+              "Verified payout ownership and approve",
+              "টাকা পাওয়ার অ্যাকাউন্টের মালিকানা যাচাই করে অনুমোদন",
+            )}
+          </label>
+          <input
+            required
+            minLength={2}
+            name="note"
+            className="block min-h-11 w-full rounded-md border px-3"
+            aria-label={t("Review reason", "যাচাইয়ের কারণ")}
+            placeholder={t("Review reason", "যাচাইয়ের কারণ")}
+          />
+          <Button type="submit" disabled={mutation.isPending}>
+            {t("Record decision", "সিদ্ধান্ত নথিভুক্ত করুন")}
+          </Button>
+        </form>
+      ))}
+      <CollectionTable records={query.data?.data.collections || []} />
+      {query.data?.data.collections.map((record) => (
+        <form
+          key={record.id}
+          className="space-y-3 rounded-xl border p-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const form = new FormData(e.currentTarget);
+            mutation.mutate({
+              endpoint: `/operations/collections/${record.id}`,
+              body: {
+                action: record.status === "COLLECTED" ? "RECEIVE" : "PAY",
+                reference: String(form.get("reference")),
+                ...(record.status === "RECEIVED"
+                  ? {
+                      accountVersion: query.data?.data.payoutAccounts.find(
+                        (account) => account.userId === record.merchantId,
+                      )?.updatedAt,
+                    }
+                  : {}),
+              },
+            });
+          }}
+        >
+          <p className="break-all">{record.shipmentId}</p>
+          {record.status === "RECEIVED" && (
+            <p>
+              {t(
+                "Verify completed transfer to this approved account: ",
+                "এই অনুমোদিত হিসাবে টাকা হস্তান্তর সম্পন্ন হয়েছে কি না যাচাই করুন: ",
+              )}
+              {
+                query.data?.data.payoutAccounts.find(
+                  (account) => account.userId === record.merchantId,
+                )?.accountName
+              }{" "}
+              ·{" "}
+              {
+                query.data?.data.payoutAccounts.find(
+                  (account) => account.userId === record.merchantId,
+                )?.accountNumber
+              }
+            </p>
+          )}
+          <label>
+            {record.status === "COLLECTED"
+              ? t("Verified cash receipt reference", "যাচাইকৃত নগদ গ্রহণের রসিদ")
+              : t(
+                  "Completed payout transaction reference",
+                  "সম্পন্ন টাকা দেওয়ার লেনদেনের প্রমাণ",
+                )}
+            <input
+              name="reference"
+              required
+              minLength={6}
+              maxLength={100}
+              className="mt-2 block min-h-11 w-full rounded-md border px-3"
+            />
+          </label>
+          <Button type="submit" disabled={mutation.isPending}>
+            {record.status === "COLLECTED"
+              ? t("Record cash received", "নগদ গ্রহণ নথিভুক্ত করুন")
+              : t("Record completed payout", "সম্পন্ন টাকা দেওয়া নথিভুক্ত করুন")}
+          </Button>
+        </form>
+      ))}
+      {mutation.isError && (
+        <p role="alert">
+          {t(
+            "The change was rejected. Review the current state and required details.",
+            "পরিবর্তন গ্রহণ করা হয়নি। বর্তমান অবস্থা ও প্রয়োজনীয় তথ্য যাচাই করুন।",
+          )}
+        </p>
+      )}
+    </div>
+  );
+}
+```
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\home\parcel-hero.tsx
+
+```typescript
+"use client";
+import { useLocale } from "next-intl";
+import { Link } from "@/i18n/navigation";
+import { Package, Truck, MapPin, ClipboardCheck } from "lucide-react";
+import TrackForm from "@/components/modules/shipment-tracking/track-form";
+import QuoteCalculator from "@/components/operations/quote-calculator";
+export default function ParcelHero() {
+  const bn = useLocale() === "bn",
+    t = (en: string, bangla: string) => (bn ? bangla : en);
+  return (
+    <div className="mx-auto max-w-7xl space-y-10 px-4 py-10 sm:px-6">
+      <section className="grid items-center gap-8 rounded-3xl bg-linear-to-br from-blue-50 to-white p-6 sm:p-10 lg:grid-cols-2">
+        <div className="space-y-5">
+          <p className="font-semibold text-primary">
+            {t(
+              "Dropzo · our own delivery team",
+              "ড্রপজো · নিজস্ব ডেলিভারিকর্মীর সেবা",
+            )}
+          </p>
+          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
+            {t(
+              "Send a parcel. Follow every step.",
+              "পার্সেল পাঠান। প্রতিটি ধাপ জানুন।",
+            )}
+          </h1>
+          <p className="max-w-xl text-lg text-muted-foreground">
+            {t(
+              "Check coverage and delivery cost, book a pickup and follow status updates through our hub network.",
+              "এলাকা ও মাশুল যাচাই করে সংগ্রহের অনুরোধ দিন। আমাদের হাব ও ডেলিভারিকর্মীর মাধ্যমে পার্সেলের প্রতিটি ধাপ অনুসরণ করুন।",
+            )}
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              className="rounded-xl bg-primary px-6 py-3 font-semibold text-primary-foreground"
+              href="/dashboard/new-shipment"
+            >
+              {t("Send a parcel", "পার্সেল পাঠান")}
+            </Link>
+            <Link
+              className="rounded-xl border px-6 py-3"
+              href="/merchant-register"
+            >
+              {t("Register your business", "ব্যবসায়িক নিবন্ধন")}
+            </Link>
+          </div>
+          <Link className="inline-block underline" href="/coverage">
+            {t(
+              "Check service areas before booking",
+              "বুকিংয়ের আগে সেবার এলাকা দেখুন",
+            )}
+          </Link>
+        </div>
+        <div
+          aria-hidden="true"
+          className="relative grid min-h-64 place-items-center rounded-3xl border border-blue-200 bg-blue-100/60"
+        >
+          <Truck className="size-36 text-primary" strokeWidth={1.3} />
+          <Package className="absolute left-8 top-8 size-14 text-blue-700" />
+          <MapPin className="absolute right-8 bottom-8 size-12 text-blue-700" />
+        </div>
+      </section>
+      <section className="rounded-2xl border p-6">
+        <h2 className="mb-4 text-2xl font-bold">
+          {t("Track your parcel", "পার্সেলের অবস্থা খুঁজুন")}
+        </h2>
+        <TrackForm />
+      </section>
+      <QuoteCalculator />
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {[
+          [
+            Package,
+            "Book",
+            "বুকিং",
+            "Provide sender and receiver details",
+            "প্রেরক ও প্রাপকের তথ্য দিন",
+          ],
+          [
+            Truck,
+            "Pickup",
+            "সংগ্রহ",
+            "Our assigned worker collects the parcel",
+            "বরাদ্দকৃত কর্মী পার্সেল সংগ্রহ করবেন",
+          ],
+          [
+            MapPin,
+            "Hub and route",
+            "হাব ও পথ",
+            "Follow recorded status updates",
+            "নথিভুক্ত অবস্থা অনুসরণ করুন",
+          ],
+          [
+            ClipboardCheck,
+            "Handover",
+            "হস্তান্তর",
+            "Recipient acknowledgment is recorded",
+            "প্রাপকের গ্রহণের প্রমাণ রাখা হবে",
+          ],
+        ].map(([Icon, en, bangla, description, bnDescription], index) => {
+          const StepIcon = Icon as typeof Package;
+          return (
+            <article key={String(en)} className="rounded-xl border p-5">
+              <StepIcon className="mb-3 size-8 text-primary" />
+              <h2 className="font-semibold">
+                {new Intl.NumberFormat(bn ? "bn-BD" : "en-US").format(
+                  index + 1,
+                )}
+                . {t(String(en), String(bangla))}
+              </h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {t(String(description), String(bnDescription))}
+              </p>
+            </article>
+          );
+        })}
+      </section>
+      <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border p-6">
+        <div>
+          <h2 className="text-xl font-bold">
+            {t("Join our delivery team", "আমাদের ডেলিভারিকর্মী দলে যোগ দিন")}
+          </h2>
+          <p>
+            {t(
+              "Applications require review and administrator approval.",
+              "আবেদনের পরে যাচাই ও প্রশাসকের অনুমোদন প্রয়োজন।",
+            )}
+          </p>
+        </div>
+        <Link className="rounded-xl border px-5 py-3" href="/courier-apply">
+          {t("Apply as a delivery worker", "ডেলিভারিকর্মী হিসেবে আবেদন")}
+        </Link>
+        <Link className="underline" href="/login?staff=1">
+          {t("Staff sign in", "কর্মীদের প্রবেশ")}
+        </Link>
+      </section>
+    </div>
+  );
+}
+```
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\pricing\page.tsx
+
+```typescript
+import QuoteCalculator from "@/components/operations/quote-calculator";
+export default function PricingPage() {
+  return (
+    <div className="mx-auto max-w-3xl px-4 py-10">
+      <QuoteCalculator />
+    </div>
+  );
+}
+```
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\merchant-register\page.tsx
+
+```typescript
+import ProfileForms from "@/components/operations/profile-forms";
+import { useLocale } from "next-intl";
+export default function MerchantPage() {
+  const bn = useLocale() === "bn";
+  return (
+    <div className="mx-auto max-w-3xl space-y-5 px-4 py-10">
+      <h1 className="text-3xl font-bold">
+        {bn ? "ব্যবসায়িক নিবন্ধন" : "Business registration"}
+      </h1>
+      <ProfileForms kind="business" />
+    </div>
+  );
+}
+```
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\dashboard\collections\page.tsx
+
+```typescript
+import ProfileForms from "@/components/operations/profile-forms";
+export default function CollectionsPage() {
+  return <ProfileForms kind="collections" />;
+}
+```
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\dashboard\business\page.tsx
+
+```typescript
+import ProfileForms from "@/components/operations/profile-forms";
+export default function BusinessPage() {
+  return <ProfileForms kind="business" />;
+}
+```
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\dashboard\bulk\page.tsx
+
+```typescript
+import BulkBookings from "@/components/operations/bulk-bookings";
+export default function Page() {
+  return <BulkBookings />;
+}
+```
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\courier-apply\page.tsx
+
+```typescript
+import ProfileForms from "@/components/operations/profile-forms";
+import { useLocale } from "next-intl";
+export default function CourierApplyPage() {
+  const bn = useLocale() === "bn";
+  return (
+    <div className="mx-auto max-w-3xl space-y-5 px-4 py-10">
+      <h1 className="text-3xl font-bold">
+        {bn ? "ডেলিভারিকর্মী হিসেবে আবেদন" : "Delivery worker application"}
+      </h1>
+      <ProfileForms kind="application" />
+    </div>
+  );
+}
+```
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\courier\collections\page.tsx
+
+```typescript
+import ProfileForms from "@/components/operations/profile-forms";
+export default function CollectionsPage() {
+  return <ProfileForms kind="collections" />;
+}
+```
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\courier\shipments\[id]\page.tsx
+
+```typescript
+export { default } from "../../../dashboard/my-shipments/[id]/page";
+```

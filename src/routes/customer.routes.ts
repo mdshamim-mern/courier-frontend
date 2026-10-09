@@ -10,6 +10,9 @@ export const customerRoutes: SidebarItems = [
         title: "Overview",
         url: `${prefix}`,
       },
+      { title: "Business Account", url: `${prefix}/business` },
+      { title: "Cash Collections", url: `${prefix}/collections` },
+      { title: "Bulk Shipments", url: `${prefix}/bulk` },
       {
         title: "New Shipment",
         url: `${prefix}/new-shipment`,

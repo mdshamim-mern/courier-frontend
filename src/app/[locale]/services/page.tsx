@@ -1,6 +1,6 @@
-import { useUiText } from "@/i18n/use-ui-text";
+import { useLocale } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import type { Metadata } from "next";
-
 export async function generateMetadata({
   params,
 }: {
@@ -9,103 +9,89 @@ export async function generateMetadata({
   const { locale } = await params;
   return {
     title: locale === "bn" ? "আমাদের সেবাসমূহ | Dropzo" : "Our Services | Dropzo",
-    description:
-      locale === "bn"
-        ? "ড্রপজোর পণ্য পরিবহন ও সরবরাহের সেবা সম্পর্কে জানুন।"
-        : "Explore delivery and logistics services offered by Dropzo.",
   };
 }
-
 export default function ServicesPage() {
-  const ui = useUiText();
+  const bn = useLocale() === "bn",
+    t = (en: string, bangla: string) => (bn ? bangla : en);
   const services = [
-    {
-      id: "standard-delivery",
-      title: "Standard Delivery",
-      description:
-        "Reliable and cost-effective delivery for your everyday parcels. Expected delivery within 2-3 business days across major cities.",
-      icon: "📦",
-    },
-    {
-      id: "express-delivery",
-      title: "Express Delivery",
-      description:
-        "Urgent shipments require priority handling. Our express service guarantees next-day delivery for time-sensitive documents and goods.",
-      icon: "⚡",
-    },
-    {
-      id: "corporate-logistics",
-      title: "Corporate Logistics",
-      description:
-        "Tailored B2B logistics solutions for businesses of all sizes. Manage bulk shipments easily with our dedicated corporate dashboard.",
-      icon: "🏢",
-    },
-    {
-      id: "fragile-handling",
-      title: "Fragile Handling",
-      description:
-        "Specialized care and secure packaging for delicate items. We ensure your fragile goods arrive in pristine condition.",
-      icon: "🛡️",
-    },
-    {
-      id: "cash-on-delivery",
-      title: "Cash on Delivery (COD)",
-      description:
-        "Empower your e-commerce business with our seamless COD service. Fast remittance and transparent payment tracking.",
-      icon: "💵",
-    },
-    {
-      id: "ecommerce-fulfillment",
-      title: "E-commerce Fulfillment",
-      description:
-        "From warehouse storage to last-mile delivery, we handle the entire supply chain so you can focus on growing your business.",
-      icon: "🛒",
-    },
+    [
+      "standard-delivery",
+      "Standard Delivery",
+      "সাধারণ ডেলিভারি",
+      "Book only on an approved route. See the calculated fee and estimated delivery days before confirming.",
+      "অনুমোদিত রুটে বুকিং করুন। নিশ্চিত করার আগে হিসাব করা মাশুল ও সম্ভাব্য সরবরাহের দিন দেখুন।",
+    ],
+    [
+      "express-delivery",
+      "Express Delivery",
+      "জরুরি ডেলিভারি",
+      "Available only where an express rate is approved. There is no blanket next-day delivery guarantee.",
+      "জরুরি সেবার মূল্য অনুমোদিত রুটেই প্রযোজ্য। সব এলাকায় পরের দিন পৌঁছানোর নিশ্চয়তা নেই।",
+    ],
+    [
+      "corporate-logistics",
+      "Business Parcels",
+      "ব্যবসায়িক পার্সেল",
+      "Verified businesses can submit individual parcels or validated CSV batches and print labels.",
+      "যাচাইকৃত ব্যবসায়ীরা একক পার্সেল বা যাচাই করা সিএসভি ব্যাচ দিতে ও লেবেল ছাপাতে পারবেন।",
+    ],
+    [
+      "fragile-handling",
+      "Fragile Items",
+      "ভঙ্গুর পণ্য",
+      "Declare the item type and packing instructions. Confirm acceptance and handling requirements with support before booking.",
+      "পণ্যের ধরন ও মোড়কের নির্দেশনা দিন। বুকিংয়ের আগে গ্রহণযোগ্যতা ও বিশেষ ব্যবস্থার শর্ত সহায়তা দলের সঙ্গে নিশ্চিত করুন।",
+    ],
+    [
+      "cash-on-delivery",
+      "Cash on Delivery (COD)",
+      "পণ্য নেওয়ার সময় টাকা সংগ্রহ",
+      "Requires an approved business account. Exact collections and recorded payouts are tracked separately from delivery fees; transfers are not automatic.",
+      "অনুমোদিত ব্যবসায়িক হিসাব লাগবে। সংগৃহীত টাকা ও নথিভুক্ত পাওনা পরিশোধ ডেলিভারি মাশুলের বাইরে পৃথক হিসাব হবে; টাকা স্বয়ংক্রিয়ভাবে পাঠানো হয় না।",
+    ],
+    [
+      "ecommerce-fulfillment",
+      "Warehousing and Fulfillment",
+      "গুদাম ও পূর্ণাঙ্গ পণ্য ব্যবস্থাপনা",
+      "Not available for booking. Warehouse operations have not been launched.",
+      "বুকিংয়ের জন্য চালু নয়। গুদামের কার্যক্রম এখনো শুরু হয়নি।",
+    ],
   ];
-
   return (
-    <div className="relative overflow-hidden">
-      <div className="pointer-events-none absolute -top-24 right-0 size-96 rounded-full bg-primary/10 blur-3xl" />
-      <div className="pointer-events-none absolute bottom-0 left-0 size-96 rounded-full bg-blue-500/10 blur-3xl" />
-
-      <div className="relative max-w-7xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl mb-4">
-            {ui("Our Services")}
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            {ui(
-              "Comprehensive logistics solutions designed to meet the unique needs of individuals and modern businesses.",
-            )}{" "}
-          </p>
-        </div>
-
-        <p
-          role="note"
-          className="mb-8 rounded-xl border p-4 text-muted-foreground"
-        >
-          {ui(
-            "Service availability and delivery terms must be confirmed before booking.",
-          )}
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {services.map((service) => (
-            <div
-              key={service.title}
-              id={service.id}
-              className="group flex flex-col p-8 rounded-3xl border border-white/40 bg-white/60 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.06)] transition-all hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(0,0,0,0.1)] dark:border-white/10 dark:bg-white/4"
-            >
-              <div className="mb-5 flex size-14 items-center justify-center rounded-2xl bg-linear-to-br from-primary/15 to-blue-500/15 text-3xl ring-1 ring-primary/10 transition-transform group-hover:scale-110">
-                {service.icon}
-              </div>
-              <h3 className="text-xl font-bold mb-3">{ui(service.title)}</h3>
-              <p className="text-muted-foreground leading-relaxed grow">
-                {ui(service.description)}
-              </p>
-            </div>
-          ))}
-        </div>
+    <article className="mx-auto max-w-6xl space-y-6 px-4 py-10">
+      <h1 className="text-3xl font-bold">
+        {t("Our Services", "আমাদের সেবাসমূহ")}
+      </h1>
+      <p>
+        {t(
+          "Dropzo's own delivery team handles collection and delivery on approved routes. Check availability first.",
+          "ড্রপজোর নিজস্ব ডেলিভারিকর্মীরা অনুমোদিত রুটে সংগ্রহ ও সরবরাহের কাজ করবেন। আগে সেবার প্রাপ্যতা যাচাই করুন।",
+        )}
+      </p>
+      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+        {services.map(([id, en, bangla, description, descriptionBn]) => (
+          <section
+            id={id}
+            key={id}
+            className="scroll-mt-36 space-y-3 rounded-xl border p-5"
+          >
+            <h2 className="text-xl font-semibold">{t(en, bangla)}</h2>
+            <p>{t(description, descriptionBn)}</p>
+            {id !== "ecommerce-fulfillment" && (
+              <Link className="inline-block underline" href="/pricing">
+                {t("Check cost and availability", "খরচ ও প্রাপ্যতা যাচাই")}
+              </Link>
+            )}
+          </section>
+        ))}
       </div>
-    </div>
+      <Link
+        href="/dashboard/new-shipment"
+        className="inline-block rounded-lg bg-primary px-5 py-3 text-primary-foreground"
+      >
+        {t("Send parcel", "পার্সেল পাঠান")}
+      </Link>
+    </article>
   );
 }

@@ -2,6 +2,23 @@ export type LegalKind = "terms" | "privacy" | "cookies";
 type Section = { title: string; paragraphs: string[] };
 type Document = { title: string; sections: Section[] };
 
+export const legalOperator = {
+  companyName: "Dropzo",
+  contactEmail: "mdshamim.mern@gmail.com",
+  contactPhone: "01865-190471",
+  address: "Love Road, Mirpur 2, Dhaka",
+  effectiveDate: "2026-10-08",
+};
+
+export function legalEffectiveDate(locale: string) {
+  return new Intl.DateTimeFormat(locale === "bn" ? "bn-BD" : "en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(`${legalOperator.effectiveDate}T00:00:00Z`));
+}
+
 const documents: Record<"en" | "bn", Record<LegalKind, Document>> = {
   en: {
     terms: {
@@ -302,5 +319,18 @@ const documents: Record<"en" | "bn", Record<LegalKind, Document>> = {
 };
 
 export function getLegalDocument(locale: string, kind: LegalKind) {
-  return documents[locale === "bn" ? "bn" : "en"][kind];
+  const document = documents[locale === "bn" ? "bn" : "en"][kind];
+  return {
+    ...document,
+    sections: document.sections.map((section) => ({
+      ...section,
+      paragraphs: section.paragraphs.map((paragraph) =>
+        paragraph
+          .replaceAll("[Company Name]", legalOperator.companyName)
+          .replaceAll("[Contact Email]", legalOperator.contactEmail)
+          .replaceAll("[Address]", legalOperator.address)
+          .replaceAll("[Effective Date]", legalEffectiveDate(locale)),
+      ),
+    })),
+  };
 }

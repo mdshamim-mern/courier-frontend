@@ -1,7 +1,6 @@
-import { useUiText } from "@/i18n/use-ui-text";
+import { useLocale } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import type { Metadata } from "next";
-import { ShieldCheck, MapPin, Clock3 } from "lucide-react";
-
 export async function generateMetadata({
   params,
 }: {
@@ -9,93 +8,67 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   return {
-    title: locale === "bn" ? "আমাদের সম্পর্কে | Dropzo" : "About Us | Dropzo",
-    description:
-      locale === "bn"
-        ? "ড্রপজোর লক্ষ্য, স্বপ্ন ও পণ্য পরিবহনব্যবস্থা সম্পর্কে জানুন।"
-        : "Learn about Dropzo, our mission, vision and delivery platform.",
+    title: locale === "bn" ? "ড্রপজো সম্পর্কে | Dropzo" : "About Dropzo | Dropzo",
   };
 }
-
 export default function AboutPage() {
-  const ui = useUiText();
+  const bn = useLocale() === "bn",
+    t = (en: string, bangla: string) => (bn ? bangla : en);
   return (
-    <div className="relative overflow-hidden">
-      <div className="pointer-events-none absolute -top-32 left-1/3 size-96 rounded-full bg-primary/10 blur-3xl" />
-      <div className="pointer-events-none absolute bottom-0 right-0 size-96 rounded-full bg-blue-500/10 blur-3xl" />
-
-      <div className="relative max-w-5xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl mb-4">
-            {ui("About Courier")}
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            {ui(
-              "Delivering trust and reliability across every mile. We are dedicated to providing seamless logistics solutions for businesses and individuals alike.",
-            )}{" "}
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start mb-16">
-          <div className="rounded-3xl border border-white/40 bg-white/60 p-8 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.06)] dark:border-white/10 dark:bg-white/4">
-            <h2 className="text-3xl font-bold mb-4">{ui("Our Mission")}</h2>
-            <p className="text-muted-foreground leading-relaxed mb-8">
-              {ui(
-                "At Dropzo, our mission is to simplify the delivery process through innovative technology and a dedicated network of professionals. We aim to ensure that every parcel, no matter how small or large, reaches its destination safely, securely, and on time.",
-              )}{" "}
-            </p>
-            <h2 className="text-3xl font-bold mb-4">{ui("Our Vision")}</h2>
-            <p className="text-muted-foreground leading-relaxed">
-              {ui(
-                "We envision a future where logistics barriers are completely eliminated, making commerce more accessible for everyone. By expanding our hub networks and integrating real-time AI-driven tracking, we strive to become the most trusted logistics partner in the region.",
-              )}{" "}
-            </p>
-          </div>
-
-          <div className="rounded-3xl border border-white/40 bg-white/60 p-8 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.06)] dark:border-white/10 dark:bg-white/4">
-            <h3 className="text-xl font-bold mb-6">{ui("Why Choose Us?")}</h3>
-            <ul className="space-y-6">
-              <li className="flex items-start gap-4">
-                <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-primary/15 to-blue-500/15 ring-1 ring-primary/10">
-                  <ShieldCheck className="size-5 text-primary" />
-                </div>
-                <div>
-                  <strong className="block">{ui("Fast & Secure")}</strong>
-                  <span className="text-sm text-muted-foreground">
-                    {ui(
-                      "Industry-leading delivery speeds with guaranteed item security.",
-                    )}
-                  </span>
-                </div>
-              </li>
-              <li className="flex items-start gap-4">
-                <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-primary/15 to-blue-500/15 ring-1 ring-primary/10">
-                  <MapPin className="size-5 text-primary" />
-                </div>
-                <div>
-                  <strong className="block">{ui("Real-time Tracking")}</strong>
-                  <span className="text-sm text-muted-foreground">
-                    {ui("Monitor your shipments at every step of the journey.")}
-                  </span>
-                </div>
-              </li>
-              <li className="flex items-start gap-4">
-                <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-primary/15 to-blue-500/15 ring-1 ring-primary/10">
-                  <Clock3 className="size-5 text-primary" />
-                </div>
-                <div>
-                  <strong className="block">{ui("24/7 Support")}</strong>
-                  <span className="text-sm text-muted-foreground">
-                    {ui(
-                      "Dedicated customer service team ready to assist you anytime.",
-                    )}
-                  </span>
-                </div>
-              </li>
-            </ul>
-          </div>
-        </div>
+    <article className="mx-auto max-w-5xl space-y-6 px-4 py-10">
+      <h1 className="text-3xl font-bold">
+        {t("About Dropzo", "ড্রপজো সম্পর্কে")}
+      </h1>
+      <p>
+        {t(
+          "Dropzo uses its own approved delivery workers. Customers book a parcel; administrators assign pickup, route hubs and delivery work.",
+          "ড্রপজো নিজের অনুমোদিত ডেলিভারিকর্মীদের দিয়ে পার্সেল সংগ্রহ ও পৌঁছে দেবে। গ্রাহক বুকিং করবেন; প্রশাসক সংগ্রহের দায়িত্ব, রুটের হাব ও ডেলিভারির কাজ বরাদ্দ করবেন।",
+        )}
+      </p>
+      <div className="grid gap-5 md:grid-cols-2">
+        {[
+          [
+            "Our service process",
+            "আমাদের কাজের ধাপ",
+            "Booking → pickup assignment → collection → hub → transit → destination hub → delivery and recipient acknowledgment.",
+            "বুকিং → সংগ্রহের কাজ বরাদ্দ → পার্সেল সংগ্রহ → হাব → পথে → গন্তব্যের হাব → ডেলিভারি ও প্রাপকের গ্রহণের নথি।",
+          ],
+          [
+            "What tracking shows",
+            "অনুসরণে যা দেখবেন",
+            "Tracking displays recorded status and timestamps, not a worker's live GPS location.",
+            "অনুসরণে নথিভুক্ত অবস্থা ও সময় দেখা যাবে; কর্মীর সরাসরি জিপিএস অবস্থান নয়।",
+          ],
+          [
+            "Business payments",
+            "ব্যবসায়ীর টাকার হিসাব",
+            "Delivery charges are paid separately. Product cash collections and administrator-confirmed remittances have their own ledger.",
+            "ডেলিভারি মাশুল আলাদা পরিশোধযোগ্য। পণ্যের টাকা সংগ্রহ ও প্রশাসকের নিশ্চিত করা টাকা হস্তান্তরের পৃথক হিসাব থাকবে।",
+          ],
+          [
+            "Service commitments",
+            "সেবার প্রতিশ্রুতি",
+            "Coverage, charges and estimated delivery time depend on approved route settings. Confirm support hours with our contact team.",
+            "অনুমোদিত রুটের সেটিং অনুযায়ী এলাকা, মাশুল ও সম্ভাব্য সময় নির্ধারিত হবে। সহায়তার সময় যোগাযোগ করে নিশ্চিত করুন।",
+          ],
+        ].map(([en, bangla, description, descriptionBn]) => (
+          <section className="space-y-3 rounded-xl border p-5" key={en}>
+            <h2 className="text-xl font-semibold">{t(en, bangla)}</h2>
+            <p>{t(description, descriptionBn)}</p>
+          </section>
+        ))}
       </div>
-    </div>
+      <nav className="flex flex-wrap gap-5">
+        <Link className="underline" href="/coverage">
+          {t("Check service coverage", "সেবার এলাকা যাচাই")}
+        </Link>
+        <Link className="underline" href="/pricing">
+          {t("Calculate charges", "খরচ হিসাব")}
+        </Link>
+        <Link className="underline" href="/contact">
+          {t("Contact support", "সহায়তার যোগাযোগ")}
+        </Link>
+      </nav>
+    </article>
   );
 }

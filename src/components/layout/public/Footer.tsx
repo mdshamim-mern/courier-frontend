@@ -7,6 +7,11 @@ const groups = [
     title: "Quick Links",
     links: [
       { href: "/", label: "Home" },
+      { href: "/dashboard/new-shipment", label: "Send Parcel" },
+      { href: "/pricing", label: "Pricing" },
+      { href: "/coverage", label: "Coverage" },
+      { href: "/merchant-register", label: "Merchant Registration" },
+      { href: "/courier-apply", label: "Courier Application" },
       { href: "/about", label: "About Us" },
       { href: "/services", label: "Services" },
       { href: "/contact", label: "Contact" },
@@ -48,7 +53,7 @@ export default function Footer() {
             </Link>
             <p className="text-sm leading-relaxed text-muted-foreground">
               {ui(
-                "Fast, secure, and reliable parcel delivery services across the nation. We bridge the gap between businesses and their customers.",
+                "Dropzo serves approved areas through its own delivery team. Check coverage and pricing before booking.",
               )}
             </p>
           </div>

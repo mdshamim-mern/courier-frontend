@@ -10,6 +10,7 @@ export const adminRoutes: SidebarItems = [
         title: "Overview",
         url: `${prefix}`,
       },
+      { title: "Operations", url: `${prefix}/operations` },
       {
         title: "Manage Users",
         url: `${prefix}/manage-users`,

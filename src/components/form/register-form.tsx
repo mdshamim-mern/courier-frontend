@@ -13,6 +13,8 @@ import {
 } from "../ui/field";
 import { RegisterCustomerZodSchema } from "@/validation";
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { authDestination } from "@/lib/auth-destination";
 import {
   Eye,
   EyeClosed,
@@ -37,6 +39,7 @@ interface IRegisterError {
 
 export default function RegisterForm() {
   const ui = useUiText();
+  const next = authDestination("CUSTOMER", useSearchParams().get("next"));
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
   const { mutate: register, isPending: registerPending } = useRegistration();
@@ -76,7 +79,7 @@ export default function RegisterForm() {
             description: "Please check your email for the OTP.",
             type: "success",
           });
-          const params = new URLSearchParams({ email: value.email });
+          const params = new URLSearchParams({ email: value.email, next });
           router.push(`/verify-account?${params.toString()}`);
         },
         onError: (err: IRegisterError) => {
@@ -298,6 +301,15 @@ export default function RegisterForm() {
         </FieldGroup>
       </form>
 
+      <p className="text-center text-sm">
+        <Link className="underline" href="/terms">
+          {ui("Terms of Service")}
+        </Link>{" "}
+        ·{" "}
+        <Link className="underline" href="/privacy">
+          {ui("Privacy Policy")}
+        </Link>
+      </p>
       <FieldSeparator>{ui("Or continue with")}</FieldSeparator>
 
       <div className="flex justify-center">
@@ -307,7 +319,7 @@ export default function RegisterForm() {
       <div className="text-center text-sm text-muted-foreground mt-2">
         {ui("Already have an account?")}{" "}
         <Link
-          href="/login"
+          href={`/login?next=${encodeURIComponent(next)}`}
           className="font-semibold text-primary hover:underline underline-offset-4"
         >
           {ui("Login here")}{" "}

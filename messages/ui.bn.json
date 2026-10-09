@@ -418,5 +418,16 @@
   "UPDATE_STATUS": "অবস্থা পরিবর্তন",
   "CANCEL_SHIPMENT": "পার্সেলের অনুরোধ বাতিল",
   "SHIPMENT": "পার্সেল",
-  "USER": "ব্যবহারকারী"
+  "USER": "ব্যবহারকারী",
+  "Operations": "সেবা ও কার্যক্রম",
+  "Business Account": "ব্যবসায়িক হিসাব",
+  "Cash Collections": "পণ্যের টাকা সংগ্রহ",
+  "Bulk Shipments": "একসঙ্গে একাধিক বুকিং",
+  "Pay with Stripe": "স্ট্রাইপ দিয়ে পরিশোধ",
+  "Send Parcel": "পার্সেল পাঠান",
+  "Pricing": "খরচ হিসাব",
+  "Coverage": "সেবার এলাকা",
+  "Merchant Registration": "ব্যবসায়িক নিবন্ধন",
+  "Courier Application": "ডেলিভারিকর্মীর আবেদন",
+  "Dropzo serves approved areas through its own delivery team. Check coverage and pricing before booking.": "ড্রপজো নিজের ডেলিভারিকর্মীদের মাধ্যমে অনুমোদিত এলাকায় সেবা দেবে। বুকিংয়ের আগে এলাকা ও খরচ যাচাই করুন।"
 }

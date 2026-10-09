@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useUiText } from "@/i18n/use-ui-text";
+import { legalOperator } from "@/content/legal";
 
 const questions = {
   en: [
@@ -15,7 +16,7 @@ const questions = {
     ],
     [
       "Can I cancel a shipment?",
-      "The customer dashboard offers cancellation only while a shipment is pending and unpaid. Refund and cancellation terms must be completed in [Payment and Refund Policy].",
+      "The customer dashboard offers cancellation only while a shipment is pending and unpaid. Paid cancellations require a separately reviewed refund; automatic refunds are not available.",
     ],
     [
       "How do I reset my password?",
@@ -23,11 +24,11 @@ const questions = {
     ],
     [
       "What are the delivery time and support hours?",
-      "Service areas, delivery estimates, restricted goods and support hours are not finalized here. Confirm [Delivery Terms] and [Business Hours] with [Company Name] before booking.",
+      "Check the coverage page and route calculator for approved areas and estimated delivery time. Confirm restricted items and support hours with Dropzo before booking.",
     ],
     [
       "How do I contact support?",
-      "The operator must replace mdshamim.mern@gmail.com, 01865-190471 and Love Road, Mirpur 2, Dhaka on the Contact page. Until then, support messages cannot be submitted through this site.",
+      `Email ${legalOperator.contactEmail} or call ${legalOperator.contactPhone}. The Contact page lists the office address and support hours. This site does not provide a contact form.`,
     ],
   ],
   bn: [
@@ -41,7 +42,7 @@ const questions = {
     ],
     [
       "পার্সেলের অনুরোধ বাতিল করতে পারব?",
-      "পার্সেল অপেক্ষমাণ ও অপরিশোধিত থাকলে গ্রাহকের ড্যাশবোর্ডে বাতিলের সুযোগ থাকে। ফেরত ও বাতিলের শর্ত [Payment and Refund Policy] অংশে পূরণ করতে হবে।",
+      "পার্সেল অপেক্ষমাণ ও অপরিশোধিত থাকলে গ্রাহকের ড্যাশবোর্ডে বাতিলের সুযোগ থাকে। পরিশোধিত বুকিং বাতিলের আগে আলাদাভাবে ফেরত পর্যালোচনা প্রয়োজন; স্বয়ংক্রিয় টাকা ফেরত দেওয়া হয় না।",
     ],
     [
       "পাসওয়ার্ড কীভাবে বদলাব?",
@@ -49,11 +50,11 @@ const questions = {
     ],
     [
       "সরবরাহের সময় ও সহায়তার সময় কত?",
-      "সেবার আওতা, সম্ভাব্য সরবরাহের সময়, নিষিদ্ধ পণ্য ও সহায়তার সময় এখানে চূড়ান্ত নয়। বুকিংয়ের আগে [Company Name] থেকে [Delivery Terms] ও [Business Hours] নিশ্চিত করুন।",
+      "অনুমোদিত এলাকা ও সম্ভাব্য সময় সেবার এলাকা ও খরচ হিসাবের পাতায় দেখুন। নিষিদ্ধ পণ্য ও সহায়তার সময় বুকিংয়ের আগে ড্রপজোর সঙ্গে নিশ্চিত করুন।",
     ],
     [
       "সহায়তার জন্য কীভাবে যোগাযোগ করব?",
-      "প্রতিষ্ঠানকে যোগাযোগের পাতায় mdshamim.mern@gmail.com, 01865-190471 ও Love Road, Mirpur 2, Dhaka পূরণ করতে হবে। এর আগে এই সাইট দিয়ে সহায়তার বার্তা পাঠানো যাবে না।",
+      `ইমেইল করুন ${legalOperator.contactEmail} ঠিকানায় অথবা ফোন করুন ${legalOperator.contactPhone} নম্বরে। যোগাযোগের পাতায় কার্যালয়ের ঠিকানা ও সহায়তার সময় পাবেন। এই সাইটে বার্তা পাঠানোর ফরম নেই।`,
     ],
   ],
 };

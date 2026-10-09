@@ -14,6 +14,8 @@ import {
 } from "../ui/field";
 import { LoginZodSchema } from "@/validation";
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { authDestination } from "@/lib/auth-destination";
 import {
   Eye,
   EyeClosed,
@@ -32,6 +34,7 @@ import GoogleLoginComponent from "../modules/google-login/GoogleLogin";
 
 export default function LoginForm() {
   const ui = useUiText();
+  const next = useSearchParams().get("next");
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -55,9 +58,7 @@ export default function LoginForm() {
             type: "success",
           });
           const role = res.data.user.role;
-          if (role === "ADMIN") router.push("/admin");
-          else if (role === "COURIER") router.push("/courier");
-          else router.push("/dashboard");
+          router.push(authDestination(role, next));
         },
         onError: (err) => {
           toast.add({
@@ -246,7 +247,10 @@ export default function LoginForm() {
       <div className="text-center text-sm text-muted-foreground mt-2">
         {ui("Don't have an account?")}{" "}
         <Link
-          href="/register"
+          href={
+            "/register?next=" +
+            encodeURIComponent(authDestination("CUSTOMER", next))
+          }
           className="font-semibold text-primary hover:underline underline-offset-4"
         >
           {ui("Create Account")}{" "}
