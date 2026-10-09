@@ -50,6 +50,22 @@ export default function LegalDocument({ kind }: { kind: LegalKind }) {
         <div className="legal-hero-orb" aria-hidden="true" />
       </header>
 
+      <aside
+        role="note"
+        className="glass-panel border-amber-200 bg-amber-50/60 p-5 text-sm leading-7"
+      >
+        <strong className="block text-amber-900">
+          {locale === "bn"
+            ? "খসড়া — চূড়ান্ত আইনি নথি নয়"
+            : "Draft — not a final legal document"}
+        </strong>
+        <p className="text-amber-900/80">
+          {locale === "bn"
+            ? "বন্ধনীর তথ্য পূরণ, বাস্তব কার্যক্রমের যাচাই এবং আইনি পর্যালোচনার পরে এই নীতি চূড়ান্ত হবে।"
+            : "Complete the bracketed details, verify operating practices and obtain legal review before treating this policy as final."}
+        </p>
+      </aside>
+
       <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="glass-panel legal-meta-card">
           <Building2 className="size-5 text-primary" aria-hidden="true" />

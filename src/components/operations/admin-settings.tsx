@@ -1,13 +1,19 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useLocale } from "next-intl";
 import { placeName } from "@/i18n/geography";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import apiClient from "@/lib/apiClient";
 import type { ApiResponse, Hub } from "@/types";
 import type { OperationsAdmin } from "@/types/operations.type";
 import { Button } from "@/components/ui/button";
 import CollectionTable from "./collection-table";
+import {
+  AdminFeedback,
+  AdminPageHeader,
+  RefreshButton,
+} from "@/components/modules/admin/admin-ui";
+import styles from "@/components/modules/admin/admin.module.css";
 type Field = {
   key: string;
   en: string;
@@ -109,16 +115,7 @@ function SettingForm({
       <Button type="submit" disabled={mutation.isPending}>
         {bn ? "সংরক্ষণ করুন" : "Save"}
       </Button>
-      {mutation.isError && (
-        <p role="alert">
-          {bn
-            ? "সংরক্ষণ হয়নি। তথ্য ও অনুমতি যাচাই করুন।"
-            : "Not saved. Check values and permissions."}
-        </p>
-      )}
-      {mutation.isSuccess && (
-        <p role="status">{bn ? "সংরক্ষিত হয়েছে।" : "Saved."}</p>
-      )}
+      <AdminFeedback error={mutation.error} />
     </form>
   );
 }
@@ -126,6 +123,10 @@ export default function AdminSettings() {
   const locale = useLocale(),
     bn = locale === "bn",
     t = (en: string, bangla: string) => (bn ? bangla : en);
+  const queryClient = useQueryClient();
+  const [saved, setSaved] = useState(false);
+  const areaRef = useRef<HTMLDivElement>(null),
+    rateRef = useRef<HTMLDivElement>(null);
   const [editingArea, setArea] = useState<
       Record<string, unknown> | undefined
     >(),
@@ -149,6 +150,8 @@ export default function AdminSettings() {
     }) => apiClient(endpoint, { method: "PATCH", body }),
     onSuccess: () => {
       void query.refetch();
+      void queryClient.invalidateQueries({ queryKey: ["couriers"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin"] });
     },
   });
   const areas = query.data?.data.areas || [],
@@ -160,7 +163,9 @@ export default function AdminSettings() {
         (hub) => [hub.id, placeName(hub.name, locale)] as [string, string],
       ) || [];
   const refresh = () => {
+    setSaved(true);
     void query.refetch();
+    void queryClient.invalidateQueries({ queryKey: ["coverage"] });
     setArea(undefined);
     setRate(undefined);
   };
@@ -183,144 +188,258 @@ export default function AdminSettings() {
     });
   };
   if (query.isError)
-    return <p role="alert">{t("Settings unavailable.", "সেটিংস পাওয়া যায়নি।")}</p>;
+    return (
+      <div className="space-y-4">
+        <AdminFeedback error={query.error} />
+        <RefreshButton
+          refresh={() => {
+            void query.refetch();
+          }}
+        />
+      </div>
+    );
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold">
-        {t("Operations settings and approvals", "কার্যক্রমের সেটিংস ও অনুমোদন")}
-      </h1>
-      <p>
+      <AdminPageHeader
+        title={t(
+          "Operations settings and approvals",
+          "কার্যক্রমের সেটিংস ও অনুমোদন",
+        )}
+        description={t(
+          "Manage approved service areas, delivery rates, worker reviews and manual cash records.",
+          "অনুমোদিত সেবার এলাকা, মাশুল, কর্মীর আবেদন ও ম্যানুয়াল নগদ হিসাব পরিচালনা করুন।",
+        )}
+        action={
+          <RefreshButton
+            refresh={() => {
+              void query.refetch();
+            }}
+            pending={query.isFetching}
+          />
+        }
+      />
+      <p className={styles.note}>
         {t(
-          "No rates or service areas are invented. Review and activate only services you can deliver. Payout references record transfers already completed outside this app; these controls do not send money.",
-          "কোনো মূল্য বা এলাকা কল্পনা করে বসানো হয়নি। বাস্তবে দিতে পারবেন এমন সেবাই যাচাই করে চালু করুন। টাকা দেওয়ার প্রমাণ দিয়ে অ্যাপের বাইরে ইতোমধ্যে সম্পন্ন হস্তান্তর নথিভুক্ত হবে; এই বোতাম টাকা পাঠায় না।",
+          "Activate only services you can deliver. Payout references record completed transfers outside this app; these controls do not send money.",
+          "বাস্তবে দিতে পারবেন এমন সেবাই চালু করুন। টাকা দেওয়ার প্রমাণ দিয়ে অ্যাপের বাইরে সম্পন্ন হস্তান্তর নথিভুক্ত হবে; এই বোতাম টাকা পাঠায় না।",
         )}
       </p>
-      <SettingForm
-        key={String(editingArea?.id || "new-area")}
-        title={t("Service area", "সেবার এলাকা")}
-        endpoint={`/operations/areas${editingArea?.id ? `/${editingArea.id}` : ""}`}
-        value={editingArea}
-        refresh={refresh}
-        fields={[
-          { key: "name", en: "Area name", bn: "এলাকার নাম" },
-          { key: "district", en: "District", bn: "জেলা" },
-          { key: "upazila", en: "Upazila", bn: "উপজেলা" },
-          {
-            key: "hubId",
-            en: "Assigned hub",
-            bn: "নির্ধারিত হাব",
-            options: hubOptions,
-          },
-          {
-            key: "pickupEnabled",
-            en: "Pickup available",
-            bn: "সংগ্রহ চালু",
-            type: "checkbox",
-          },
-          {
-            key: "dropoffEnabled",
-            en: "Branch drop-off available",
-            bn: "হাবে জমা চালু",
-            type: "checkbox",
-          },
-          {
-            key: "deliveryEnabled",
-            en: "Delivery available",
-            bn: "পৌঁছানো চালু",
-            type: "checkbox",
-          },
-        ]}
-      />
-      <div className="flex flex-wrap gap-3">
+      <nav
+        className={styles.toolbar}
+        aria-label={t("Operations sections", "কার্যক্রমের বিভাগ")}
+      >
+        {[
+          ["#service-areas", "Service areas", "সেবার এলাকা"],
+          ["#rate-plans", "Rate plans", "মূল্যতালিকা"],
+          ["#worker-reviews", "Worker reviews", "কর্মীর আবেদন"],
+          ["#business-reviews", "Business reviews", "ব্যবসার আবেদন"],
+          ["#cash-records", "Cash records", "নগদ হিসাব"],
+        ].map(([href, en, bangla]) => (
+          <a key={href} href={href} className="secondary-button">
+            {t(en, bangla)}
+          </a>
+        ))}
+      </nav>
+      {query.isPending && (
+        <p role="status">{t("Loading settings…", "সেটিংস লোড হচ্ছে…")}</p>
+      )}
+      {mutation.isSuccess && (
+        <AdminFeedback
+          success={t(
+            "Decision recorded. Current server data has been refreshed.",
+            "সিদ্ধান্ত নথিভুক্ত। সার্ভারের বর্তমান তথ্য আপডেট হয়েছে।",
+          )}
+        />
+      )}
+      {saved && <AdminFeedback success={t("Saved.", "সংরক্ষিত হয়েছে।")} />}
+      <div id="service-areas" ref={areaRef} className="scroll-mt-44">
+        {editingArea && (
+          <div className={styles.toolbar}>
+            <p>
+              {t("Editing area: ", "এলাকা সম্পাদনা: ")}
+              {placeName(String(editingArea.name), locale)}
+            </p>
+            <Button variant="outline" onClick={() => setArea(undefined)}>
+              {t("Cancel editing", "সম্পাদনা বাতিল")}
+            </Button>
+          </div>
+        )}
+        <SettingForm
+          key={String(editingArea?.id || "new-area")}
+          title={t("Service area", "সেবার এলাকা")}
+          endpoint={`/operations/areas${editingArea?.id ? `/${editingArea.id}` : ""}`}
+          value={editingArea}
+          refresh={refresh}
+          fields={[
+            { key: "name", en: "Area name", bn: "এলাকার নাম" },
+            { key: "district", en: "District", bn: "জেলা" },
+            { key: "upazila", en: "Upazila", bn: "উপজেলা" },
+            {
+              key: "hubId",
+              en: "Assigned hub",
+              bn: "নির্ধারিত হাব",
+              options: hubOptions,
+            },
+            {
+              key: "pickupEnabled",
+              en: "Pickup available",
+              bn: "সংগ্রহ চালু",
+              type: "checkbox",
+            },
+            {
+              key: "dropoffEnabled",
+              en: "Branch drop-off available",
+              bn: "হাবে জমা চালু",
+              type: "checkbox",
+            },
+            {
+              key: "deliveryEnabled",
+              en: "Delivery available",
+              bn: "পৌঁছানো চালু",
+              type: "checkbox",
+            },
+          ]}
+        />
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {areas.map((area) => (
           <button
             type="button"
-            className="rounded-md border p-3"
+            className="glass-panel min-h-16 p-4 text-left"
             key={area.id}
-            onClick={() => setArea({ ...area })}
+            onClick={() => {
+              setArea({ ...area });
+              requestAnimationFrame(() =>
+                areaRef.current?.scrollIntoView({ block: "start" }),
+              );
+            }}
           >
             {t("Edit area: ", "এলাকা সম্পাদনা: ")}
             {placeName(area.name, locale)}
           </button>
         ))}
       </div>
-      <SettingForm
-        key={String(editingRate?.id || "new-rate")}
-        title={t("Approved rate plan", "অনুমোদিত মূল্যতালিকা")}
-        endpoint={`/operations/rates${editingRate?.id ? `/${editingRate.id}` : ""}`}
-        value={editingRate}
-        refresh={refresh}
-        fields={[
-          {
-            key: "pickupAreaId",
-            en: "Pickup area",
-            bn: "সংগ্রহের এলাকা",
-            options,
-          },
-          {
-            key: "receiverAreaId",
-            en: "Delivery area",
-            bn: "পৌঁছানোর এলাকা",
-            options,
-          },
-          {
-            key: "serviceType",
-            en: "Service",
-            bn: "সেবা",
-            options: [
-              ["STANDARD", t("Standard", "সাধারণ")],
-              ["SAME_DAY", t("Same day", "একই দিন")],
-              ["NEXT_DAY", t("Next day", "পরের দিন")],
-              ["EXPRESS", t("Express", "জরুরি")],
-            ],
-          },
-          ...[
-            ["baseWeight", "Included weight (kg)", "মূল মাশুলের অন্তর্ভুক্ত ওজন"],
-            ["baseCharge", "Base delivery fee", "মূল ডেলিভারি মাশুল"],
-            [
-              "extraPerKg",
-              "Per additional started kg",
-              "বাড়তি প্রতি শুরু হওয়া কেজির মাশুল",
-            ],
-            ["pickupFee", "Pickup fee", "সংগ্রহের মাশুল"],
-            ["codPercent", "COD handling percentage", "টাকা সংগ্রহের শতকরা মাশুল"],
-            ["deliveryDays", "Estimated delivery days", "সম্ভাব্য সরবরাহের দিন"],
-            [
-              "cutoffMinutes",
-              "Same-day cutoff minutes after midnight (noon: 720)",
-              "একই দিনের শেষ সময়: মধ্যরাতের পর মিনিট (দুপুর: ৭২০)",
-            ],
-          ].map(([key, en, bangla]) => ({
-            key,
-            en,
-            bn: bangla,
-            type: "number",
-          })),
-          {
-            key: "active",
-            en: "Approve and activate pricing",
-            bn: "মূল্য অনুমোদন করে চালু করুন",
-            type: "checkbox",
-          },
-        ]}
-      />
-      <div className="flex flex-wrap gap-3">
+      <div id="rate-plans" ref={rateRef} className="scroll-mt-44">
+        {editingRate && (
+          <div className={styles.toolbar}>
+            <p>
+              {t(
+                "Editing an existing approved rate plan.",
+                "বিদ্যমান অনুমোদিত মূল্যতালিকা সম্পাদনা করছেন।",
+              )}
+            </p>
+            <Button variant="outline" onClick={() => setRate(undefined)}>
+              {t("Cancel editing", "সম্পাদনা বাতিল")}
+            </Button>
+          </div>
+        )}
+        <SettingForm
+          key={String(editingRate?.id || "new-rate")}
+          title={t("Approved rate plan", "অনুমোদিত মূল্যতালিকা")}
+          endpoint={`/operations/rates${editingRate?.id ? `/${editingRate.id}` : ""}`}
+          value={editingRate}
+          refresh={refresh}
+          fields={[
+            {
+              key: "pickupAreaId",
+              en: "Pickup area",
+              bn: "সংগ্রহের এলাকা",
+              options,
+            },
+            {
+              key: "receiverAreaId",
+              en: "Delivery area",
+              bn: "পৌঁছানোর এলাকা",
+              options,
+            },
+            {
+              key: "serviceType",
+              en: "Service",
+              bn: "সেবা",
+              options: [
+                ["STANDARD", t("Standard", "সাধারণ")],
+                ["SAME_DAY", t("Same day", "একই দিন")],
+                ["NEXT_DAY", t("Next day", "পরের দিন")],
+                ["EXPRESS", t("Express", "জরুরি")],
+              ],
+            },
+            ...[
+              ["baseWeight", "Included weight (kg)", "মূল মাশুলের অন্তর্ভুক্ত ওজন"],
+              ["baseCharge", "Base delivery fee", "মূল ডেলিভারি মাশুল"],
+              [
+                "extraPerKg",
+                "Per additional started kg",
+                "বাড়তি প্রতি শুরু হওয়া কেজির মাশুল",
+              ],
+              ["pickupFee", "Pickup fee", "সংগ্রহের মাশুল"],
+              ["codPercent", "COD handling percentage", "টাকা সংগ্রহের শতকরা মাশুল"],
+              ["deliveryDays", "Estimated delivery days", "সম্ভাব্য সরবরাহের দিন"],
+              [
+                "cutoffMinutes",
+                "Same-day cutoff minutes after midnight (noon: 720)",
+                "একই দিনের শেষ সময়: মধ্যরাতের পর মিনিট (দুপুর: ৭২০)",
+              ],
+            ].map(([key, en, bangla]) => ({
+              key,
+              en,
+              bn: bangla,
+              type: "number",
+            })),
+            {
+              key: "active",
+              en: "Approve and activate pricing",
+              bn: "মূল্য অনুমোদন করে চালু করুন",
+              type: "checkbox",
+            },
+          ]}
+        />
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {query.data?.data.rates.map((rate) => (
           <button
-            className="rounded-md border p-3"
+            className="glass-panel min-h-16 p-4 text-left"
             type="button"
             key={String(rate.id)}
-            onClick={() => setRate(rate)}
+            onClick={() => {
+              setRate(rate);
+              requestAnimationFrame(() =>
+                rateRef.current?.scrollIntoView({ block: "start" }),
+              );
+            }}
           >
             {t("Edit rate: ", "মূল্য সম্পাদনা: ")}
-            {areas.find((area) => area.id === rate.pickupAreaId)?.name} →{" "}
-            {areas.find((area) => area.id === rate.receiverAreaId)?.name}
+            {placeName(
+              areas.find((area) => area.id === rate.pickupAreaId)?.name || "",
+              locale,
+            )}{" "}
+            →{" "}
+            {placeName(
+              areas.find((area) => area.id === rate.receiverAreaId)?.name || "",
+              locale,
+            )}
+            <span className="mt-1 block text-xs text-muted-foreground">
+              {{
+                STANDARD: t("Standard", "সাধারণ"),
+                SAME_DAY: t("Same day", "একই দিন"),
+                NEXT_DAY: t("Next day", "পরের দিন"),
+              }[String(rate.serviceType)] ||
+                String(rate.serviceType).replaceAll("_", " ")}{" "}
+              · ৳
+              {new Intl.NumberFormat(bn ? "bn-BD" : "en-US").format(
+                Number(rate.baseCharge),
+              )}
+            </span>
           </button>
         ))}
       </div>
-      <h2 className="text-2xl font-bold">
+      <h2 id="worker-reviews" className="scroll-mt-44 text-2xl font-bold">
         {t("Pending applications", "যাচাইয়ের অপেক্ষায় আবেদন")}
       </h2>
+      {!query.isPending && !query.data?.data.applications.length && (
+        <p className={styles.note}>
+          {t("No pending worker applications.", "কর্মীর কোনো আবেদন অপেক্ষায় নেই।")}
+        </p>
+      )}
       {query.data?.data.applications.map((application) => (
         <form
           className="space-y-3 rounded-xl border p-5"
@@ -363,6 +482,17 @@ export default function AdminSettings() {
           </Button>
         </form>
       ))}
+      <h2 id="business-reviews" className="scroll-mt-44 text-2xl font-bold">
+        {t("Business account reviews", "ব্যবসার অ্যাকাউন্ট যাচাই")}
+      </h2>
+      {!query.isPending && !query.data?.data.businesses.length && (
+        <p className={styles.note}>
+          {t(
+            "No business accounts waiting for review.",
+            "ব্যবসার কোনো অ্যাকাউন্ট যাচাইয়ের অপেক্ষায় নেই।",
+          )}
+        </p>
+      )}
       {query.data?.data.businesses.map((business) => (
         <form
           className="space-y-3 rounded-xl border p-5"
@@ -401,6 +531,9 @@ export default function AdminSettings() {
           </Button>
         </form>
       ))}
+      <h2 id="cash-records" className="scroll-mt-44 text-2xl font-bold">
+        {t("Cash collection records", "নগদ সংগ্রহের হিসাব")}
+      </h2>
       <CollectionTable records={query.data?.data.collections || []} />
       {query.data?.data.collections.map((record) => (
         <form

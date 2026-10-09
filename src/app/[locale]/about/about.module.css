@@ -1,0 +1,493 @@
+.page {
+  display: grid;
+  gap: clamp(2.75rem, 6vw, 4.5rem);
+  padding-top: clamp(1.5rem, 4vw, 3rem);
+}
+.hero {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  align-items: center;
+  gap: clamp(2rem, 4vw, 4rem);
+  overflow: hidden;
+  padding: clamp(1.5rem, 4vw, 3.25rem);
+  border-radius: 2rem;
+  background:
+    radial-gradient(ellipse at 94% 10%, rgb(181 139 230 / 32%), transparent 50%),
+    radial-gradient(ellipse at 4% 95%, rgb(208 232 170 / 19%), transparent 45%),
+    linear-gradient(135deg, rgb(247 242 255 / 84%), rgb(255 255 255 / 72%));
+  box-shadow:
+    0 24px 70px rgb(74 35 109 / 7%),
+    inset 0 1px 0 rgb(255 255 255 / 90%);
+}
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgb(113 53 184 / 3%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(113 53 184 / 3%) 1px, transparent 1px);
+  background-size: 38px 38px;
+  mask-image: linear-gradient(to left, black, transparent 80%);
+}
+.heroCopy {
+  min-width: 0;
+}
+.eyebrow,
+.sectionLabel {
+  font-size: 0.7rem;
+  font-weight: 750;
+  letter-spacing: 0.11em;
+  color: var(--primary);
+  line-height: 1.8;
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1.1rem;
+}
+.eyebrow span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #94be4b;
+  box-shadow: 0 0 0 5px rgb(148 190 75 / 12%);
+  flex-shrink: 0;
+}
+.title {
+  font-size: clamp(2.8rem, 4.7vw, 4.25rem);
+  font-weight: 800;
+  letter-spacing: -0.055em;
+  line-height: 1.1;
+  margin: 0;
+  color: var(--foreground);
+}
+.tagline {
+  margin-top: 1.15rem;
+  font-size: clamp(1.3rem, 2vw, 1.65rem);
+  font-weight: 600;
+  line-height: 1.45;
+  letter-spacing: -0.02em;
+  max-width: 27rem;
+  color: var(--primary);
+}
+.description {
+  margin-top: 1.25rem;
+  color: var(--muted-foreground);
+  font-size: 0.98rem;
+  line-height: 1.85;
+  max-width: 35rem;
+}
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.25rem;
+  align-items: center;
+  margin-top: 1.75rem;
+}
+.textLink,
+.cardLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  font-weight: 650;
+  color: var(--primary);
+  min-height: 44px;
+}
+.textLink:hover,
+.cardLink:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.trustNotes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1.1rem;
+  margin-top: 1.6rem;
+  padding: 0;
+  list-style: none;
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+}
+.trustNotes li {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+.trustNotes svg {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+.routePanel {
+  min-width: 0;
+  position: relative;
+  padding: clamp(1.25rem, 2.8vw, 2rem);
+  border: 1px solid rgb(255 255 255 / 90%);
+  border-radius: 1.65rem;
+  background: linear-gradient(
+    150deg,
+    rgb(255 255 255 / 80%),
+    rgb(248 240 255 / 50%)
+  );
+  box-shadow:
+    0 18px 50px rgb(85 41 121 / 12%),
+    inset 0 1px 0 white;
+  backdrop-filter: blur(24px);
+}
+.routeHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.routeBrand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 750;
+  color: var(--primary);
+}
+.routePill {
+  border: 1px solid rgb(113 53 184 / 12%);
+  background: rgb(113 53 184 / 5%);
+  border-radius: 999px;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--primary);
+  text-align: center;
+}
+.routePanel > h2 {
+  margin: 1.1rem 0 1.5rem;
+  font-size: 1.2rem;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+}
+.routeList {
+  display: grid;
+  gap: 1.5rem;
+  padding: 0;
+  list-style: none;
+}
+.routeNode {
+  position: relative;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 0.85rem;
+  align-items: center;
+}
+.routeNode h3 {
+  font-size: 0.95rem;
+  font-weight: 650;
+}
+.routeNode p {
+  margin-top: 0.25rem;
+  color: var(--muted-foreground);
+  font-size: 0.77rem;
+  line-height: 1.55;
+}
+.routeIcon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  color: var(--primary);
+  background: rgb(255 255 255 / 78%);
+  box-shadow: 0 6px 14px rgb(85 41 121 / 4%);
+}
+.routeNode:last-child .routeIcon {
+  background: #ecf4de;
+  border-color: #dce9c5;
+  color: #587628;
+}
+.routeArrow {
+  position: absolute;
+  left: 17px;
+  bottom: -21px;
+  color: #b79bd5;
+}
+.routeCaption {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  font-size: 0.7rem;
+  color: var(--muted-foreground);
+  line-height: 1.6;
+  margin-top: 1.7rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+.routeCaption svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.sectionHeading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+.sectionHeading h2 {
+  margin-top: 0.35rem;
+  font-size: clamp(1.5rem, 2.6vw, 2rem);
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.035em;
+}
+.sectionHeading > p {
+  max-width: 25rem;
+  color: var(--muted-foreground);
+  font-size: 0.88rem;
+  line-height: 1.8;
+}
+.stepGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  list-style: none;
+  padding: 0;
+}
+.stepCard {
+  position: relative;
+  padding: 1.45rem;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
+  background: linear-gradient(
+    130deg,
+    rgb(255 255 255 / 80%),
+    rgb(249 244 255 / 52%)
+  );
+}
+.stepCard:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 15px 35px rgb(85 41 121 / 8%);
+}
+.stepTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.15rem;
+  color: var(--primary);
+}
+.stepNumber {
+  font-size: 1.6rem;
+  font-weight: 750;
+  letter-spacing: -0.06em;
+  color: #ab86cf;
+}
+.stepCard h3 {
+  font-size: 1rem;
+  font-weight: 650;
+  line-height: 1.5;
+  margin-bottom: 0.55rem;
+}
+.stepCard p {
+  color: var(--muted-foreground);
+  font-size: 0.85rem;
+  line-height: 1.8;
+}
+.principleGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.15rem;
+}
+.principleCard {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: clamp(1.35rem, 2.4vw, 1.8rem);
+}
+.principleIcon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  color: var(--primary);
+  background: rgb(236 223 253 / 42%);
+}
+.principleCard h3 {
+  font-size: 1.15rem;
+  font-weight: 650;
+  margin-top: 1.4rem;
+  margin-bottom: 0.7rem;
+  line-height: 1.5;
+}
+.principleCard p {
+  color: var(--muted-foreground);
+  font-size: 0.88rem;
+  line-height: 1.85;
+  margin-bottom: 1rem;
+}
+.cardLink {
+  margin-top: auto;
+  padding-top: 0.3rem;
+}
+.darkCard {
+  position: relative;
+  overflow: hidden;
+  color: #fff;
+  background:
+    radial-gradient(ellipse at 100% 0, rgb(196 154 239 / 30%), transparent 70%),
+    linear-gradient(145deg, #6c34a8, #482365);
+  border-color: #814fba;
+  box-shadow: 0 18px 35px rgb(85 41 121 / 15%);
+}
+.darkCard .principleIcon {
+  background: rgb(255 255 255 / 10%);
+  border-color: rgb(255 255 255 / 25%);
+  color: #e5d3ff;
+}
+.darkCard p {
+  color: #eee3fa;
+}
+.darkCard .cardLink {
+  color: #d5f1a7;
+}
+.cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.75rem;
+  padding: clamp(1.4rem, 3vw, 2.1rem);
+  background:
+    radial-gradient(ellipse at 0 100%, rgb(208 232 170 / 24%), transparent 60%),
+    linear-gradient(130deg, rgb(255 255 255 / 84%), rgb(237 223 255 / 45%));
+}
+.ctaCopy {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+}
+.ctaIcon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  color: var(--primary);
+  background: rgb(255 255 255 / 78%);
+  border: 1px solid var(--border);
+}
+.cta h2 {
+  font-size: 1.25rem;
+  font-weight: 650;
+  line-height: 1.5;
+}
+.cta p {
+  color: var(--muted-foreground);
+  font-size: 0.85rem;
+  line-height: 1.75;
+  margin-top: 0.35rem;
+}
+.ctaActions {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+.bengali .eyebrow,
+.bengali .sectionLabel,
+.bengali .routePill {
+  letter-spacing: 0;
+}
+.bengali .title {
+  font-size: clamp(2.2rem, 4.2vw, 3.8rem);
+  letter-spacing: 0;
+  line-height: 1.35;
+}
+.bengali .tagline,
+.bengali .sectionHeading h2 {
+  letter-spacing: 0;
+}
+@media (max-width: 1000px) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+    gap: 1.5rem;
+  }
+  .cta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .ctaActions {
+    width: 100%;
+  }
+}
+@media (max-width: 760px) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
+    border-radius: 1.65rem;
+  }
+  .heroCopy {
+    max-width: 35rem;
+  }
+  .routePanel {
+    width: 100%;
+  }
+  .title {
+    font-size: clamp(2.5rem, 8vw, 3.5rem);
+  }
+  .sectionHeading {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.7rem;
+  }
+  .stepGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .principleGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .principleCard {
+    padding: 1.5rem;
+  }
+}
+@media (max-width: 440px) {
+  .stepGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .heroActions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  .heroActions > a {
+    justify-content: center;
+  }
+  .ctaCopy {
+    align-items: flex-start;
+  }
+  .ctaIcon {
+    width: 42px;
+    height: 42px;
+  }
+  .ctaActions {
+    flex-direction: column;
+  }
+  .ctaActions > a {
+    justify-content: center;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stepCard {
+    transition: none;
+  }
+  .stepCard:hover {
+    transform: none;
+  }
+}

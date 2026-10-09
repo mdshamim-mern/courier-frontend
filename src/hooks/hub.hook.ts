@@ -13,6 +13,8 @@ export function useCreateHub() {
     mutationFn: createHub,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["hubs"] });
+      queryClient.invalidateQueries({ queryKey: ["coverage"] });
+      queryClient.invalidateQueries({ queryKey: ["operations-admin"] });
     },
   });
 }
@@ -35,11 +37,18 @@ export function useGetSingleHub(id: string) {
 export function useUpdateHub() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: Record<string, unknown> }) =>
-      updateHub(id, payload),
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: Record<string, unknown>;
+    }) => updateHub(id, payload),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["hubs"] });
       queryClient.invalidateQueries({ queryKey: ["hubs", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["coverage"] });
+      queryClient.invalidateQueries({ queryKey: ["operations-admin"] });
     },
   });
 }
@@ -50,6 +59,8 @@ export function useDeleteHub() {
     mutationFn: deleteHub,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["hubs"] });
+      queryClient.invalidateQueries({ queryKey: ["coverage"] });
+      queryClient.invalidateQueries({ queryKey: ["operations-admin"] });
     },
   });
 }

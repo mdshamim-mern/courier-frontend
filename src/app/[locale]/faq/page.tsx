@@ -130,7 +130,7 @@ export default function FaqPage() {
             </h2>
             <p className="mt-1 text-sm leading-6 text-muted-foreground">
               {bengali
-                ? "আমাদের support team-এর সঙ্গে সরাসরি যোগাযোগ করুন।"
+                ? "আমাদের সহায়তা দলের সঙ্গে সরাসরি যোগাযোগ করুন।"
                 : "Reach our support team directly for assistance."}
             </p>
           </div>

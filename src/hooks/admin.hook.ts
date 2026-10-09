@@ -24,10 +24,18 @@ export function useGetAllUsers(params?: Record<string, unknown>) {
 export function useUpdateUserStatus() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: Record<string, unknown> }) =>
-      updateUserStatus(id, payload),
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: Record<string, unknown>;
+    }) => updateUserStatus(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "dashboard-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["operations-admin"] });
+      queryClient.invalidateQueries({ queryKey: ["couriers"] });
     },
   });
 }
@@ -35,10 +43,18 @@ export function useUpdateUserStatus() {
 export function useUpdateUserRole() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: Record<string, unknown> }) =>
-      updateUserRole(id, payload),
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: Record<string, unknown>;
+    }) => updateUserRole(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "dashboard-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["operations-admin"] });
+      queryClient.invalidateQueries({ queryKey: ["couriers"] });
     },
   });
 }

@@ -9,7 +9,17 @@ import type { OperationsAdmin } from "@/types/operations.type";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import ShipmentActions from "./shipment-actions";
+import { useUiText } from "@/i18n/use-ui-text";
+import {
+  AdminFeedback,
+  AdminPageHeader,
+  RefreshButton,
+  TestRecordBadge,
+  isTestRecord,
+} from "@/components/modules/admin/admin-ui";
+import styles from "@/components/modules/admin/admin.module.css";
 export default function WorkBoard({ admin = false }: { admin?: boolean }) {
+  const ui = useUiText();
   const bn = useLocale() === "bn",
     t = (en: string, bangla: string) => (bn ? bangla : en);
   const [task, setTask] = useState(""),
@@ -47,12 +57,29 @@ export default function WorkBoard({ admin = false }: { admin?: boolean }) {
   });
   return (
     <section className="space-y-5">
-      <h1 className="text-2xl font-bold">
-        {admin
-          ? t("Parcel work allocation", "পার্সেলের কাজ বরাদ্দ")
-          : t("My pickup and delivery tasks", "আমার সংগ্রহ ও ডেলিভারির কাজ")}
-      </h1>
-      <div className="flex flex-wrap gap-3">
+      {admin ? (
+        <AdminPageHeader
+          title={t("Parcel work allocation", "পার্সেলের কাজ বরাদ্দ")}
+          description={t(
+            "Allocate pickups and hub handovers using each worker's availability and current load.",
+            "কর্মীর উপস্থিতি ও কাজের চাপ অনুযায়ী সংগ্রহ এবং হাবে হস্তান্তরের কাজ বরাদ্দ করুন।",
+          )}
+          action={
+            <RefreshButton
+              refresh={() => {
+                void records.refetch();
+                void workers.refetch();
+              }}
+              pending={records.isFetching}
+            />
+          }
+        />
+      ) : (
+        <h1 className="text-2xl font-bold">
+          {t("My pickup and delivery tasks", "আমার সংগ্রহ ও ডেলিভারির কাজ")}
+        </h1>
+      )}
+      <div className={admin ? styles.toolbar : "flex flex-wrap gap-3"}>
         <label>
           {t("Task filter", "কাজের ধরন")}
           <select
@@ -90,6 +117,14 @@ export default function WorkBoard({ admin = false }: { admin?: boolean }) {
           }}
         />
       </div>
+      {records.isPending && (
+        <p role="status">{t("Loading parcels…", "পার্সেল লোড হচ্ছে…")}</p>
+      )}
+      {assign.isSuccess && (
+        <AdminFeedback
+          success={t("Work allocation saved.", "কাজের বরাদ্দ সংরক্ষিত।")}
+        />
+      )}
       {records.isError && (
         <p role="alert">{t("Tasks unavailable.", "কাজের তালিকা পাওয়া যায়নি।")}</p>
       )}
@@ -102,6 +137,11 @@ export default function WorkBoard({ admin = false }: { admin?: boolean }) {
           className="space-y-3 rounded-xl border bg-card p-5"
         >
           <h2 className="break-all font-semibold">{shipment.trackingId}</h2>
+          <div className="flex flex-wrap gap-2">
+            <span className={styles.badge}>{ui(shipment.status)}</span>
+            <span className={styles.badge}>{ui(shipment.paymentStatus)}</span>
+            {isTestRecord(shipment) && <TestRecordBadge />}
+          </div>
           <p>
             {t("Pickup: ", "সংগ্রহ: ")}
             {shipment.pickupAddress ||
@@ -132,7 +172,7 @@ export default function WorkBoard({ admin = false }: { admin?: boolean }) {
             </p>
           )}
           <Link
-            className="inline-block underline"
+            className="secondary-button"
             href={
               admin
                 ? `/admin/shipments/${shipment.id}`

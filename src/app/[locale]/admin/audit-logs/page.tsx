@@ -1,7 +1,9 @@
 "use client";
-
+import { useState } from "react";
+import { useGetAuditLogs } from "@/hooks";
 import { useUiText, useUiFormat } from "@/i18n/use-ui-text";
-import { Skeleton } from "@/components/ui/skeleton";
+import type { AuditLog } from "@/types";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -11,96 +13,94 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import TablePagination from "@/components/ui/table-pagination";
-import { useState, Suspense } from "react";
-import { useGetAuditLogs } from "@/hooks";
-
-function AuditLogsContent() {
-  const ui = useUiText();
-  const display = useUiFormat();
-  const [page, setPage] = useState(1);
-  const { data, isLoading } = useGetAuditLogs({ page, limit: 10 });
-
-  const logs = data?.data || [];
-  const meta = data?.meta;
-
+import {
+  AdminDialog,
+  AdminFeedback,
+  AdminPageHeader,
+  RefreshButton,
+  useAdminText,
+} from "@/components/modules/admin/admin-ui";
+import styles from "@/components/modules/admin/admin.module.css";
+export default function AuditLogsPage() {
+  const ui = useUiText(),
+    display = useUiFormat(),
+    t = useAdminText();
+  const [page, setPage] = useState(1),
+    [selected, setSelected] = useState<AuditLog | null>(null);
+  const result = useGetAuditLogs({ page, limit: 10 });
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold tracking-tight">
-          {ui("System Audit Logs")}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {ui(
-            "View system-wide automated logs, tracking history, and payment events.",
-          )}{" "}
-        </p>
-      </div>
-
-      <div className="flex flex-col gap-4">
-        <div className="rounded-md border bg-card">
+    <div className="space-y-6">
+      <AdminPageHeader
+        title={ui("System Audit Logs")}
+        description={ui(
+          "View system-wide automated logs, tracking history, and payment events.",
+        )}
+        action={
+          <RefreshButton
+            refresh={() => {
+              void result.refetch();
+            }}
+            pending={result.isFetching}
+          />
+        }
+      />
+      {result.isError ? (
+        <AdminFeedback error={result.error} />
+      ) : (
+        <div className={styles.tablePanel}>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{ui("Date & Time")}</TableHead>
-                <TableHead>{ui("Action")}</TableHead>
-                <TableHead>{ui("Entity Type")}</TableHead>
-                <TableHead>{ui("Entity ID")}</TableHead>
-                <TableHead>{ui("Details")}</TableHead>
+                {[
+                  "Date & Time",
+                  "Action",
+                  "Entity Type",
+                  "Entity ID",
+                  "Details",
+                ].map((label) => (
+                  <TableHead key={label}>{ui(label)}</TableHead>
+                ))}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
-                [
-                  "placeholder-a",
-                  "placeholder-b",
-                  "placeholder-c",
-                  "placeholder-d",
-                  "placeholder-e",
-                ].map((key) => (
-                  <TableRow key={key}>
-                    <TableCell>
-                      <Skeleton className="h-4 w-32" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-24" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-24" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-40" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-48" />
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : logs.length === 0 ? (
+              {result.isPending ? (
                 <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className="h-24 text-center text-muted-foreground"
-                  >
-                    {ui("No logs found.")}{" "}
+                  <TableCell colSpan={5} className={styles.empty}>
+                    {t("Loading audit history…", "ইতিহাস লোড হচ্ছে…")}
+                  </TableCell>
+                </TableRow>
+              ) : !result.data?.data.length ? (
+                <TableRow>
+                  <TableCell colSpan={5} className={styles.empty}>
+                    {ui("No logs found.")}
                   </TableCell>
                 </TableRow>
               ) : (
-                logs.map((log) => (
+                result.data.data.map((log) => (
                   <TableRow key={log.id}>
-                    <TableCell className="whitespace-nowrap">
+                    <TableCell data-label={ui("Date & Time")}>
                       {display.date(new Date(log.createdAt), true)}
                     </TableCell>
-                    <TableCell>
-                      <span className="px-2 py-1 rounded-md text-xs font-semibold bg-muted">
-                        {ui(log.action)}
-                      </span>
+                    <TableCell data-label={ui("Action")}>
+                      <span className={styles.badge}>{ui(log.action)}</span>
                     </TableCell>
-                    <TableCell>{ui(log.entityType)}</TableCell>
-                    <TableCell className="font-mono text-xs">
+                    <TableCell data-label={ui("Entity Type")}>
+                      {ui(log.entityType)}
+                    </TableCell>
+                    <TableCell
+                      data-label={ui("Entity ID")}
+                      className={styles.secondary}
+                    >
                       {log.entityId}
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground max-w-50 truncate">
-                      {JSON.stringify(log.details)}
+                    <TableCell data-label={ui("Details")}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelected(log)}
+                      >
+                        {ui("View")}
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))
@@ -108,23 +108,41 @@ function AuditLogsContent() {
             </TableBody>
           </Table>
         </div>
-
-        {meta && meta.totalPages > 1 && (
-          <TablePagination
-            page={page}
-            totalPages={meta.totalPages}
-            handlePageChange={setPage}
-          />
+      )}
+      {result.data?.meta && result.data.meta.totalPages > 1 && (
+        <TablePagination
+          page={page}
+          totalPages={result.data.meta.totalPages}
+          handlePageChange={setPage}
+        />
+      )}
+      <AdminDialog
+        open={!!selected}
+        onClose={() => setSelected(null)}
+        title={t("Audit event details", "ঘটনার বিস্তারিত")}
+        description={t(
+          "Read-only server event. Raw identifiers and details are preserved.",
+          "সার্ভারে নথিভুক্ত ঘটনা। মূল পরিচিতি ও বিস্তারিত অপরিবর্তিত।",
         )}
-      </div>
+      >
+        {selected && (
+          <>
+            <dl className={styles.details}>
+              <div>
+                <dt>{ui("Action")}</dt>
+                <dd>{ui(selected.action)}</dd>
+              </div>
+              <div>
+                <dt>{ui("Entity ID")}</dt>
+                <dd>{selected.entityId}</dd>
+              </div>
+            </dl>
+            <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-all rounded-xl border bg-white/70 p-4 text-xs">
+              {JSON.stringify(selected.details, null, 2)}
+            </pre>
+          </>
+        )}
+      </AdminDialog>
     </div>
-  );
-}
-
-export default function AuditLogsPage() {
-  return (
-    <Suspense fallback={<Skeleton className="w-full h-150 rounded-xl" />}>
-      <AuditLogsContent />
-    </Suspense>
   );
 }

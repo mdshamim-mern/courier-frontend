@@ -13,6 +13,8 @@ export function useCreateCourier() {
     mutationFn: createCourier,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["couriers"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "dashboard-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["operations-admin"] });
     },
   });
 }
@@ -35,11 +37,17 @@ export function useGetCourierDetails(id: string) {
 export function useUpdateCourierProfile() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: Record<string, unknown> }) =>
-      updateCourierProfile(id, payload),
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: Record<string, unknown>;
+    }) => updateCourierProfile(id, payload),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["couriers"] });
       queryClient.invalidateQueries({ queryKey: ["couriers", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["operations-admin"] });
     },
   });
 }

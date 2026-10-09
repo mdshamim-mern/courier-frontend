@@ -387,7 +387,6 @@ test("Bengali audit action captions are localized while raw event details stay i
   await expect(
     page.getByRole("cell", { name: "পার্সেল", exact: true }),
   ).toBeVisible();
-  await expect(
-    page.getByText('{"status":"PENDING"}', { exact: true }),
-  ).toBeVisible();
+  await page.getByRole("button", { name: "দেখুন", exact: true }).click();
+  await expect(page.getByRole("dialog")).toContainText('"status": "PENDING"');
 });
