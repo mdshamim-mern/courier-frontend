@@ -13,9 +13,9 @@ export default function LegalDocument({ kind }: { kind: LegalKind }) {
   const ui = useUiText();
   const document = getLegalDocument(locale, kind);
   return (
-    <article className="mx-auto max-w-4xl space-y-8 px-4 py-16 sm:px-6">
+    <article className="page-wrap space-y-8">
       <header className="space-y-4">
-        <h1 className="text-3xl font-bold sm:text-4xl">{document.title}</h1>
+        <h1 className="page-heading sm:text-4xl">{document.title}</h1>
         <aside
           role="note"
           className="rounded-xl border border-amber-400 bg-amber-50 p-5 text-amber-950"

@@ -8,9 +8,9 @@ export default function ContactPage() {
   const ui = useUiText();
   const bengali = useLocale() === "bn";
   return (
-    <div className="mx-auto max-w-5xl space-y-10 px-4 py-16 sm:px-6">
-      <header className="space-y-4 text-center">
-        <h1 className="text-4xl font-bold">{ui("Contact Us")}</h1>
+    <div className="page-wrap space-y-8">
+      <header className="space-y-4 py-4 text-center">
+        <h1 className="page-heading">{ui("Contact Us")}</h1>
         <p className="text-muted-foreground">
           {bengali
             ? "সহায়তার জন্য নিচের ইমেইল বা ফোন নম্বরে যোগাযোগ করুন।"
@@ -18,19 +18,23 @@ export default function ContactPage() {
         </p>
       </header>
       <div className="grid gap-6 md:grid-cols-3">
-        <section className="space-y-3 rounded-3xl border bg-card p-6">
-          <MapPin aria-hidden="true" className="text-primary" />
+        <section className="glass-panel info-card min-w-0 space-y-4 p-6 sm:p-8">
+          <span className="icon-tile">
+            <MapPin aria-hidden="true" />
+          </span>
           <h2 className="text-xl font-semibold">{ui("Head Office")}</h2>
           <p>{legalOperator.companyName}</p>
           <p>{legalOperator.address}</p>
         </section>
-        <section className="space-y-3 rounded-3xl border bg-card p-6">
-          <Mail aria-hidden="true" className="text-primary" />
+        <section className="glass-panel info-card min-w-0 space-y-4 p-6 sm:p-8">
+          <span className="icon-tile">
+            <Mail aria-hidden="true" />
+          </span>
           <h2 className="text-xl font-semibold">{ui("Contact Details")}</h2>
           <p>
             <a
               href={`mailto:${legalOperator.contactEmail}`}
-              className="underline"
+              className="break-all font-medium text-primary underline underline-offset-4"
             >
               {legalOperator.contactEmail}
             </a>
@@ -38,14 +42,16 @@ export default function ContactPage() {
           <p>
             <a
               href={`tel:${legalOperator.contactPhone.replaceAll("-", "")}`}
-              className="underline"
+              className="break-all font-medium text-primary underline underline-offset-4"
             >
               {legalOperator.contactPhone}
             </a>
           </p>
         </section>
-        <section className="space-y-3 rounded-3xl border bg-card p-6">
-          <Clock3 aria-hidden="true" className="text-primary" />
+        <section className="glass-panel info-card min-w-0 space-y-4 p-6 sm:p-8">
+          <span className="icon-tile">
+            <Clock3 aria-hidden="true" />
+          </span>
           <h2 className="text-xl font-semibold">{ui("Business Hours")}</h2>
           <p>
             {bengali
@@ -54,7 +60,7 @@ export default function ContactPage() {
           </p>
         </section>
       </div>
-      <aside role="note" className="rounded-xl border p-6">
+      <aside role="note" className="glass-panel p-6 sm:p-8">
         <p>
           {bengali
             ? "এই সাইটে বার্তা পাঠানোর ফরম নেই। সহায়তার অনুরোধ ইমেইল বা ফোনে জানান।"

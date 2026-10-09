@@ -1,10 +1,13 @@
 "use client";
-
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
 import { DashboardSidebar } from "./dashboard-sidebar";
+import { useUiText } from "@/i18n/use-ui-text";
 import type { ReactNode } from "react";
 import type { UserRole } from "@/types";
-
 export default function DashboardShell({
   children,
   userRole,
@@ -12,16 +15,18 @@ export default function DashboardShell({
   children: ReactNode;
   userRole: UserRole;
 }) {
+  const ui = useUiText();
   return (
-    <SidebarProvider>
+    <SidebarProvider className="dashboard-shell">
       <DashboardSidebar userRole={userRole} />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-background/80 backdrop-blur-md px-4 sticky top-0 z-40">
+        <header className="dashboard-toolbar">
           <SidebarTrigger className="-ml-1" />
+          <span className="text-sm font-medium text-muted-foreground">
+            {ui("Dashboard")}
+          </span>
         </header>
-        <main className="flex-1 overflow-auto p-4 md:p-6 bg-muted/10">
-          {children}
-        </main>
+        <div className="dashboard-content">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );

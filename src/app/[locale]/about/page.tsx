@@ -1,3 +1,4 @@
+import { PackageCheck, Route, Wallet, ShieldCheck } from "lucide-react";
 import { useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import type { Metadata } from "next";
@@ -15,11 +16,9 @@ export default function AboutPage() {
   const bn = useLocale() === "bn",
     t = (en: string, bangla: string) => (bn ? bangla : en);
   return (
-    <article className="mx-auto max-w-5xl space-y-6 px-4 py-10">
-      <h1 className="text-3xl font-bold">
-        {t("About Dropzo", "ড্রপজো সম্পর্কে")}
-      </h1>
-      <p>
+    <article className="page-wrap space-y-8">
+      <h1 className="page-heading">{t("About Dropzo", "ড্রপজো সম্পর্কে")}</h1>
+      <p className="max-w-3xl text-lg leading-relaxed text-muted-foreground">
         {t(
           "Dropzo uses its own approved delivery workers. Customers book a parcel; administrators assign pickup, route hubs and delivery work.",
           "ড্রপজো নিজের অনুমোদিত ডেলিভারিকর্মীদের দিয়ে পার্সেল সংগ্রহ ও পৌঁছে দেবে। গ্রাহক বুকিং করবেন; প্রশাসক সংগ্রহের দায়িত্ব, রুটের হাব ও ডেলিভারির কাজ বরাদ্দ করবেন।",
@@ -51,21 +50,37 @@ export default function AboutPage() {
             "Coverage, charges and estimated delivery time depend on approved route settings. Confirm support hours with our contact team.",
             "অনুমোদিত রুটের সেটিং অনুযায়ী এলাকা, মাশুল ও সম্ভাব্য সময় নির্ধারিত হবে। সহায়তার সময় যোগাযোগ করে নিশ্চিত করুন।",
           ],
-        ].map(([en, bangla, description, descriptionBn]) => (
-          <section className="space-y-3 rounded-xl border p-5" key={en}>
+        ].map(([en, bangla, description, descriptionBn], index) => (
+          <section
+            className="glass-panel info-card space-y-4 p-6 sm:p-8"
+            key={en}
+          >
+            <span className="icon-tile">
+              {index === 0 ? (
+                <PackageCheck />
+              ) : index === 1 ? (
+                <Route />
+              ) : index === 2 ? (
+                <Wallet />
+              ) : (
+                <ShieldCheck />
+              )}
+            </span>
             <h2 className="text-xl font-semibold">{t(en, bangla)}</h2>
-            <p>{t(description, descriptionBn)}</p>
+            <p className="leading-relaxed text-muted-foreground">
+              {t(description, descriptionBn)}
+            </p>
           </section>
         ))}
       </div>
-      <nav className="flex flex-wrap gap-5">
-        <Link className="underline" href="/coverage">
+      <nav className="glass-panel flex flex-wrap gap-4 p-6">
+        <Link className="secondary-button" href="/coverage">
           {t("Check service coverage", "সেবার এলাকা যাচাই")}
         </Link>
-        <Link className="underline" href="/pricing">
+        <Link className="secondary-button" href="/pricing">
           {t("Calculate charges", "খরচ হিসাব")}
         </Link>
-        <Link className="underline" href="/contact">
+        <Link className="secondary-button" href="/contact">
           {t("Contact support", "সহায়তার যোগাযোগ")}
         </Link>
       </nav>

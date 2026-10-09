@@ -1,5 +1,6 @@
 "use client";
 import { useLocale } from "next-intl";
+import { placeName } from "@/i18n/geography";
 import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRouter } from "@/i18n/navigation";
@@ -9,7 +10,8 @@ import type { ApiResponse, Shipment } from "@/types";
 import type { ServiceArea, Quote } from "@/types/operations.type";
 import { BookingSchema } from "@/validation/shipment.validation";
 export default function CreateShipmentForm() {
-  const bn = useLocale() === "bn",
+  const locale = useLocale(),
+    bn = locale === "bn",
     t = (en: string, bangla: string) => (bn ? bangla : en),
     router = useRouter();
   const areas = useQuery({
@@ -122,7 +124,7 @@ export default function CreateShipmentForm() {
     ],
   ];
   return (
-    <section className="mx-auto max-w-3xl space-y-5 rounded-2xl border bg-card p-6">
+    <section className="glass-panel mx-auto max-w-3xl space-y-6 p-5 sm:p-8">
       <h1 className="text-2xl font-bold">
         {t("Book your parcel", "পার্সেল বুকিং করুন")}
       </h1>
@@ -185,7 +187,9 @@ export default function CreateShipmentForm() {
                 )
                 .map((area) => (
                   <option key={area.id} value={area.id}>
-                    {area.district} / {area.upazila} / {area.name}
+                    {placeName(area.district, locale)} /{" "}
+                    {placeName(area.upazila, locale)} /{" "}
+                    {placeName(area.name, locale)}
                   </option>
                 ))}
             </select>
@@ -312,7 +316,7 @@ export default function CreateShipmentForm() {
             {payload.pickupMode === "BRANCH" && (
               <p>
                 {t("Assigned branch: ", "নির্ধারিত শাখা: ")}
-                {quote.data.data.originHub.name} ·{" "}
+                {placeName(quote.data.data.originHub.name, locale)} ·{" "}
                 {quote.data.data.originHub.address}
               </p>
             )}

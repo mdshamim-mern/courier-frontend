@@ -41,11 +41,11 @@ export default async function RootLayout({
       lang={locale}
       className={cn("h-full antialiased font-sans", inter.variable)}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-svh flex flex-col">
         <NextIntlClientProvider messages={messages}>
           <Providers>
             <Header />
-            <main className="flex-1">{children}</main>
+            <main id="main-content" className="site-content">{children}</main>
             <Footer />
             <Toaster />
           </Providers>

@@ -42,7 +42,7 @@ export default function ProfileForms({
           )}
         </p>
         <Link
-          className="inline-block rounded-lg bg-primary px-5 py-3 text-primary-foreground"
+          className="brand-button"
           href={
             kind === "business"
               ? "/register?next=/dashboard/business"
@@ -140,7 +140,7 @@ export default function ProfileForms({
       </p>
       <form
         key={record?.id || kind}
-        className="grid gap-4 sm:grid-cols-2"
+        className="glass-panel grid gap-5 p-5 sm:grid-cols-2 sm:p-8"
         onSubmit={(e) => {
           e.preventDefault();
           submit.mutate(

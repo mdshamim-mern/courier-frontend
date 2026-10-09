@@ -34,8 +34,8 @@ export function DashboardSidebar({ userRole }: { userRole: UserRole }) {
       <SidebarHeader className="py-4">
         <Link href="/">
           <div className="flex items-center gap-3 px-2">
-            <Logo className="size-8" />
-            <span className="font-bold tracking-tight text-lg">Dropzo</span>
+            <Logo className="size-9" />
+            <span className="brand-wordmark">Dropzo</span>
           </div>
         </Link>
       </SidebarHeader>

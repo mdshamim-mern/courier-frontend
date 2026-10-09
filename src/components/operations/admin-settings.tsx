@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useLocale } from "next-intl";
+import { placeName } from "@/i18n/geography";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import apiClient from "@/lib/apiClient";
 import type { ApiResponse, Hub } from "@/types";
@@ -122,7 +123,8 @@ function SettingForm({
   );
 }
 export default function AdminSettings() {
-  const bn = useLocale() === "bn",
+  const locale = useLocale(),
+    bn = locale === "bn",
     t = (en: string, bangla: string) => (bn ? bangla : en);
   const [editingArea, setArea] = useState<
       Record<string, unknown> | undefined
@@ -150,10 +152,13 @@ export default function AdminSettings() {
     },
   });
   const areas = query.data?.data.areas || [],
-    options = areas.map((area) => [area.id, area.name] as [string, string]),
+    options = areas.map(
+      (area) => [area.id, placeName(area.name, locale)] as [string, string],
+    ),
     hubOptions =
-      hubs.data?.data.map((hub) => [hub.id, hub.name] as [string, string]) ||
-      [];
+      hubs.data?.data.map(
+        (hub) => [hub.id, placeName(hub.name, locale)] as [string, string],
+      ) || [];
   const refresh = () => {
     void query.refetch();
     setArea(undefined);
@@ -235,7 +240,7 @@ export default function AdminSettings() {
             onClick={() => setArea({ ...area })}
           >
             {t("Edit area: ", "এলাকা সম্পাদনা: ")}
-            {area.name}
+            {placeName(area.name, locale)}
           </button>
         ))}
       </div>

@@ -2,22 +2,23 @@
 import { useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Package, Truck, MapPin, ClipboardCheck } from "lucide-react";
+import DeliveryScene from "./delivery-scene";
 import TrackForm from "@/components/modules/shipment-tracking/track-form";
 import QuoteCalculator from "@/components/operations/quote-calculator";
 export default function ParcelHero() {
   const bn = useLocale() === "bn",
     t = (en: string, bangla: string) => (bn ? bangla : en);
   return (
-    <div className="mx-auto max-w-7xl space-y-10 px-4 py-10 sm:px-6">
-      <section className="grid items-center gap-8 rounded-3xl bg-linear-to-br from-blue-50 to-white p-6 sm:p-10 lg:grid-cols-2">
+    <div className="page-wrap space-y-10">
+      <section className="hero-panel">
         <div className="space-y-5">
-          <p className="font-semibold text-primary">
+          <p className="eyebrow">
             {t(
               "Dropzo · our own delivery team",
               "ড্রপজো · নিজস্ব ডেলিভারিকর্মীর সেবা",
             )}
           </p>
-          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
+          <h1 className="text-4xl font-bold leading-tight tracking-tight sm:text-5xl xl:text-6xl">
             {t(
               "Send a parcel. Follow every step.",
               "পার্সেল পাঠান। প্রতিটি ধাপ জানুন।",
@@ -30,16 +31,10 @@ export default function ParcelHero() {
             )}
           </p>
           <div className="flex flex-wrap gap-3">
-            <Link
-              className="rounded-xl bg-primary px-6 py-3 font-semibold text-primary-foreground"
-              href="/dashboard/new-shipment"
-            >
+            <Link className="brand-button" href="/dashboard/new-shipment">
               {t("Send a parcel", "পার্সেল পাঠান")}
             </Link>
-            <Link
-              className="rounded-xl border px-6 py-3"
-              href="/merchant-register"
-            >
+            <Link className="secondary-button" href="/merchant-register">
               {t("Register your business", "ব্যবসায়িক নিবন্ধন")}
             </Link>
           </div>
@@ -50,16 +45,18 @@ export default function ParcelHero() {
             )}
           </Link>
         </div>
-        <div
-          aria-hidden="true"
-          className="relative grid min-h-64 place-items-center rounded-3xl border border-blue-200 bg-blue-100/60"
-        >
-          <Truck className="size-36 text-primary" strokeWidth={1.3} />
-          <Package className="absolute left-8 top-8 size-14 text-blue-700" />
-          <MapPin className="absolute right-8 bottom-8 size-12 text-blue-700" />
+        <div className="hero-art">
+          <DeliveryScene />
+          <p className="hero-art-caption">
+            <ClipboardCheck
+              aria-hidden="true"
+              className="size-5 shrink-0 text-primary"
+            />
+            {t("From your doorstep to theirs", "আপনার দরজা থেকে প্রাপকের দরজায়")}
+          </p>
         </div>
       </section>
-      <section className="rounded-2xl border p-6">
+      <section className="glass-panel p-6 sm:p-8">
         <h2 className="mb-4 text-2xl font-bold">
           {t("Track your parcel", "পার্সেলের অবস্থা খুঁজুন")}
         </h2>
@@ -99,8 +96,8 @@ export default function ParcelHero() {
         ].map(([Icon, en, bangla, description, bnDescription], index) => {
           const StepIcon = Icon as typeof Package;
           return (
-            <article key={String(en)} className="rounded-xl border p-5">
-              <StepIcon className="mb-3 size-8 text-primary" />
+            <article key={String(en)} className="glass-panel info-card p-6">
+              <StepIcon className="icon-tile mb-4 p-3" />
               <h2 className="font-semibold">
                 {new Intl.NumberFormat(bn ? "bn-BD" : "en-US").format(
                   index + 1,
@@ -114,7 +111,7 @@ export default function ParcelHero() {
           );
         })}
       </section>
-      <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border p-6">
+      <section className="glass-panel flex flex-wrap items-center justify-between gap-4 p-6 sm:p-8">
         <div>
           <h2 className="text-xl font-bold">
             {t("Join our delivery team", "আমাদের ডেলিভারিকর্মী দলে যোগ দিন")}
@@ -126,7 +123,7 @@ export default function ParcelHero() {
             )}
           </p>
         </div>
-        <Link className="rounded-xl border px-5 py-3" href="/courier-apply">
+        <Link className="secondary-button" href="/courier-apply">
           {t("Apply as a delivery worker", "ডেলিভারিকর্মী হিসেবে আবেদন")}
         </Link>
         <Link className="underline" href="/login?staff=1">

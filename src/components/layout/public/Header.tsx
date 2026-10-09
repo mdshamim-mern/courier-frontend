@@ -5,6 +5,9 @@ import { useLocale, useTranslations } from "next-intl";
 import { useGetMe, useLogout } from "@/hooks";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { ChevronDown, Globe2, Menu, ArrowUpRight } from "lucide-react";
+import { useEffect, useRef } from "react";
+
 export default function Header() {
   const locale = useLocale(),
     bn = locale === "bn",
@@ -12,9 +15,26 @@ export default function Header() {
   const pathname = usePathname(),
     router = useRouter(),
     query = useQueryClient();
+  const header = useRef<HTMLElement>(null),
+    mobile = useRef<HTMLDetailsElement>(null);
   const { data, isLoading } = useGetMe(),
     user = data?.data,
     logout = useLogout();
+  useEffect(() => {
+    const element = header.current;
+    if (!element) return;
+    const observer = new ResizeObserver(() =>
+      document.documentElement.style.setProperty(
+        "--site-header-height",
+        `${element.getBoundingClientRect().height}px`,
+      ),
+    );
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+  useEffect(() => {
+    if (pathname && mobile.current) mobile.current.open = false;
+  }, [pathname]);
   const links = [
     ["/dashboard/new-shipment", "Send a parcel", "পার্সেল পাঠান"],
     ["/track-shipment", "Track parcel", "পার্সেল অনুসরণ"],
@@ -33,7 +53,7 @@ export default function Header() {
   const language = (
     <button
       type="button"
-      className="min-h-11 px-3 text-sm"
+      className="language-button"
       aria-label={t("switchLanguage")}
       onClick={() =>
         router.replace(
@@ -42,6 +62,7 @@ export default function Header() {
         )
       }
     >
+      <Globe2 size={16} aria-hidden="true" />
       {bn ? "English" : "বাংলা"}
     </button>
   );
@@ -49,20 +70,18 @@ export default function Header() {
     <>
       {!isLoading && !user && (
         <>
-          <Link className="px-3 py-2" href="/login">
+          <Link className="account-link" href="/login">
             {t("login")}
           </Link>
-          <Link
-            className="rounded-lg bg-primary px-4 py-2 text-primary-foreground"
-            href="/register"
-          >
+          <Link className="brand-button header-register" href="/register">
             {t("register")}
+            <ArrowUpRight size={15} aria-hidden="true" />
           </Link>
         </>
       )}
       {user && (
         <>
-          <Link className="px-3 py-2" href={dashboard}>
+          <Link className="account-link" href={dashboard}>
             {t("dashboard")}
           </Link>
           <Button
@@ -85,56 +104,77 @@ export default function Header() {
     </>
   );
   return (
-    <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
-        <Link href="/" aria-label="Dropzo" className="flex items-center gap-2">
-          <Logo className="size-8" />
-          <span className="text-xl font-bold text-primary">Dropzo</span>
+    <header ref={header} className="site-header">
+      <div className="header-row">
+        <Link href="/" aria-label="Dropzo" className="brand-lockup">
+          <Logo className="size-10" />
+          <span className="brand-wordmark">
+            Dropzo<span className="brand-dot">.</span>
+          </span>
         </Link>
-        <div className="hidden items-center gap-2 lg:flex">
+        <nav
+          aria-label={bn ? "প্রধান মেনু" : "Main navigation"}
+          className="desktop-nav"
+        >
+          {links.map(([href, en, bangla]) => (
+            <Link
+              key={href}
+              href={href}
+              className="nav-link"
+              aria-current={pathname === href ? "page" : undefined}
+            >
+              {bn ? bangla : en}
+            </Link>
+          ))}
+          <details className="team-menu">
+            <summary className="nav-link">
+              {bn ? "দল" : "Team"}
+              <ChevronDown size={13} aria-hidden="true" />
+            </summary>
+            <div className="team-dropdown glass-panel">
+              <Link href="/courier-apply">
+                {bn ? "কর্মীর আবেদন" : "Join our team"}
+              </Link>
+              <Link href="/login?staff=1">
+                {bn ? "কর্মীদের প্রবেশ" : "Staff sign in"}
+              </Link>
+            </div>
+          </details>
+        </nav>
+        <div className="desktop-accounts">
           {language}
           {accounts}
         </div>
-        <details className="relative lg:hidden">
-          <summary className="cursor-pointer rounded-md border p-3">
-            {t("menu")}
+        <details ref={mobile} className="mobile-menu">
+          <summary aria-label={t("menu")}>
+            <Menu size={22} aria-hidden="true" />
+            <span className="sr-only">{t("menu")}</span>
           </summary>
-          <nav
-            aria-label={t("menu")}
-            className="absolute right-0 top-full mt-2 flex max-h-[75vh] w-72 flex-col gap-2 overflow-auto rounded-xl border bg-background p-4 shadow-xl"
-          >
+          <nav aria-label={t("menu")} className="mobile-dropdown glass-panel">
             {links.map(([href, en, bangla]) => (
-              <Link key={href} className="rounded-md px-2 py-3" href={href}>
+              <Link
+                key={href}
+                href={href}
+                onClick={() => {
+                  if (mobile.current) mobile.current.open = false;
+                }}
+              >
                 {bn ? bangla : en}
               </Link>
             ))}
-            <Link className="px-2 py-3" href="/courier-apply">
+            <Link href="/courier-apply">
               {bn ? "কর্মীর আবেদন" : "Worker application"}
             </Link>
-            <Link className="px-2 py-3" href="/login?staff=1">
+            <Link href="/login?staff=1">
               {bn ? "কর্মীদের প্রবেশ" : "Staff sign in"}
             </Link>
-            {language}
-            {accounts}
+            <div className="mobile-accounts">
+              {language}
+              {accounts}
+            </div>
           </nav>
         </details>
       </div>
-      <nav
-        aria-label={bn ? "প্রধান মেনু" : "Main navigation"}
-        className="mx-auto hidden max-w-7xl flex-wrap items-center gap-x-6 gap-y-2 px-4 pb-3 text-sm lg:flex"
-      >
-        {links.map(([href, en, bangla]) => (
-          <Link key={href} className="py-2 hover:text-primary" href={href}>
-            {bn ? bangla : en}
-          </Link>
-        ))}
-        <Link href="/courier-apply" className="py-2">
-          {bn ? "কর্মীর আবেদন" : "Join our team"}
-        </Link>
-        <Link href="/login?staff=1" className="py-2">
-          {bn ? "কর্মীদের প্রবেশ" : "Staff sign in"}
-        </Link>
-      </nav>
     </header>
   );
 }

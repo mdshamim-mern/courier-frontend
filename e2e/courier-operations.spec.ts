@@ -136,9 +136,9 @@ test("mobile Bengali home exposes booking, tracking and functional menu without 
     page.getByRole("textbox", { name: "পার্সেলের অনুসন্ধানসংখ্যা" }),
   ).toBeVisible();
   await expect(page.locator("main")).not.toContainText(/99.9%|10K|50\+|24\/7/);
-  await page.locator("header summary").click();
+  await page.locator(".mobile-menu summary").click();
   await expect(
-    page.locator('header a[href="/bn/pricing"]').first(),
+    page.locator('.mobile-dropdown a[href="/bn/pricing"]'),
   ).toBeVisible();
   expect(
     await page.evaluate(

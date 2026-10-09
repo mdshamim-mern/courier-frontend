@@ -2,7 +2,7 @@
 
 মূল কাঠামো রেখে সংশোধিত ফাইলের বর্তমান কোড নিচে আছে। প্রতিটি কোডের আগে সম্পূর্ণ স্থানীয় পথ দেওয়া হয়েছে। বাস্তব শংসাপত্রের ফাইল অন্তর্ভুক্ত করা হয়নি। যেগুলোতে কার্যকর পরিবর্তনের বদলে টাইপের আমদানি, ভাষা-সচেতন লিংক বা প্রবেশযোগ্যতার সংশোধন হয়েছে, সেগুলোও অন্তর্ভুক্ত।
 
-মোট কোড ফাইল: 153।
+মোট কোড ফাইল: 156।
 
 অন্যান্য পরিবর্তিত ফাইল:
 
@@ -1836,6 +1836,7 @@ export default function ResetPasswordPage() {
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\about\page.tsx
 
 ```tsx
+import { PackageCheck, Route, Wallet, ShieldCheck } from "lucide-react";
 import { useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import type { Metadata } from "next";
@@ -1853,11 +1854,9 @@ export default function AboutPage() {
   const bn = useLocale() === "bn",
     t = (en: string, bangla: string) => (bn ? bangla : en);
   return (
-    <article className="mx-auto max-w-5xl space-y-6 px-4 py-10">
-      <h1 className="text-3xl font-bold">
-        {t("About Dropzo", "ড্রপজো সম্পর্কে")}
-      </h1>
-      <p>
+    <article className="page-wrap space-y-8">
+      <h1 className="page-heading">{t("About Dropzo", "ড্রপজো সম্পর্কে")}</h1>
+      <p className="max-w-3xl text-lg leading-relaxed text-muted-foreground">
         {t(
           "Dropzo uses its own approved delivery workers. Customers book a parcel; administrators assign pickup, route hubs and delivery work.",
           "ড্রপজো নিজের অনুমোদিত ডেলিভারিকর্মীদের দিয়ে পার্সেল সংগ্রহ ও পৌঁছে দেবে। গ্রাহক বুকিং করবেন; প্রশাসক সংগ্রহের দায়িত্ব, রুটের হাব ও ডেলিভারির কাজ বরাদ্দ করবেন।",
@@ -1889,21 +1888,37 @@ export default function AboutPage() {
             "Coverage, charges and estimated delivery time depend on approved route settings. Confirm support hours with our contact team.",
             "অনুমোদিত রুটের সেটিং অনুযায়ী এলাকা, মাশুল ও সম্ভাব্য সময় নির্ধারিত হবে। সহায়তার সময় যোগাযোগ করে নিশ্চিত করুন।",
           ],
-        ].map(([en, bangla, description, descriptionBn]) => (
-          <section className="space-y-3 rounded-xl border p-5" key={en}>
+        ].map(([en, bangla, description, descriptionBn], index) => (
+          <section
+            className="glass-panel info-card space-y-4 p-6 sm:p-8"
+            key={en}
+          >
+            <span className="icon-tile">
+              {index === 0 ? (
+                <PackageCheck />
+              ) : index === 1 ? (
+                <Route />
+              ) : index === 2 ? (
+                <Wallet />
+              ) : (
+                <ShieldCheck />
+              )}
+            </span>
             <h2 className="text-xl font-semibold">{t(en, bangla)}</h2>
-            <p>{t(description, descriptionBn)}</p>
+            <p className="leading-relaxed text-muted-foreground">
+              {t(description, descriptionBn)}
+            </p>
           </section>
         ))}
       </div>
-      <nav className="flex flex-wrap gap-5">
-        <Link className="underline" href="/coverage">
+      <nav className="glass-panel flex flex-wrap gap-4 p-6">
+        <Link className="secondary-button" href="/coverage">
           {t("Check service coverage", "সেবার এলাকা যাচাই")}
         </Link>
-        <Link className="underline" href="/pricing">
+        <Link className="secondary-button" href="/pricing">
           {t("Calculate charges", "খরচ হিসাব")}
         </Link>
-        <Link className="underline" href="/contact">
+        <Link className="secondary-button" href="/contact">
           {t("Contact support", "সহায়তার যোগাযোগ")}
         </Link>
       </nav>
@@ -2555,9 +2570,9 @@ export default function ContactPage() {
   const ui = useUiText();
   const bengali = useLocale() === "bn";
   return (
-    <div className="mx-auto max-w-5xl space-y-10 px-4 py-16 sm:px-6">
-      <header className="space-y-4 text-center">
-        <h1 className="text-4xl font-bold">{ui("Contact Us")}</h1>
+    <div className="page-wrap space-y-8">
+      <header className="space-y-4 py-4 text-center">
+        <h1 className="page-heading">{ui("Contact Us")}</h1>
         <p className="text-muted-foreground">
           {bengali
             ? "সহায়তার জন্য নিচের ইমেইল বা ফোন নম্বরে যোগাযোগ করুন।"
@@ -2565,19 +2580,23 @@ export default function ContactPage() {
         </p>
       </header>
       <div className="grid gap-6 md:grid-cols-3">
-        <section className="space-y-3 rounded-3xl border bg-card p-6">
-          <MapPin aria-hidden="true" className="text-primary" />
+        <section className="glass-panel info-card min-w-0 space-y-4 p-6 sm:p-8">
+          <span className="icon-tile">
+            <MapPin aria-hidden="true" />
+          </span>
           <h2 className="text-xl font-semibold">{ui("Head Office")}</h2>
           <p>{legalOperator.companyName}</p>
           <p>{legalOperator.address}</p>
         </section>
-        <section className="space-y-3 rounded-3xl border bg-card p-6">
-          <Mail aria-hidden="true" className="text-primary" />
+        <section className="glass-panel info-card min-w-0 space-y-4 p-6 sm:p-8">
+          <span className="icon-tile">
+            <Mail aria-hidden="true" />
+          </span>
           <h2 className="text-xl font-semibold">{ui("Contact Details")}</h2>
           <p>
             <a
               href={`mailto:${legalOperator.contactEmail}`}
-              className="underline"
+              className="break-all font-medium text-primary underline underline-offset-4"
             >
               {legalOperator.contactEmail}
             </a>
@@ -2585,14 +2604,16 @@ export default function ContactPage() {
           <p>
             <a
               href={`tel:${legalOperator.contactPhone.replaceAll("-", "")}`}
-              className="underline"
+              className="break-all font-medium text-primary underline underline-offset-4"
             >
               {legalOperator.contactPhone}
             </a>
           </p>
         </section>
-        <section className="space-y-3 rounded-3xl border bg-card p-6">
-          <Clock3 aria-hidden="true" className="text-primary" />
+        <section className="glass-panel info-card min-w-0 space-y-4 p-6 sm:p-8">
+          <span className="icon-tile">
+            <Clock3 aria-hidden="true" />
+          </span>
           <h2 className="text-xl font-semibold">{ui("Business Hours")}</h2>
           <p>
             {bengali
@@ -2601,7 +2622,7 @@ export default function ContactPage() {
           </p>
         </section>
       </div>
-      <aside role="note" className="rounded-xl border p-6">
+      <aside role="note" className="glass-panel p-6 sm:p-8">
         <p>
           {bengali
             ? "এই সাইটে বার্তা পাঠানোর ফরম নেই। সহায়তার অনুরোধ ইমেইল বা ফোনে জানান।"
@@ -3515,10 +3536,10 @@ export default function FaqPage() {
   const locale = useLocale();
   const ui = useUiText();
   return (
-    <article className="mx-auto max-w-4xl space-y-8 px-4 py-16 sm:px-6">
-      <h1 className="text-4xl font-bold">{ui("FAQ")}</h1>
+    <article className="page-wrap space-y-8">
+      <h1 className="page-heading">{ui("FAQ")}</h1>
       {questions[locale === "bn" ? "bn" : "en"].map(([question, answer]) => (
-        <section key={question} className="space-y-3 rounded-xl border p-6">
+        <section key={question} className="glass-panel space-y-3 p-6">
           <h2 className="text-xl font-semibold">{question}</h2>
           <p className="leading-8 text-muted-foreground">{answer}</p>
         </section>
@@ -3587,11 +3608,11 @@ export default async function RootLayout({
       lang={locale}
       className={cn("h-full antialiased font-sans", inter.variable)}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-svh flex flex-col">
         <NextIntlClientProvider messages={messages}>
           <Providers>
             <Header />
-            <main className="flex-1">{children}</main>
+            <main id="main-content" className="site-content">{children}</main>
             <Footer />
             <Toaster />
           </Providers>
@@ -3796,6 +3817,14 @@ export default function Page() {
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\app\[locale]\services\page.tsx
 
 ```tsx
+import {
+  Package,
+  Zap,
+  Store,
+  ShieldCheck,
+  Wallet,
+  Warehouse,
+} from "lucide-react";
 import { useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import type { Metadata } from "next";
@@ -3857,23 +3886,36 @@ export default function ServicesPage() {
     ],
   ];
   return (
-    <article className="mx-auto max-w-6xl space-y-6 px-4 py-10">
-      <h1 className="text-3xl font-bold">
-        {t("Our Services", "আমাদের সেবাসমূহ")}
-      </h1>
-      <p>
+    <article className="page-wrap space-y-8">
+      <h1 className="page-heading">{t("Our Services", "আমাদের সেবাসমূহ")}</h1>
+      <p className="max-w-3xl text-lg text-muted-foreground">
         {t(
           "Dropzo's own delivery team handles collection and delivery on approved routes. Check availability first.",
           "ড্রপজোর নিজস্ব ডেলিভারিকর্মীরা অনুমোদিত রুটে সংগ্রহ ও সরবরাহের কাজ করবেন। আগে সেবার প্রাপ্যতা যাচাই করুন।",
         )}
       </p>
       <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-        {services.map(([id, en, bangla, description, descriptionBn]) => (
+        {services.map(([id, en, bangla, description, descriptionBn], index) => (
           <section
             id={id}
             key={id}
-            className="scroll-mt-36 space-y-3 rounded-xl border p-5"
+            className="glass-panel info-card scroll-mt-24 space-y-4 p-6"
           >
+            <span className="icon-tile">
+              {index === 0 ? (
+                <Package />
+              ) : index === 1 ? (
+                <Zap />
+              ) : index === 2 ? (
+                <Store />
+              ) : index === 3 ? (
+                <ShieldCheck />
+              ) : index === 4 ? (
+                <Wallet />
+              ) : (
+                <Warehouse />
+              )}
+            </span>
             <h2 className="text-xl font-semibold">{t(en, bangla)}</h2>
             <p>{t(description, descriptionBn)}</p>
             {id !== "ecommerce-fulfillment" && (
@@ -3884,10 +3926,7 @@ export default function ServicesPage() {
           </section>
         ))}
       </div>
-      <Link
-        href="/dashboard/new-shipment"
-        className="inline-block rounded-lg bg-primary px-5 py-3 text-primary-foreground"
-      >
+      <Link href="/dashboard/new-shipment" className="brand-button">
         {t("Send parcel", "পার্সেল পাঠান")}
       </Link>
     </article>
@@ -4001,42 +4040,6 @@ export default async function TrackShipmentPage() {
   --radius-lg: var(--radius);
 }
 
-:root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.488 0.243 264.376);
-  --primary-foreground: oklch(0.97 0.014 254.604);
-  --secondary: oklch(0.967 0.001 286.375);
-  --secondary-foreground: oklch(0.21 0.006 285.885);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --radius: 0.625rem;
-}
-
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.424 0.199 265.638);
-  --primary-foreground: oklch(0.97 0.014 254.604);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-}
-
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -4053,6 +4056,550 @@ export default async function TrackShipmentPage() {
   }
 }
 
+:root {
+  --site-header-height: 5rem;
+  --background: #faf8fd;
+  --foreground: #2b2036;
+  --card: rgb(255 255 255 / 84%);
+  --card-foreground: #2b2036;
+  --popover: #ffffff;
+  --popover-foreground: #2b2036;
+  --primary: #7135b8;
+  --primary-foreground: #ffffff;
+  --secondary: #f0e8f8;
+  --secondary-foreground: #543077;
+  --muted: #f1ecf6;
+  --muted-foreground: #6e627b;
+  --accent: #eee3f9;
+  --accent-foreground: #602a9d;
+  --border: #e6ddee;
+  --input: #ded0ec;
+  --ring: #9964cf;
+  --sidebar: #fcfaff;
+  --sidebar-foreground: #40304f;
+  --sidebar-primary: #7135b8;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #eee3f9;
+  --sidebar-accent-foreground: #602a9d;
+  --sidebar-border: #e6ddee;
+  --sidebar-ring: #9964cf;
+  --destructive: #c52d45;
+  --radius: 0.9rem;
+}
+.dark {
+  --destructive: #fb7185;
+  --background: #1e1529;
+  --foreground: #f3edf9;
+  --card: rgb(46 31 63 / 90%);
+  --card-foreground: #f3edf9;
+  --popover: #2e1f3f;
+  --popover-foreground: #f3edf9;
+  --primary: #bb8aef;
+  --primary-foreground: #261137;
+  --muted: #382746;
+  --muted-foreground: #c2b1d1;
+  --border: #4d365f;
+  --input: #634777;
+  --sidebar: #261a33;
+  --sidebar-foreground: #f3edf9;
+  --sidebar-accent: #432b59;
+  --sidebar-accent-foreground: #f3edf9;
+}
+@theme inline {
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+body {
+  min-height: 100svh;
+  background-repeat: no-repeat;
+  background-image:
+    radial-gradient(ellipse at 8% 10%, rgb(217 193 240 / 20%), transparent 35%),
+    radial-gradient(ellipse at 95% 50%, rgb(230 213 247 / 24%), transparent 38%);
+}
+html[lang="bn"] {
+  font-family: var(--font-sans), "Nirmala UI", "Noto Sans Bengali", sans-serif;
+}
+.site-content {
+  min-width: 0;
+  flex: 1 0 auto;
+}
+.glass-panel,
+[data-slot="card"] {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 1.5rem;
+  box-shadow:
+    0 8px 30px rgb(66 26 104 / 5%),
+    inset 0 1px 0 rgb(255 255 255 / 70%);
+  backdrop-filter: blur(18px);
+}
+.glass-panel {
+  min-width: 0;
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+select,
+textarea {
+  min-width: 0;
+  color: var(--foreground);
+}
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 3px;
+}
+.brand-lockup {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.55rem;
+}
+.brand-wordmark {
+  color: var(--primary);
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.065em;
+  line-height: 1.1;
+}
+.brand-dot {
+  color: #76a935;
+}
+.brand-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.8rem 1.25rem;
+  border-radius: 0.9rem;
+  background: linear-gradient(135deg, #834bc3, #642b9f);
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 5px 16px rgb(113 53 184 / 18%);
+  transition:
+    box-shadow 0.2s,
+    transform 0.2s;
+}
+.brand-button:hover {
+  box-shadow: 0 8px 22px rgb(113 53 184 / 25%);
+  transform: translateY(-1px);
+}
+.secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--primary);
+  border-radius: 0.9rem;
+  padding: 0.8rem 1.25rem;
+  font-weight: 600;
+}
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgb(252 250 255 / 92%);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(22px);
+}
+.dark .site-header {
+  background: rgb(30 21 41 / 94%);
+}
+.header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 5rem;
+  max-width: 1440px;
+  margin: auto;
+  padding: 0.8rem 1.5rem;
+}
+.desktop-nav,
+.desktop-accounts {
+  display: none;
+}
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  white-space: nowrap;
+  padding: 0.65rem 0.15rem;
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+  transition: color 0.2s;
+}
+.nav-link:hover,
+.nav-link[aria-current="page"] {
+  color: var(--primary);
+}
+.nav-link[aria-current="page"] {
+  font-weight: 700;
+}
+.language-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  min-height: 2.75rem;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  color: var(--muted-foreground);
+}
+.account-link {
+  padding: 0.65rem 0.35rem;
+  font-size: 0.81rem;
+  white-space: nowrap;
+}
+.header-register {
+  padding: 0.65rem 0.85rem;
+  font-size: 0.81rem;
+  min-height: 2.5rem;
+}
+.team-menu,
+.mobile-menu {
+  position: relative;
+}
+.team-menu summary,
+.mobile-menu summary {
+  list-style: none;
+  cursor: pointer;
+}
+.team-menu summary::-webkit-details-marker,
+.mobile-menu summary::-webkit-details-marker {
+  display: none;
+}
+.team-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.75rem);
+  width: 13rem;
+  padding: 0.5rem;
+}
+.team-dropdown a,
+.mobile-dropdown > a {
+  display: block;
+  padding: 0.8rem;
+  border-radius: 0.7rem;
+  font-size: 0.9rem;
+}
+.team-dropdown a:hover,
+.mobile-dropdown > a:hover {
+  background: var(--accent);
+  color: var(--primary);
+}
+.mobile-menu summary {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.8rem;
+  color: var(--primary);
+}
+.mobile-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.9rem);
+  width: min(21rem, calc(100vw - 2rem));
+  max-height: calc(100svh - 7rem);
+  overflow-y: auto;
+  padding: 0.75rem;
+  background: var(--popover);
+}
+.mobile-accounts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  border-top: 1px solid var(--border);
+  padding-top: 0.75rem;
+  margin-top: 0.5rem;
+}
+@media (min-width: 1280px) {
+  .desktop-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(0.55rem, 1vw, 1rem);
+    min-width: 0;
+  }
+  .desktop-accounts {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 0.4rem;
+  }
+  .mobile-menu {
+    display: none;
+  }
+}
+@media (max-width: 639px) {
+  .header-row {
+    min-height: 4.5rem;
+    padding: 0.65rem 1rem;
+  }
+  .brand-wordmark {
+    font-size: 1.6rem;
+  }
+}
+.dashboard-shell {
+  min-height: calc(100svh - var(--site-header-height));
+  align-items: stretch;
+}
+.dashboard-shell [data-slot="sidebar-inset"] {
+  min-width: 0;
+  width: 0;
+  background: transparent;
+}
+.dashboard-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 4rem;
+  padding: 0.75rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+}
+.dashboard-content {
+  min-width: 0;
+  flex: 1;
+  padding: 1.5rem;
+}
+.dashboard-content > * {
+  min-width: 0;
+}
+@media (min-width: 768px) {
+  .dashboard-shell [data-slot="sidebar"]:not([data-mobile="true"]) {
+    position: sticky;
+    top: var(--site-header-height);
+    align-self: flex-start;
+    width: var(--sidebar-width);
+    flex-shrink: 0;
+    height: calc(100svh - var(--site-header-height));
+    transition: width 0.2s;
+    z-index: 20;
+  }
+  .dashboard-shell [data-slot="sidebar"][data-state="collapsed"] {
+    width: 0;
+    overflow: hidden;
+  }
+  .dashboard-shell [data-slot="sidebar-gap"] {
+    display: none;
+  }
+  .dashboard-shell [data-slot="sidebar-container"] {
+    position: relative;
+    inset: auto;
+    width: var(--sidebar-width);
+    height: 100%;
+  }
+  .dashboard-shell [data-slot="sidebar-inner"] {
+    background: var(--sidebar);
+    border-right: 1px solid var(--border);
+  }
+  .dashboard-shell [data-slot="sidebar-rail"] {
+    display: none;
+  }
+}
+@media (max-width: 767px) {
+  .dashboard-content {
+    padding: 1rem;
+  }
+  .dashboard-toolbar {
+    padding-inline: 1rem;
+  }
+}
+.page-wrap {
+  max-width: 1200px;
+  margin: auto;
+  padding: clamp(2rem, 5vw, 4rem) 1.5rem;
+}
+.page-heading {
+  max-width: 750px;
+}
+.page-heading h1,
+h1.page-heading {
+  font-size: clamp(2rem, 4vw, 3.25rem);
+  font-weight: 750;
+  letter-spacing: -0.04em;
+  line-height: 1.15;
+}
+.page-heading p {
+  margin-top: 1rem;
+  color: var(--muted-foreground);
+  font-size: 1.05rem;
+  line-height: 1.8;
+}
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--primary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.9rem;
+}
+.icon-tile {
+  display: grid;
+  place-items: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 1rem;
+  color: var(--primary);
+  background: linear-gradient(135deg, var(--accent), var(--card));
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.info-card {
+  padding: clamp(1.3rem, 3vw, 2rem);
+  min-width: 0;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+.info-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 40px rgb(66 26 104 / 9%);
+}
+.info-card h2 {
+  font-size: 1.2rem;
+  font-weight: 650;
+  margin: 1.25rem 0 0.7rem;
+}
+.info-card p {
+  color: var(--muted-foreground);
+  line-height: 1.8;
+}
+.hero-panel {
+  display: grid;
+  align-items: center;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  padding: clamp(1.5rem, 4vw, 3.5rem);
+  border-radius: 2rem;
+  background: linear-gradient(130deg, #f2e9fb 0%, #fdfbff 55%, #f4edfb 100%);
+  border: 1px solid #e4d5f0;
+  position: relative;
+  overflow: hidden;
+}
+.hero-panel h1 {
+  font-size: clamp(2.15rem, 4.4vw, 3.6rem);
+  line-height: 1.12;
+  letter-spacing: -0.05em;
+}
+.hero-art {
+  min-width: 0;
+  position: relative;
+}
+.delivery-scene {
+  display: block;
+  width: 100%;
+  max-width: 560px;
+  margin: auto;
+}
+.hero-art-caption {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  font-size: 0.82rem;
+  color: var(--primary);
+}
+.hero-art-caption span {
+  padding: 0.45rem 0.65rem;
+  border-radius: 0.7rem;
+  background: rgb(255 255 255 / 75%);
+  border: 1px solid #e4d5f0;
+}
+@media (min-width: 1024px) {
+  .hero-panel {
+    grid-template-columns: 1.1fr 1fr;
+  }
+}
+.dark .hero-panel {
+  background: linear-gradient(130deg, #382149, #23182f);
+  border-color: var(--border);
+}
+.dark .hero-art-caption span {
+  background: #362744;
+  border-color: var(--border);
+}
+.site-footer {
+  position: relative;
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+  background: linear-gradient(145deg, #f3edf9, #fcfaff);
+}
+.dark .site-footer {
+  background: #261a33;
+}
+.site-footer a:hover {
+  color: var(--primary);
+}
+@media (max-width: 639px) {
+  .page-wrap {
+    padding: 2rem 1rem;
+  }
+  .page-heading {
+    margin-bottom: 1.75rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .info-card,
+  .brand-button,
+  .dashboard-shell [data-slot="sidebar"] {
+    transition: none;
+  }
+  .info-card:hover,
+  .brand-button:hover {
+    transform: none;
+  }
+}
+
+.availability-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border-radius: 999px;
+  padding: 0.25rem 0.55rem;
+  color: #3f6725;
+  background: #eef6e4;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.availability-badge.unavailable {
+  color: var(--muted-foreground);
+  background: var(--muted);
+}
+.dashboard-content :is(form, section, article).rounded-xl.border,
+.dashboard-content :is(form, section, article).rounded-2xl.border {
+  background: var(--card);
+  box-shadow: 0 5px 24px rgb(66 26 104 / 4%);
+}
+[data-slot="button"],
+[data-slot="input"] {
+  min-height: 2.75rem;
+}
 @media print {
   @page {
     margin: 10mm;
@@ -4067,6 +4614,10 @@ export default async function TrackShipmentPage() {
     position: static;
     min-height: 0;
     height: auto;
+    width: auto;
+    max-width: none;
+    box-shadow: none;
+    backdrop-filter: none;
     margin: 0;
     padding: 0;
     overflow: visible;
@@ -4162,7 +4713,8 @@ import type * as React from "react";
 
 export default function Logo(props: React.SVGProps<SVGSVGElement>) {
   return (
-    <svg aria-hidden="true"
+    <svg
+      aria-hidden="true"
       xmlns="http://www.w3.org/2000/svg"
       width="40"
       height="40"
@@ -4170,43 +4722,23 @@ export default function Logo(props: React.SVGProps<SVGSVGElement>) {
       fill="none"
       {...props}
     >
-      <g clipPath="url(#clip0_logo)">
-        <path
-          d="M24 0H16V12.0632C15.9663 14.2434 14.1885 16 12.0005 16H0V24H8.68629C10.808 24 12.8429 23.1571 14.3431 21.6569L21.6569 14.3431C23.1571 12.8429 24 10.808 24 8.68629V0Z"
-          fill="url(#paint0_linear_logo)"
-        />
-        <path
-          d="M16 40H24V27.9368C24.0337 25.7566 25.8115 24 27.9995 24H40V16H31.3137C29.192 16 27.1571 16.8429 25.6569 18.3431L18.3431 25.6569C16.8429 27.1571 16 29.192 16 31.3137V40Z"
-          fill="url(#paint1_linear_logo)"
-        />
-      </g>
-      <defs>
-        <linearGradient
-          id="paint0_linear_logo"
-          x1="20"
-          y1="-0.997096"
-          x2="20"
-          y2="33.7931"
-          gradientUnits="userSpaceOnUse"
-        >
-          <stop stopColor="#75D8FC" />
-          <stop offset="1" stopColor="#0072E5" />
-        </linearGradient>
-        <linearGradient
-          id="paint1_linear_logo"
-          x1="20"
-          y1="-0.997096"
-          x2="20"
-          y2="33.7931"
-          gradientUnits="userSpaceOnUse"
-        >
-          <stop stopColor="#75D8FC" />
-          <stop offset="1" stopColor="#0072E5" />
-        </linearGradient>
-        <clipPath id="clip0_logo">
-          <rect width="40" height="40" fill="white" />
-        </clipPath>
-      </defs>
+      <path d="m20 4 14 8v16l-14 8-14-8V12L20 4Z" fill="#7135B8" />
+      <path
+        d="m7 12 13 8 13-8M20 20v15"
+        stroke="#EAD9FF"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      <path d="m13 8 14 8v7l-6 3v-7L7 11" fill="#A574E0" />
+      <path d="m13 23 3 2v4l-3-2v-4Z" fill="white" />
+      <circle
+        cx="33"
+        cy="7"
+        r="5"
+        fill="#BFEA80"
+        stroke="#FCFAFF"
+        strokeWidth="2"
+      />
     </svg>
   );
 }
@@ -4344,12 +4876,15 @@ export default function RoleGuard({ children, roles }: { children: ReactNode; ro
 
 ```tsx
 "use client";
-
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
 import { DashboardSidebar } from "./dashboard-sidebar";
+import { useUiText } from "@/i18n/use-ui-text";
 import type { ReactNode } from "react";
 import type { UserRole } from "@/types";
-
 export default function DashboardShell({
   children,
   userRole,
@@ -4357,16 +4892,18 @@ export default function DashboardShell({
   children: ReactNode;
   userRole: UserRole;
 }) {
+  const ui = useUiText();
   return (
-    <SidebarProvider>
+    <SidebarProvider className="dashboard-shell">
       <DashboardSidebar userRole={userRole} />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-background/80 backdrop-blur-md px-4 sticky top-0 z-40">
+        <header className="dashboard-toolbar">
           <SidebarTrigger className="-ml-1" />
+          <span className="text-sm font-medium text-muted-foreground">
+            {ui("Dashboard")}
+          </span>
         </header>
-        <main className="flex-1 overflow-auto p-4 md:p-6 bg-muted/10">
-          {children}
-        </main>
+        <div className="dashboard-content">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );
@@ -4414,8 +4951,8 @@ export function DashboardSidebar({ userRole }: { userRole: UserRole }) {
       <SidebarHeader className="py-4">
         <Link href="/">
           <div className="flex items-center gap-3 px-2">
-            <Logo className="size-8" />
-            <span className="font-bold tracking-tight text-lg">Dropzo</span>
+            <Logo className="size-9" />
+            <span className="brand-wordmark">Dropzo</span>
           </div>
         </Link>
       </SidebarHeader>
@@ -4455,6 +4992,7 @@ export function DashboardSidebar({ userRole }: { userRole: UserRole }) {
 ```tsx
 "use client";
 import { useLocale } from "next-intl";
+import { placeName } from "@/i18n/geography";
 import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRouter } from "@/i18n/navigation";
@@ -4464,7 +5002,8 @@ import type { ApiResponse, Shipment } from "@/types";
 import type { ServiceArea, Quote } from "@/types/operations.type";
 import { BookingSchema } from "@/validation/shipment.validation";
 export default function CreateShipmentForm() {
-  const bn = useLocale() === "bn",
+  const locale = useLocale(),
+    bn = locale === "bn",
     t = (en: string, bangla: string) => (bn ? bangla : en),
     router = useRouter();
   const areas = useQuery({
@@ -4577,7 +5116,7 @@ export default function CreateShipmentForm() {
     ],
   ];
   return (
-    <section className="mx-auto max-w-3xl space-y-5 rounded-2xl border bg-card p-6">
+    <section className="glass-panel mx-auto max-w-3xl space-y-6 p-5 sm:p-8">
       <h1 className="text-2xl font-bold">
         {t("Book your parcel", "পার্সেল বুকিং করুন")}
       </h1>
@@ -4640,7 +5179,9 @@ export default function CreateShipmentForm() {
                 )
                 .map((area) => (
                   <option key={area.id} value={area.id}>
-                    {area.district} / {area.upazila} / {area.name}
+                    {placeName(area.district, locale)} /{" "}
+                    {placeName(area.upazila, locale)} /{" "}
+                    {placeName(area.name, locale)}
                   </option>
                 ))}
             </select>
@@ -4767,7 +5308,7 @@ export default function CreateShipmentForm() {
             {payload.pickupMode === "BRANCH" && (
               <p>
                 {t("Assigned branch: ", "নির্ধারিত শাখা: ")}
-                {quote.data.data.originHub.name} ·{" "}
+                {placeName(quote.data.data.originHub.name, locale)} ·{" "}
                 {quote.data.data.originHub.address}
               </p>
             )}
@@ -4924,7 +5465,7 @@ export default function LoginForm() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col items-center gap-3 text-center">
-        <div className="flex size-14 items-center justify-center rounded-2xl bg-linear-to-br from-primary to-blue-600 shadow-lg shadow-primary/30">
+        <div className="flex size-14 items-center justify-center rounded-2xl bg-linear-to-br from-primary to-purple-500 shadow-lg shadow-primary/30">
           <Lock className="size-6 text-white" />
         </div>
         <h1 className="text-3xl font-bold tracking-tight">
@@ -5219,7 +5760,7 @@ export default function RegisterForm() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col items-center gap-3 text-center">
-        <div className="flex size-14 items-center justify-center rounded-2xl bg-linear-to-br from-primary to-blue-600 shadow-lg shadow-primary/30">
+        <div className="flex size-14 items-center justify-center rounded-2xl bg-linear-to-br from-primary to-purple-500 shadow-lg shadow-primary/30">
           <UserPlus className="size-6 text-white" />
         </div>
         <h1 className="text-3xl font-bold tracking-tight">
@@ -5690,9 +6231,9 @@ export default function LegalDocument({ kind }: { kind: LegalKind }) {
   const ui = useUiText();
   const document = getLegalDocument(locale, kind);
   return (
-    <article className="mx-auto max-w-4xl space-y-8 px-4 py-16 sm:px-6">
+    <article className="page-wrap space-y-8">
       <header className="space-y-4">
-        <h1 className="text-3xl font-bold sm:text-4xl">{document.title}</h1>
+        <h1 className="page-heading sm:text-4xl">{document.title}</h1>
         <aside
           role="note"
           className="rounded-xl border border-amber-400 bg-amber-50 p-5 text-amber-950"
@@ -5769,6 +6310,7 @@ export default function LegalDocument({ kind }: { kind: LegalKind }) {
 ## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\layout\public\Footer.tsx
 
 ```tsx
+import { useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useUiText } from "@/i18n/use-ui-text";
 import Logo from "@/assets/svg/Logo";
@@ -5813,14 +6355,17 @@ const groups = [
 
 export default function Footer() {
   const ui = useUiText();
+  const locale = useLocale();
   return (
-    <footer className="mt-auto w-full border-t bg-background text-foreground">
+    <footer className="site-footer w-full text-foreground">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
         <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-4">
           <div className="flex flex-col gap-4">
-            <Link href="/" className="flex items-center gap-2">
-              <Logo className="size-6" />
-              <span className="text-xl font-bold">Dropzo</span>
+            <Link href="/" className="brand-lockup">
+              <Logo className="size-9" />
+              <span className="brand-wordmark">
+                Dropzo<span className="brand-dot">.</span>
+              </span>
             </Link>
             <p className="text-sm leading-relaxed text-muted-foreground">
               {ui(
@@ -5852,7 +6397,10 @@ export default function Footer() {
       <div className="border-t bg-muted/20 py-6">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 sm:px-6 md:flex-row lg:px-8">
           <p className="text-sm text-muted-foreground">
-            © {ui(new Date().getFullYear())}{" "}
+            ©{" "}
+            {new Intl.NumberFormat(locale === "bn" ? "bn-BD" : "en-US", {
+              useGrouping: false,
+            }).format(new Date().getFullYear())}{" "}
             {ui("Dropzo. All rights reserved.")}
           </p>
           <p className="text-sm text-muted-foreground">
@@ -5877,6 +6425,9 @@ import { useLocale, useTranslations } from "next-intl";
 import { useGetMe, useLogout } from "@/hooks";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { ChevronDown, Globe2, Menu, ArrowUpRight } from "lucide-react";
+import { useEffect, useRef } from "react";
+
 export default function Header() {
   const locale = useLocale(),
     bn = locale === "bn",
@@ -5884,9 +6435,26 @@ export default function Header() {
   const pathname = usePathname(),
     router = useRouter(),
     query = useQueryClient();
+  const header = useRef<HTMLElement>(null),
+    mobile = useRef<HTMLDetailsElement>(null);
   const { data, isLoading } = useGetMe(),
     user = data?.data,
     logout = useLogout();
+  useEffect(() => {
+    const element = header.current;
+    if (!element) return;
+    const observer = new ResizeObserver(() =>
+      document.documentElement.style.setProperty(
+        "--site-header-height",
+        `${element.getBoundingClientRect().height}px`,
+      ),
+    );
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+  useEffect(() => {
+    if (pathname && mobile.current) mobile.current.open = false;
+  }, [pathname]);
   const links = [
     ["/dashboard/new-shipment", "Send a parcel", "পার্সেল পাঠান"],
     ["/track-shipment", "Track parcel", "পার্সেল অনুসরণ"],
@@ -5905,7 +6473,7 @@ export default function Header() {
   const language = (
     <button
       type="button"
-      className="min-h-11 px-3 text-sm"
+      className="language-button"
       aria-label={t("switchLanguage")}
       onClick={() =>
         router.replace(
@@ -5914,6 +6482,7 @@ export default function Header() {
         )
       }
     >
+      <Globe2 size={16} aria-hidden="true" />
       {bn ? "English" : "বাংলা"}
     </button>
   );
@@ -5921,20 +6490,18 @@ export default function Header() {
     <>
       {!isLoading && !user && (
         <>
-          <Link className="px-3 py-2" href="/login">
+          <Link className="account-link" href="/login">
             {t("login")}
           </Link>
-          <Link
-            className="rounded-lg bg-primary px-4 py-2 text-primary-foreground"
-            href="/register"
-          >
+          <Link className="brand-button header-register" href="/register">
             {t("register")}
+            <ArrowUpRight size={15} aria-hidden="true" />
           </Link>
         </>
       )}
       {user && (
         <>
-          <Link className="px-3 py-2" href={dashboard}>
+          <Link className="account-link" href={dashboard}>
             {t("dashboard")}
           </Link>
           <Button
@@ -5957,56 +6524,77 @@ export default function Header() {
     </>
   );
   return (
-    <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
-        <Link href="/" aria-label="Dropzo" className="flex items-center gap-2">
-          <Logo className="size-8" />
-          <span className="text-xl font-bold text-primary">Dropzo</span>
+    <header ref={header} className="site-header">
+      <div className="header-row">
+        <Link href="/" aria-label="Dropzo" className="brand-lockup">
+          <Logo className="size-10" />
+          <span className="brand-wordmark">
+            Dropzo<span className="brand-dot">.</span>
+          </span>
         </Link>
-        <div className="hidden items-center gap-2 lg:flex">
+        <nav
+          aria-label={bn ? "প্রধান মেনু" : "Main navigation"}
+          className="desktop-nav"
+        >
+          {links.map(([href, en, bangla]) => (
+            <Link
+              key={href}
+              href={href}
+              className="nav-link"
+              aria-current={pathname === href ? "page" : undefined}
+            >
+              {bn ? bangla : en}
+            </Link>
+          ))}
+          <details className="team-menu">
+            <summary className="nav-link">
+              {bn ? "দল" : "Team"}
+              <ChevronDown size={13} aria-hidden="true" />
+            </summary>
+            <div className="team-dropdown glass-panel">
+              <Link href="/courier-apply">
+                {bn ? "কর্মীর আবেদন" : "Join our team"}
+              </Link>
+              <Link href="/login?staff=1">
+                {bn ? "কর্মীদের প্রবেশ" : "Staff sign in"}
+              </Link>
+            </div>
+          </details>
+        </nav>
+        <div className="desktop-accounts">
           {language}
           {accounts}
         </div>
-        <details className="relative lg:hidden">
-          <summary className="cursor-pointer rounded-md border p-3">
-            {t("menu")}
+        <details ref={mobile} className="mobile-menu">
+          <summary aria-label={t("menu")}>
+            <Menu size={22} aria-hidden="true" />
+            <span className="sr-only">{t("menu")}</span>
           </summary>
-          <nav
-            aria-label={t("menu")}
-            className="absolute right-0 top-full mt-2 flex max-h-[75vh] w-72 flex-col gap-2 overflow-auto rounded-xl border bg-background p-4 shadow-xl"
-          >
+          <nav aria-label={t("menu")} className="mobile-dropdown glass-panel">
             {links.map(([href, en, bangla]) => (
-              <Link key={href} className="rounded-md px-2 py-3" href={href}>
+              <Link
+                key={href}
+                href={href}
+                onClick={() => {
+                  if (mobile.current) mobile.current.open = false;
+                }}
+              >
                 {bn ? bangla : en}
               </Link>
             ))}
-            <Link className="px-2 py-3" href="/courier-apply">
+            <Link href="/courier-apply">
               {bn ? "কর্মীর আবেদন" : "Worker application"}
             </Link>
-            <Link className="px-2 py-3" href="/login?staff=1">
+            <Link href="/login?staff=1">
               {bn ? "কর্মীদের প্রবেশ" : "Staff sign in"}
             </Link>
-            {language}
-            {accounts}
+            <div className="mobile-accounts">
+              {language}
+              {accounts}
+            </div>
           </nav>
         </details>
       </div>
-      <nav
-        aria-label={bn ? "প্রধান মেনু" : "Main navigation"}
-        className="mx-auto hidden max-w-7xl flex-wrap items-center gap-x-6 gap-y-2 px-4 pb-3 text-sm lg:flex"
-      >
-        {links.map(([href, en, bangla]) => (
-          <Link key={href} className="py-2 hover:text-primary" href={href}>
-            {bn ? bangla : en}
-          </Link>
-        ))}
-        <Link href="/courier-apply" className="py-2">
-          {bn ? "কর্মীর আবেদন" : "Join our team"}
-        </Link>
-        <Link href="/login?staff=1" className="py-2">
-          {bn ? "কর্মীদের প্রবেশ" : "Staff sign in"}
-        </Link>
-      </nav>
     </header>
   );
 }
@@ -8380,9 +8968,12 @@ function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
   );
 }
 
-function SidebarInset({ className, ...props }: React.ComponentProps<"main">) {
+function SidebarInset({
+  className,
+  ...props
+}: React.ComponentProps<"section">) {
   return (
-    <main
+    <section
       data-slot="sidebar-inset"
       className={cn(
         "relative flex w-full flex-1 flex-col bg-background md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2",
@@ -11396,9 +11987,9 @@ test("mobile Bengali home exposes booking, tracking and functional menu without 
     page.getByRole("textbox", { name: "পার্সেলের অনুসন্ধানসংখ্যা" }),
   ).toBeVisible();
   await expect(page.locator("main")).not.toContainText(/99.9%|10K|50\+|24\/7/);
-  await page.locator("header summary").click();
+  await page.locator(".mobile-menu summary").click();
   await expect(
-    page.locator('header a[href="/bn/pricing"]').first(),
+    page.locator('.mobile-dropdown a[href="/bn/pricing"]'),
   ).toBeVisible();
   expect(
     await page.evaluate(
@@ -12003,6 +12594,509 @@ export default function OperationsPage() {
 
 ```typescript
 export { default } from "../../../dashboard/my-shipments/[id]/page";
+```
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\i18n\geography.ts
+
+```typescript
+const places: ReadonlyArray<readonly [string, string]> = [
+  ["ঢাকা", "Dhaka"],
+  ["ঢাকা মহানগর", "Dhaka Metropolitan"],
+  ["সাভার", "Savar"],
+  ["সাভার — দত্তপাড়া", "Savar — Dattapara"],
+  ["সাভার — বিরুলিয়া", "Savar — Birulia"],
+  ["মিরপুর", "Mirpur"],
+  ["উত্তরা", "Uttara"],
+  ["ধানমন্ডি", "Dhanmondi"],
+  ["মোহাম্মদপুর", "Mohammadpur"],
+  ["গুলশান", "Gulshan"],
+  ["বগুড়া", "Bogura"],
+  ["বগুড়া", "Bogura"],
+  ["বগুড়া সদর", "Bogura Sadar"],
+  ["বগুড়া সদর", "Bogura Sadar"],
+  ["শিবগঞ্জ", "Shibganj"],
+  ["ঢাকা নর্থ হাব", "Dhaka North Hub"],
+  ["ঢাকা সাউথ হাব", "Dhaka South Hub"],
+  ["বগুড়া সদর হাব", "Bogura Sadar Hub"],
+  ["বগুড়া সদর হাব", "Bogura Sadar Hub"],
+];
+export function placeName(value: string, locale: string): string {
+  const normalized = value.trim().normalize("NFC").toLocaleLowerCase("en");
+  const match = places.find((pair) =>
+    pair.some(
+      (name) => name.normalize("NFC").toLocaleLowerCase("en") === normalized,
+    ),
+  );
+  return match ? match[locale === "bn" ? 0 : 1] : value;
+}
+export function placeSearch(values: string[], search: string): boolean {
+  const text = values
+    .flatMap((value) => [value, placeName(value, "en"), placeName(value, "bn")])
+    .join(" ")
+    .toLocaleLowerCase("en");
+  return text.includes(search.trim().toLocaleLowerCase("en"));
+}
+```
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\src\components\home\delivery-scene.tsx
+
+```typescript
+import { useId } from "react";
+
+export default function DeliveryScene() {
+  const id = useId().replaceAll(":", "");
+  return (
+    <svg
+      viewBox="0 0 560 400"
+      fill="none"
+      aria-hidden="true"
+      className="delivery-scene"
+    >
+      <defs>
+        <linearGradient
+          id={`${id}body`}
+          x1="180"
+          y1="155"
+          x2="420"
+          y2="280"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop stopColor="#9C61D7" />
+          <stop offset="1" stopColor="#61259F" />
+        </linearGradient>
+        <linearGradient
+          id={`${id}box`}
+          x1="120"
+          y1="80"
+          x2="225"
+          y2="210"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop stopColor="#E3C3A6" />
+          <stop offset="1" stopColor="#C6976F" />
+        </linearGradient>
+        <linearGradient
+          id={`${id}glass`}
+          x1="343"
+          y1="172"
+          x2="400"
+          y2="220"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop stopColor="#EDE0FF" />
+          <stop offset="1" stopColor="#BE91EC" />
+        </linearGradient>
+        <radialGradient id={`${id}halo`}>
+          <stop stopColor="#DDC6F5" />
+          <stop offset="1" stopColor="#F8F3FF" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <ellipse cx="290" cy="220" rx="245" ry="170" fill={`url(#${id}halo)`} />
+      <ellipse
+        cx="294"
+        cy="316"
+        rx="188"
+        ry="23"
+        fill="#5F328F"
+        opacity=".12"
+      />
+      <path
+        d="M64 301c0-34 22-64 54-64h345c33 0 40-35 22-56"
+        stroke="#C6ACDE"
+        strokeWidth="3"
+        strokeDasharray="7 9"
+        strokeLinecap="round"
+      />
+      <circle
+        cx="66"
+        cy="300"
+        r="8"
+        fill="#BFEA80"
+        stroke="#7135B8"
+        strokeWidth="3"
+      />
+      <path d="m330 133 63 20 39 48v75l-109 28V153l7-20Z" fill="#562185" />
+      <path
+        d="M172 145c0-10 8-18 18-18h128c10 0 18 8 18 18v72h44l37 48v31H172V145Z"
+        fill={`url(#${id}body)`}
+      />
+      <path d="M172 153h164v124H172V153Z" fill="#8950C7" />
+      <path d="M344 173h33l29 37h-62v-37Z" fill={`url(#${id}glass)`} />
+      <path d="m378 175 25 33h-9l-25-33h9Z" fill="white" opacity=".45" />
+      <path d="M337 223h67v58h-67v-58Z" fill="#793DB4" />
+      <path
+        d="M351 234h16"
+        stroke="#E8D8F6"
+        strokeWidth="4"
+        strokeLinecap="round"
+      />
+      <path
+        d="M172 267h149M180 282h137"
+        stroke="#BCA0DF"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <rect x="403" y="247" width="14" height="10" rx="3" fill="#E9EEAA" />
+      <rect x="168" y="267" width="7" height="16" rx="3" fill="#EAA6C4" />
+      <rect x="167" y="289" width="251" height="11" rx="5.5" fill="#532179" />
+      <circle cx="215" cy="300" r="29" fill="#2C203C" />
+      <circle cx="215" cy="300" r="16" fill="#DFD6E8" />
+      <circle cx="215" cy="300" r="7" fill="#A288B8" />
+      <circle cx="372" cy="300" r="29" fill="#2C203C" />
+      <circle cx="372" cy="300" r="16" fill="#DFD6E8" />
+      <circle cx="372" cy="300" r="7" fill="#A288B8" />
+      <path
+        d="m243 170 30 17v36l-30 17-30-17v-36l30-17Z"
+        fill="white"
+        opacity=".95"
+      />
+      <path
+        d="m215 188 28 16 28-16M243 204v34"
+        stroke="#8650BC"
+        strokeWidth="2.5"
+        strokeLinejoin="round"
+      />
+      <path d="m231 177 29 17v14l-11 6v-14l-30-17" fill="#BFEA80" />
+      <path d="m109 97 49-25 50 25-50 26-49-26Z" fill="#F0D5BD" />
+      <path d="m109 97 49 26v60l-49-27V97Z" fill={`url(#${id}box)`} />
+      <path d="m158 123 50-26v60l-50 26v-60Z" fill="#BF926B" />
+      <path d="m129 87 51 26v19l17-9v-19l-51-26-17 9Z" fill="#7135B8" />
+      <path d="m123 126 21 11v17l-21-11v-17Z" fill="#FFF8EE" />
+      <path d="m129 136 9 5M129 141l6 3" stroke="#C29471" strokeWidth="2" />
+      <g transform="translate(422 67)">
+        <circle cx="27" cy="27" r="27" fill="white" stroke="#E1D0F2" />
+        <path
+          d="M38 23c0 9-11 18-11 18S16 32 16 23a11 11 0 0 1 22 0Z"
+          fill="#7135B8"
+        />
+        <circle cx="27" cy="23" r="4" fill="#D4EFA9" />
+      </g>
+      <g transform="translate(80 220)">
+        <circle cx="22" cy="22" r="22" fill="#FDFBFF" stroke="#E1D0F2" />
+        <path
+          d="m14 22 6 6 11-13"
+          stroke="#7135B8"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </g>
+      <path
+        d="M344 89h27M358 75v28M84 176h15M92 168v16"
+        stroke="#B399CE"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <circle cx="472" cy="272" r="4" fill="#BFEA80" />
+      <circle cx="253" cy="87" r="5" fill="#BFA1DE" />
+    </svg>
+  );
+}
+```
+
+
+## D:\NEXT_LEVEL_WEB_DEV\assignment\courier-frontend\e2e\design-refresh.spec.ts
+
+```typescript
+import { test, expect, type Page } from "@playwright/test";
+const areaId = "22222222-2222-4222-8222-222222222222";
+async function setup(page: Page, role = "GUEST") {
+  await page.route("**/api/backend/**", (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith("/users/me"))
+      return route.fulfill({
+        status: role === "GUEST" ? 401 : 200,
+        json: {
+          success: role !== "GUEST",
+          data:
+            role === "GUEST"
+              ? undefined
+              : {
+                  id: areaId,
+                  name: "Test Customer",
+                  email: "test@example.test",
+                  role,
+                  status: "ACTIVE",
+                },
+        },
+      });
+    const data = path.endsWith("/operations/coverage")
+      ? [
+          {
+            id: areaId,
+            name: "মিরপুর",
+            district: "ঢাকা",
+            upazila: "ঢাকা মহানগর",
+            pickupEnabled: true,
+            dropoffEnabled: true,
+            deliveryEnabled: true,
+          },
+        ]
+      : path.includes("/stats")
+        ? {
+            total: 0,
+            delivered: 0,
+            pending: 0,
+            totalSpent: 0,
+            totalEarnings: 0,
+          }
+        : [];
+    return route.fulfill({
+      json: {
+        success: true,
+        data,
+        meta: { page: 1, limit: 10, total: 0, totalPages: 1 },
+      },
+    });
+  });
+}
+async function noOverflow(page: Page) {
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+}
+for (const locale of ["en", "bn"]) {
+  for (const width of [1280, 1366, 1440]) {
+    test(`desktop ${locale} navigation stays in one row at ${width}px`, async ({
+      page,
+    }) => {
+      await setup(page, "CUSTOMER");
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/" + locale);
+      await expect(
+        page.locator(".desktop-accounts").getByRole("button").last(),
+      ).toBeVisible();
+      const boxes = await page
+        .locator(".header-row > .brand-lockup, .desktop-nav, .desktop-accounts")
+        .evaluateAll((elements) =>
+          elements.map((e) => {
+            const r = e.getBoundingClientRect();
+            return {
+              top: r.top,
+              bottom: r.bottom,
+              left: r.left,
+              right: r.right,
+            };
+          }),
+        );
+      expect(boxes).toHaveLength(3);
+      expect(Math.max(...boxes.map((b) => b.top))).toBeLessThan(
+        Math.min(...boxes.map((b) => b.bottom)),
+      );
+      expect(boxes[0].right).toBeLessThanOrEqual(boxes[1].left);
+      expect(boxes[1].right).toBeLessThanOrEqual(boxes[2].left);
+      await noOverflow(page);
+    });
+  }
+  test(`localized coverage and booking retain area IDs in ${locale}`, async ({
+    page,
+  }) => {
+    await setup(page, "CUSTOMER");
+    await page.goto("/" + locale + "/coverage");
+    const display = locale === "en" ? "Mirpur" : "মিরপুর";
+    await expect(
+      page.getByRole("heading", { name: display, exact: true }),
+    ).toBeVisible();
+    const search = page.getByRole("searchbox");
+    await search.fill(locale === "en" ? "মিরপুর" : "Mirpur");
+    await expect(
+      page.getByRole("heading", { name: display, exact: true }),
+    ).toBeVisible();
+    await expect(
+      page
+        .locator("select")
+        .first()
+        .locator('option[value="' + areaId + '"]'),
+    ).toContainText(display);
+    await page.goto("/" + locale + "/dashboard/new-shipment");
+    await expect(
+      page
+        .locator("select")
+        .first()
+        .locator('option[value="' + areaId + '"]'),
+    ).toContainText(display);
+  });
+}
+for (const width of [360, 390, 768, 1024]) {
+  test(`responsive public pages and mobile menu at ${width}px`, async ({
+    page,
+  }) => {
+    await setup(page);
+    await page.setViewportSize({ width, height: 844 });
+    for (const path of [
+      "/en",
+      "/en/about",
+      "/en/contact",
+      "/en/coverage",
+      "/bn",
+    ]) {
+      await page.goto(path);
+      await expect(page.locator("h1")).toBeVisible();
+      await noOverflow(page);
+    }
+    await page.locator(".mobile-menu summary").click();
+    await expect(page.locator(".mobile-dropdown")).toBeVisible();
+    await page.locator('.mobile-dropdown a[href="/bn/coverage"]').click();
+    await expect(page).toHaveURL(/\/bn\/coverage/);
+    await expect(page.locator(".mobile-menu")).not.toHaveAttribute("open");
+    await noOverflow(page);
+  });
+}
+test("desktop dashboard sidebar clears header and footer and supports collapse", async ({
+  page,
+}) => {
+  await setup(page, "CUSTOMER");
+  await page.setViewportSize({ width: 1366, height: 900 });
+  await page.goto("/en/dashboard/new-shipment");
+  const sidebar = page.locator('[data-slot="sidebar"][data-state]');
+  await expect(
+    sidebar.getByRole("link", { name: "Overview", exact: true }),
+  ).toBeVisible();
+  const header = await page.locator(".site-header").boundingBox();
+  const overview = await sidebar
+    .getByRole("link", { name: "Overview", exact: true })
+    .boundingBox();
+  expect(overview!.y).toBeGreaterThanOrEqual(header!.y + header!.height);
+  await page.locator("footer").scrollIntoViewIfNeeded();
+  const side = await sidebar.boundingBox(),
+    footer = await page.locator("footer").boundingBox();
+  expect(side!.y + side!.height).toBeLessThanOrEqual(footer!.y + 1);
+  await page.locator('[data-slot="sidebar-trigger"]').click();
+  await expect(sidebar).toHaveAttribute("data-state", "collapsed");
+  await expect.poll(async () => (await sidebar.boundingBox())?.width).toBe(0);
+  await page.locator('[data-slot="sidebar-trigger"]').click();
+  await expect(sidebar).toHaveAttribute("data-state", "expanded");
+  await noOverflow(page);
+});
+test("mobile dashboard opens an accessible sidebar drawer", async ({
+  page,
+}) => {
+  await setup(page, "CUSTOMER");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/en/dashboard/new-shipment");
+  await page.locator('[data-slot="sidebar-trigger"]').click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(
+    page
+      .getByRole("dialog")
+      .getByRole("link", { name: "Overview", exact: true }),
+  ).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).not.toBeVisible();
+  await noOverflow(page);
+});
+test("purple branding and glass cards render across key pages", async ({
+  page,
+}, testInfo) => {
+  await setup(page, "CUSTOMER");
+  for (const [path, width, name] of [
+    ["/en", 1366, "home-desktop"],
+    ["/bn", 390, "home-mobile"],
+    ["/en/about", 1366, "about-desktop"],
+    ["/en/contact", 390, "contact-mobile"],
+    ["/en/coverage", 1366, "coverage-desktop"],
+    ["/en/dashboard/new-shipment", 1366, "dashboard-desktop"],
+  ] as const) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(path);
+    await expect(page.locator("h1,h2").first()).toBeVisible();
+    if (path.endsWith("coverage"))
+      await expect(
+        page.getByRole("heading", { name: "Mirpur", exact: true }),
+      ).toBeVisible();
+    await expect(page.locator(".site-header")).toBeVisible();
+    expect(
+      await page.evaluate(() =>
+        getComputedStyle(document.documentElement)
+          .getPropertyValue("--primary")
+          .trim(),
+      ),
+    ).toBe("#7135b8");
+    await noOverflow(page);
+    await page.screenshot({
+      path: testInfo.outputPath(name + ".png"),
+      fullPage: true,
+      animations: "disabled",
+    });
+  }
+});
+
+for (const [role, path] of [
+  ["CUSTOMER", "/dashboard"],
+  ["ADMIN", "/admin"],
+  ["COURIER", "/courier"],
+] as const) {
+  test(
+    role + " dashboard keeps its overview and footer separated",
+    async ({ page }) => {
+      await setup(page, role);
+      await page.setViewportSize({ width: 1366, height: 900 });
+      await page.goto("/en" + path);
+      const sidebar = page.locator('[data-slot="sidebar"][data-state]');
+      const overview = sidebar.getByRole("link", {
+        name: "Overview",
+        exact: true,
+      });
+      await expect(overview).toBeVisible();
+      const header = await page.locator(".site-header").boundingBox(),
+        item = await overview.boundingBox();
+      expect(item!.y).toBeGreaterThanOrEqual(header!.y + header!.height);
+      await page.locator("footer").scrollIntoViewIfNeeded();
+      const side = await sidebar.boundingBox(),
+        footer = await page.locator("footer").boundingBox();
+      expect(side!.y + side!.height).toBeLessThanOrEqual(footer!.y + 1);
+      await noOverflow(page);
+    },
+  );
+}
+test("Bengali coverage localizes English records and preserves unfamiliar area names", async ({
+  page,
+}) => {
+  await setup(page);
+  await page.route("**/api/backend/operations/coverage", (route) =>
+    route.fulfill({
+      json: {
+        success: true,
+        data: [
+          {
+            id: areaId,
+            name: "Uttara",
+            district: "Dhaka",
+            upazila: "Dhaka Metropolitan",
+            pickupEnabled: true,
+            deliveryEnabled: true,
+          },
+          {
+            id: "unknown-area",
+            name: "New locality",
+            district: "New district",
+            upazila: "New upazila",
+            pickupEnabled: true,
+            deliveryEnabled: true,
+          },
+        ],
+      },
+    }),
+  );
+  await page.goto("/bn/coverage");
+  await expect(
+    page.getByRole("heading", { name: "উত্তরা", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "New locality", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("searchbox").fill("Uttara");
+  await expect(
+    page.getByRole("heading", { name: "উত্তরা", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "New locality", exact: true }),
+  ).not.toBeVisible();
+});
 ```
 
 
@@ -12611,13 +13705,15 @@ export default function ShipmentActions({
 "use client";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocale } from "next-intl";
+import { placeName } from "@/i18n/geography";
 import { useState } from "react";
 import apiClient from "@/lib/apiClient";
 import type { ApiResponse } from "@/types";
 import type { Quote, ServiceArea } from "@/types/operations.type";
 import { Button } from "@/components/ui/button";
 export default function QuoteCalculator() {
-  const bn = useLocale() === "bn",
+  const locale = useLocale(),
+    bn = locale === "bn",
     t = (en: string, bangla: string) => (bn ? bangla : en);
   const [input, setInput] = useState({
     pickupAreaId: "",
@@ -12646,7 +13742,7 @@ export default function QuoteCalculator() {
       currency: "BDT",
     }).format(Number(value));
   return (
-    <section className="space-y-5 rounded-2xl border bg-card p-6">
+    <section className="glass-panel space-y-5 p-6 sm:p-8">
       <h2 className="text-2xl font-bold">
         {t("Calculate delivery cost", "ডেলিভারির খরচ হিসাব করুন")}
       </h2>
@@ -12687,7 +13783,8 @@ export default function QuoteCalculator() {
                   )
                   .map((area) => (
                     <option key={area.id} value={area.id}>
-                      {area.name} — {area.district}
+                      {placeName(area.name, locale)} —{" "}
+                      {placeName(area.district, locale)}
                     </option>
                   ))}
               </select>
@@ -12899,7 +13996,7 @@ export default function ProfileForms({
           )}
         </p>
         <Link
-          className="inline-block rounded-lg bg-primary px-5 py-3 text-primary-foreground"
+          className="brand-button"
           href={
             kind === "business"
               ? "/register?next=/dashboard/business"
@@ -12997,7 +14094,7 @@ export default function ProfileForms({
       </p>
       <form
         key={record?.id || kind}
-        className="grid gap-4 sm:grid-cols-2"
+        className="glass-panel grid gap-5 p-5 sm:grid-cols-2 sm:p-8"
         onSubmit={(e) => {
           e.preventDefault();
           submit.mutate(
@@ -13188,105 +14285,138 @@ export default function ParcelLabel({ shipment }: { shipment: Shipment }) {
 ```typescript
 "use client";
 import { useQuery } from "@tanstack/react-query";
+import { MapPin, Search, Check, Minus } from "lucide-react";
 import { useLocale } from "next-intl";
 import { useState } from "react";
+import { placeName, placeSearch } from "@/i18n/geography";
 import apiClient from "@/lib/apiClient";
 import type { ApiResponse } from "@/types";
 import type { ServiceArea } from "@/types/operations.type";
 import QuoteCalculator from "./quote-calculator";
 export default function CoverageList() {
-  const bn = useLocale() === "bn",
+  const locale = useLocale(),
+    bn = locale === "bn",
     [search, setSearch] = useState("");
+  const t = (en: string, bangla: string) => (bn ? bangla : en);
   const result = useQuery({
     queryKey: ["coverage"],
     queryFn: () =>
       apiClient<ApiResponse<ServiceArea[]>>("/operations/coverage"),
     retry: false,
   });
+  const filtered =
+    result.data?.data.filter((area) =>
+      placeSearch([area.name, area.district, area.upazila], search),
+    ) ?? [];
   return (
-    <div className="mx-auto max-w-5xl space-y-6 px-4 py-10">
-      <h1 className="text-3xl font-bold">
-        {bn ? "সেবার এলাকা" : "Service coverage"}
-      </h1>
-      <label>
-        {bn ? "জেলা, উপজেলা বা এলাকা খুঁজুন" : "Search district, upazila or area"}
-        <input
-          className="mt-2 block h-11 w-full rounded-md border px-3"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      </label>
-      {result.isPending && <p>{bn ? "তথ্য আসছে…" : "Loading…"}</p>}
-      {result.isError && (
-        <p role="alert">
-          {bn ? "এলাকার তথ্য পাওয়া যায়নি।" : "Coverage unavailable."}
+    <div className="page-wrap space-y-8">
+      <header className="space-y-3">
+        <span className="eyebrow">
+          {t("Our service network", "আমাদের সেবার নেটওয়ার্ক")}
+        </span>
+        <h1 className="page-heading">{t("Service coverage", "সেবার এলাকা")}</h1>
+        <p className="max-w-2xl text-muted-foreground">
+          {t(
+            "Find an approved area and check how your parcel can be collected and delivered.",
+            "অনুমোদিত এলাকা খুঁজে পার্সেল সংগ্রহ ও পৌঁছানোর সুবিধা যাচাই করুন।",
+          )}
         </p>
+      </header>
+      <label className="glass-panel block p-5 sm:p-6">
+        <span className="font-medium">
+          {t("Search district, upazila or area", "জেলা, উপজেলা বা এলাকা খুঁজুন")}
+        </span>
+        <span className="relative mt-3 block">
+          <Search
+            aria-hidden="true"
+            className="pointer-events-none absolute left-4 top-3.5 size-5 text-primary"
+          />
+          <input
+            type="search"
+            className="h-12 w-full rounded-xl border bg-background py-3 pl-12 pr-4"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </span>
+      </label>
+      {result.isPending && <p role="status">{t("Loading…", "তথ্য আসছে…")}</p>}
+      {result.isError && (
+        <p role="alert">{t("Coverage unavailable.", "এলাকার তথ্য পাওয়া যায়নি।")}</p>
       )}
       {!result.isPending && !result.isError && !result.data?.data.length && (
         <p>
-          {bn
-            ? "এখনো কোনো সেবার এলাকা অনুমোদিত হয়নি।"
-            : "No service area has been approved yet."}
+          {t(
+            "No service area has been approved yet.",
+            "এখনো কোনো সেবার এলাকা অনুমোদিত হয়নি।",
+          )}
         </p>
       )}
-      <div className="grid gap-4 sm:grid-cols-2">
-        {result.data?.data
-          .filter((area) =>
-            [area.name, area.district, area.upazila]
-              .join(" ")
-              .toLowerCase()
-              .includes(search.toLowerCase()),
-          )
-          .map((area) => (
-            <article className="rounded-xl border p-5" key={area.id}>
-              <h2 className="font-semibold">{area.name}</h2>
-              <p>
-                {area.district} · {area.upazila}
+      {!result.isPending &&
+        !result.isError &&
+        !!result.data?.data.length &&
+        !filtered.length && (
+          <p role="status">
+            {t(
+              "No areas match your search.",
+              "আপনার অনুসন্ধানের সঙ্গে কোনো এলাকা মেলেনি।",
+            )}
+          </p>
+        )}
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {filtered.map((area) => (
+          <article
+            className="glass-panel info-card space-y-5 p-6"
+            key={area.id}
+          >
+            <span className="icon-tile">
+              <MapPin aria-hidden="true" />
+            </span>
+            <div>
+              <h2 className="text-xl font-semibold">
+                {placeName(area.name, locale)}
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {placeName(area.district, locale)} ·{" "}
+                {placeName(area.upazila, locale)}
               </p>
-              <p>
-                {bn ? "সংগ্রহ: " : "Pickup: "}
-                {area.pickupEnabled
-                  ? bn
-                    ? "চালু"
-                    : "Available"
-                  : bn
-                    ? "বন্ধ"
-                    : "Unavailable"}
-              </p>
-              <p>
-                {bn ? "হাবে জমা: " : "Branch drop-off: "}
-                {area.dropoffEnabled
-                  ? bn
-                    ? "চালু"
-                    : "Available"
-                  : bn
-                    ? "বন্ধ"
-                    : "Unavailable"}
-              </p>
-              <p>
-                {bn ? "পৌঁছানো: " : "Delivery: "}
-                {area.deliveryEnabled
-                  ? bn
-                    ? "চালু"
-                    : "Available"
-                  : bn
-                    ? "বন্ধ"
-                    : "Unavailable"}
-              </p>
-            </article>
-          ))}
+            </div>
+            <dl className="space-y-3 text-sm">
+              {[
+                [t("Pickup", "সংগ্রহ"), area.pickupEnabled],
+                [t("Branch drop-off", "হাবে জমা"), area.dropoffEnabled],
+                [t("Delivery", "পৌঁছানো"), area.deliveryEnabled],
+              ].map(([label, available]) => (
+                <div
+                  className="flex flex-wrap items-center justify-between gap-2"
+                  key={String(label)}
+                >
+                  <dt>{label}:</dt>
+                  <dd
+                    className={
+                      available
+                        ? "availability-badge"
+                        : "availability-badge unavailable"
+                    }
+                  >
+                    {available ? (
+                      <Check aria-hidden="true" className="size-3.5" />
+                    ) : (
+                      <Minus aria-hidden="true" className="size-3.5" />
+                    )}
+                    {available ? t("Available", "চালু") : t("Unavailable", "বন্ধ")}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+            <details className="border-t pt-3 text-xs text-muted-foreground">
+              <summary className="cursor-pointer font-medium">
+                {t("Area ID for bulk booking", "একাধিক বুকিংয়ের এলাকার পরিচয়সংখ্যা")}
+              </summary>
+              <code className="mt-2 block break-all select-all">{area.id}</code>
+            </details>
+          </article>
+        ))}
       </div>
-      <p className="text-sm">
-        {bn
-          ? "একাধিক বুকিংয়ের জন্য এলাকার পরিচয়সংখ্যা জানতে এলাকার নামের উপরে চাপুন।"
-          : "For bulk booking, expand an area to copy its ID."}
-      </p>
-      {result.data?.data.map((area) => (
-        <details key={area.id}>
-          <summary>{area.name}</summary>
-          <code className="break-all">{area.id}</code>
-        </details>
-      ))}
       <QuoteCalculator />
     </div>
   );
@@ -13691,6 +14821,7 @@ export default function BulkBookings() {
 "use client";
 import { useState } from "react";
 import { useLocale } from "next-intl";
+import { placeName } from "@/i18n/geography";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import apiClient from "@/lib/apiClient";
 import type { ApiResponse, Hub } from "@/types";
@@ -13812,7 +14943,8 @@ function SettingForm({
   );
 }
 export default function AdminSettings() {
-  const bn = useLocale() === "bn",
+  const locale = useLocale(),
+    bn = locale === "bn",
     t = (en: string, bangla: string) => (bn ? bangla : en);
   const [editingArea, setArea] = useState<
       Record<string, unknown> | undefined
@@ -13840,10 +14972,13 @@ export default function AdminSettings() {
     },
   });
   const areas = query.data?.data.areas || [],
-    options = areas.map((area) => [area.id, area.name] as [string, string]),
+    options = areas.map(
+      (area) => [area.id, placeName(area.name, locale)] as [string, string],
+    ),
     hubOptions =
-      hubs.data?.data.map((hub) => [hub.id, hub.name] as [string, string]) ||
-      [];
+      hubs.data?.data.map(
+        (hub) => [hub.id, placeName(hub.name, locale)] as [string, string],
+      ) || [];
   const refresh = () => {
     void query.refetch();
     setArea(undefined);
@@ -13925,7 +15060,7 @@ export default function AdminSettings() {
             onClick={() => setArea({ ...area })}
           >
             {t("Edit area: ", "এলাকা সম্পাদনা: ")}
-            {area.name}
+            {placeName(area.name, locale)}
           </button>
         ))}
       </div>
@@ -14173,22 +15308,23 @@ export default function AdminSettings() {
 import { useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Package, Truck, MapPin, ClipboardCheck } from "lucide-react";
+import DeliveryScene from "./delivery-scene";
 import TrackForm from "@/components/modules/shipment-tracking/track-form";
 import QuoteCalculator from "@/components/operations/quote-calculator";
 export default function ParcelHero() {
   const bn = useLocale() === "bn",
     t = (en: string, bangla: string) => (bn ? bangla : en);
   return (
-    <div className="mx-auto max-w-7xl space-y-10 px-4 py-10 sm:px-6">
-      <section className="grid items-center gap-8 rounded-3xl bg-linear-to-br from-blue-50 to-white p-6 sm:p-10 lg:grid-cols-2">
+    <div className="page-wrap space-y-10">
+      <section className="hero-panel">
         <div className="space-y-5">
-          <p className="font-semibold text-primary">
+          <p className="eyebrow">
             {t(
               "Dropzo · our own delivery team",
               "ড্রপজো · নিজস্ব ডেলিভারিকর্মীর সেবা",
             )}
           </p>
-          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
+          <h1 className="text-4xl font-bold leading-tight tracking-tight sm:text-5xl xl:text-6xl">
             {t(
               "Send a parcel. Follow every step.",
               "পার্সেল পাঠান। প্রতিটি ধাপ জানুন।",
@@ -14201,16 +15337,10 @@ export default function ParcelHero() {
             )}
           </p>
           <div className="flex flex-wrap gap-3">
-            <Link
-              className="rounded-xl bg-primary px-6 py-3 font-semibold text-primary-foreground"
-              href="/dashboard/new-shipment"
-            >
+            <Link className="brand-button" href="/dashboard/new-shipment">
               {t("Send a parcel", "পার্সেল পাঠান")}
             </Link>
-            <Link
-              className="rounded-xl border px-6 py-3"
-              href="/merchant-register"
-            >
+            <Link className="secondary-button" href="/merchant-register">
               {t("Register your business", "ব্যবসায়িক নিবন্ধন")}
             </Link>
           </div>
@@ -14221,16 +15351,18 @@ export default function ParcelHero() {
             )}
           </Link>
         </div>
-        <div
-          aria-hidden="true"
-          className="relative grid min-h-64 place-items-center rounded-3xl border border-blue-200 bg-blue-100/60"
-        >
-          <Truck className="size-36 text-primary" strokeWidth={1.3} />
-          <Package className="absolute left-8 top-8 size-14 text-blue-700" />
-          <MapPin className="absolute right-8 bottom-8 size-12 text-blue-700" />
+        <div className="hero-art">
+          <DeliveryScene />
+          <p className="hero-art-caption">
+            <ClipboardCheck
+              aria-hidden="true"
+              className="size-5 shrink-0 text-primary"
+            />
+            {t("From your doorstep to theirs", "আপনার দরজা থেকে প্রাপকের দরজায়")}
+          </p>
         </div>
       </section>
-      <section className="rounded-2xl border p-6">
+      <section className="glass-panel p-6 sm:p-8">
         <h2 className="mb-4 text-2xl font-bold">
           {t("Track your parcel", "পার্সেলের অবস্থা খুঁজুন")}
         </h2>
@@ -14270,8 +15402,8 @@ export default function ParcelHero() {
         ].map(([Icon, en, bangla, description, bnDescription], index) => {
           const StepIcon = Icon as typeof Package;
           return (
-            <article key={String(en)} className="rounded-xl border p-5">
-              <StepIcon className="mb-3 size-8 text-primary" />
+            <article key={String(en)} className="glass-panel info-card p-6">
+              <StepIcon className="icon-tile mb-4 p-3" />
               <h2 className="font-semibold">
                 {new Intl.NumberFormat(bn ? "bn-BD" : "en-US").format(
                   index + 1,
@@ -14285,7 +15417,7 @@ export default function ParcelHero() {
           );
         })}
       </section>
-      <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border p-6">
+      <section className="glass-panel flex flex-wrap items-center justify-between gap-4 p-6 sm:p-8">
         <div>
           <h2 className="text-xl font-bold">
             {t("Join our delivery team", "আমাদের ডেলিভারিকর্মী দলে যোগ দিন")}
@@ -14297,7 +15429,7 @@ export default function ParcelHero() {
             )}
           </p>
         </div>
-        <Link className="rounded-xl border px-5 py-3" href="/courier-apply">
+        <Link className="secondary-button" href="/courier-apply">
           {t("Apply as a delivery worker", "ডেলিভারিকর্মী হিসেবে আবেদন")}
         </Link>
         <Link className="underline" href="/login?staff=1">
@@ -14332,8 +15464,8 @@ import { useLocale } from "next-intl";
 export default function MerchantPage() {
   const bn = useLocale() === "bn";
   return (
-    <div className="mx-auto max-w-3xl space-y-5 px-4 py-10">
-      <h1 className="text-3xl font-bold">
+    <div className="page-wrap max-w-3xl space-y-6">
+      <h1 className="page-heading">
         {bn ? "ব্যবসায়িক নিবন্ধন" : "Business registration"}
       </h1>
       <ProfileForms kind="business" />
@@ -14381,8 +15513,8 @@ import { useLocale } from "next-intl";
 export default function CourierApplyPage() {
   const bn = useLocale() === "bn";
   return (
-    <div className="mx-auto max-w-3xl space-y-5 px-4 py-10">
-      <h1 className="text-3xl font-bold">
+    <div className="page-wrap max-w-3xl space-y-6">
+      <h1 className="page-heading">
         {bn ? "ডেলিভারিকর্মী হিসেবে আবেদন" : "Delivery worker application"}
       </h1>
       <ProfileForms kind="application" />

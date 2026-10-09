@@ -1,3 +1,4 @@
+import { useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useUiText } from "@/i18n/use-ui-text";
 import Logo from "@/assets/svg/Logo";
@@ -42,14 +43,17 @@ const groups = [
 
 export default function Footer() {
   const ui = useUiText();
+  const locale = useLocale();
   return (
-    <footer className="mt-auto w-full border-t bg-background text-foreground">
+    <footer className="site-footer w-full text-foreground">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
         <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-4">
           <div className="flex flex-col gap-4">
-            <Link href="/" className="flex items-center gap-2">
-              <Logo className="size-6" />
-              <span className="text-xl font-bold">Dropzo</span>
+            <Link href="/" className="brand-lockup">
+              <Logo className="size-9" />
+              <span className="brand-wordmark">
+                Dropzo<span className="brand-dot">.</span>
+              </span>
             </Link>
             <p className="text-sm leading-relaxed text-muted-foreground">
               {ui(
@@ -81,7 +85,10 @@ export default function Footer() {
       <div className="border-t bg-muted/20 py-6">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 sm:px-6 md:flex-row lg:px-8">
           <p className="text-sm text-muted-foreground">
-            © {ui(new Date().getFullYear())}{" "}
+            ©{" "}
+            {new Intl.NumberFormat(locale === "bn" ? "bn-BD" : "en-US", {
+              useGrouping: false,
+            }).format(new Date().getFullYear())}{" "}
             {ui("Dropzo. All rights reserved.")}
           </p>
           <p className="text-sm text-muted-foreground">

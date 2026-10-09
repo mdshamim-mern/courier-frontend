@@ -101,7 +101,7 @@ export default function RegisterForm() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col items-center gap-3 text-center">
-        <div className="flex size-14 items-center justify-center rounded-2xl bg-linear-to-br from-primary to-blue-600 shadow-lg shadow-primary/30">
+        <div className="flex size-14 items-center justify-center rounded-2xl bg-linear-to-br from-primary to-purple-500 shadow-lg shadow-primary/30">
           <UserPlus className="size-6 text-white" />
         </div>
         <h1 className="text-3xl font-bold tracking-tight">

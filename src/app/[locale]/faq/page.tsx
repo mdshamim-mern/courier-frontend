@@ -77,10 +77,10 @@ export default function FaqPage() {
   const locale = useLocale();
   const ui = useUiText();
   return (
-    <article className="mx-auto max-w-4xl space-y-8 px-4 py-16 sm:px-6">
-      <h1 className="text-4xl font-bold">{ui("FAQ")}</h1>
+    <article className="page-wrap space-y-8">
+      <h1 className="page-heading">{ui("FAQ")}</h1>
       {questions[locale === "bn" ? "bn" : "en"].map(([question, answer]) => (
-        <section key={question} className="space-y-3 rounded-xl border p-6">
+        <section key={question} className="glass-panel space-y-3 p-6">
           <h2 className="text-xl font-semibold">{question}</h2>
           <p className="leading-8 text-muted-foreground">{answer}</p>
         </section>

@@ -1,13 +1,15 @@
 "use client";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocale } from "next-intl";
+import { placeName } from "@/i18n/geography";
 import { useState } from "react";
 import apiClient from "@/lib/apiClient";
 import type { ApiResponse } from "@/types";
 import type { Quote, ServiceArea } from "@/types/operations.type";
 import { Button } from "@/components/ui/button";
 export default function QuoteCalculator() {
-  const bn = useLocale() === "bn",
+  const locale = useLocale(),
+    bn = locale === "bn",
     t = (en: string, bangla: string) => (bn ? bangla : en);
   const [input, setInput] = useState({
     pickupAreaId: "",
@@ -36,7 +38,7 @@ export default function QuoteCalculator() {
       currency: "BDT",
     }).format(Number(value));
   return (
-    <section className="space-y-5 rounded-2xl border bg-card p-6">
+    <section className="glass-panel space-y-5 p-6 sm:p-8">
       <h2 className="text-2xl font-bold">
         {t("Calculate delivery cost", "ডেলিভারির খরচ হিসাব করুন")}
       </h2>
@@ -77,7 +79,8 @@ export default function QuoteCalculator() {
                   )
                   .map((area) => (
                     <option key={area.id} value={area.id}>
-                      {area.name} — {area.district}
+                      {placeName(area.name, locale)} —{" "}
+                      {placeName(area.district, locale)}
                     </option>
                   ))}
               </select>
