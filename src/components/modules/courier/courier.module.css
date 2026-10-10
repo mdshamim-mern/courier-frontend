@@ -62,6 +62,34 @@
 .headerAction {
   flex-shrink: 0;
 }
+.refreshControl {
+  display: grid;
+  justify-items: end;
+  gap: 0.6rem;
+  max-width: 22rem;
+}
+.refreshControl button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.refreshControl p {
+  font-size: 0.75rem;
+  line-height: 1.65;
+  text-align: right;
+}
+.refreshControl p[role="alert"] {
+  color: var(--destructive);
+}
+.refreshSpin {
+  animation: refreshRotation 1s linear infinite;
+}
+@keyframes refreshRotation {
+  to {
+    transform: rotate(360deg);
+  }
+}
 .metrics {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
@@ -420,6 +448,12 @@
     align-items: flex-start;
     flex-direction: column;
   }
+  .refreshControl {
+    justify-items: start;
+  }
+  .refreshControl p {
+    text-align: left;
+  }
 }
 @media (max-width: 640px) {
   .workspace {
@@ -431,6 +465,11 @@
   .headerAction,
   .headerAction > a,
   .headerAction > button {
+    width: 100%;
+  }
+  .refreshControl,
+  .refreshControl button {
+    max-width: none;
     width: 100%;
   }
   .toolbar {
@@ -450,6 +489,9 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  .refreshSpin {
+    animation: none;
+  }
   .shortcut {
     transition: none;
     transform: none;

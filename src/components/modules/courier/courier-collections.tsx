@@ -11,13 +11,17 @@ import { EmptyStatePanel } from "@/components/ui/empty-state-panel";
 import { Link } from "@/i18n/navigation";
 import { CourierMetric, CourierNote, CourierPageHeader } from "./courier-ui";
 import styles from "./courier.module.css";
+import CourierRefresh from "./courier-refresh";
 
 export default function CourierCollections() {
   const bn = useLocale() === "bn",
     t = (en: string, bangla: string) => (bn ? bangla : en);
   const mine = useQuery({
     queryKey: ["operations-mine"],
-    queryFn: () => apiClient<ApiResponse<OperationsMine>>("/operations/mine"),
+    queryFn: () =>
+      apiClient<ApiResponse<OperationsMine>>("/operations/mine", {
+        cache: "no-store",
+      }),
   });
   const records = mine.data?.data.collections || [],
     totals = mine.data?.data.totals;
@@ -50,16 +54,13 @@ export default function CourierCollections() {
           "প্রাপকের কাছ থেকে সংগৃহীত পণ্যের নগদ টাকা ও নথিভুক্ত হস্তান্তরের হিসাব মিলিয়ে নিন।",
         )}
         action={
-          <button
-            type="button"
-            className="secondary-button"
-            disabled={mine.isFetching}
-            onClick={() => {
-              void mine.refetch();
+          <CourierRefresh
+            label={t("Refresh ledger", "হিসাব হালনাগাদ করুন")}
+            fetching={mine.isFetching}
+            refresh={async () => {
+              await mine.refetch({ throwOnError: true });
             }}
-          >
-            {t("Refresh ledger", "হিসাব হালনাগাদ করুন")}
-          </button>
+          />
         }
       />
       {mine.isPending ? (

@@ -13,8 +13,12 @@ import {
 } from "@/components/modules/courier/courier-ui";
 import styles from "@/components/modules/courier/courier.module.css";
 import { Link } from "@/i18n/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { getCourierHistoryAndEarnings } from "@/api";
+import CourierRefresh from "@/components/modules/courier/courier-refresh";
 
 export default function EarningsPage() {
+  const queryClient = useQueryClient();
   const bn = useLocale() === "bn",
     ui = useUiText(),
     display = useUiFormat();
@@ -39,16 +43,20 @@ export default function EarningsPage() {
           "View your total earnings and delivery performance over time.",
         )}
         action={
-          <button
-            type="button"
-            className="secondary-button"
-            disabled={isFetching || userLoading || !courierId}
-            onClick={() => {
-              void refetch();
+          <CourierRefresh
+            label={bn ? "হালনাগাদ করুন" : "Refresh earnings"}
+            fetching={isFetching || userLoading}
+            refresh={async () => {
+              const profile = await refreshUser({ throwOnError: true });
+              const currentId = profile.data?.data.courier?.id;
+              if (!currentId) throw new Error("Courier profile is not linked");
+              await queryClient.fetchQuery({
+                queryKey: ["couriers", "history-earnings", currentId],
+                queryFn: () => getCourierHistoryAndEarnings(currentId),
+                staleTime: 0,
+              });
             }}
-          >
-            {bn ? "হালনাগাদ করুন" : "Refresh earnings"}
-          </button>
+          />
         }
       />
       {userLoading || isLoading ? (

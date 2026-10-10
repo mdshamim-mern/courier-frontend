@@ -1,6 +1,151 @@
 import { test, expect, type Page } from "@playwright/test";
 import { setSession } from "./support/session";
 
+for (const locale of ["en", "bn"]) {
+  for (const ledger of [true, false]) {
+    test(`courier refresh fetches changed and unchanged ${ledger ? "ledger" : "earnings"} data in ${locale}`, async ({
+      page,
+    }) => {
+      await mock(page);
+      let requests = 0;
+      let release: (() => void) | undefined;
+      let blocked = false;
+      const endpoint = ledger
+        ? "**/api/backend/operations/mine"
+        : "**/api/backend/couriers/*/history-earnings";
+      await page.route(endpoint, async (route) => {
+        requests++;
+        if (blocked)
+          await new Promise<void>((resolve) => {
+            release = resolve;
+          });
+        const amount = requests > 1 ? "999" : "1500";
+        return route.fulfill({
+          json: {
+            success: true,
+            data: ledger
+              ? {
+                  collections: [],
+                  totals: {
+                    ...totals,
+                    collected: amount,
+                    heldByWorker: amount,
+                  },
+                }
+              : {
+                  totalEarnings: requests > 1 ? 999 : 240,
+                  completedDeliveries: 6,
+                  performanceRate: 75,
+                  totalShipments: 9,
+                  shipments: [],
+                },
+          },
+        });
+      });
+      await page.goto(
+        `/${locale}/courier/${ledger ? "collections" : "earnings"}`,
+      );
+      const label = ledger
+        ? locale === "en"
+          ? "Refresh ledger"
+          : "হিসাব হালনাগাদ করুন"
+        : locale === "en"
+          ? "Refresh earnings"
+          : "হালনাগাদ করুন";
+      const button = page.getByRole("button", { name: label, exact: true });
+      await expect(button).toBeEnabled();
+      const initial = requests;
+      blocked = true;
+      await button.click();
+      await expect.poll(() => requests).toBe(initial + 1);
+      await expect(button).toBeDisabled();
+      await expect(button).toHaveAttribute("aria-busy", "true");
+      await expect(
+        page.locator("[data-courier-header]").getByRole("status"),
+      ).toContainText(
+        locale === "en" ? "Fetching the latest" : "সর্বশেষ তথ্য আনা হচ্ছে",
+      );
+      blocked = false;
+      release?.();
+      await expect(button).toBeEnabled();
+      await expect(
+        page.locator("[data-courier-header]").getByRole("status"),
+      ).toContainText(
+        locale === "en" ? "Latest server data loaded" : "সর্বশেষ তথ্য আনা হয়েছে",
+      );
+      await expect(
+        page.locator("[data-courier-metric]").nth(ledger ? 2 : 0),
+      ).toContainText(locale === "en" ? "999.00" : "৯৯৯.০০");
+      await button.click();
+      await expect.poll(() => requests).toBe(initial + 2);
+      await expect(
+        page.locator("[data-courier-header]").getByRole("status"),
+      ).toContainText(
+        locale === "en" ? "Values remain unchanged" : "অঙ্ক অপরিবর্তিত থাকবে",
+      );
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+        ),
+      ).toBe(true);
+    });
+  }
+}
+
+for (const ledger of [true, false]) {
+  test(`courier refresh reports ${ledger ? "ledger" : "earnings"} failure and recovers on retry`, async ({
+    page,
+  }) => {
+    await mock(page);
+    let fail = false;
+    const endpoint = ledger
+      ? "**/api/backend/operations/mine"
+      : "**/api/backend/couriers/*/history-earnings";
+    await page.route(endpoint, (route) =>
+      route.fulfill({
+        status: fail ? 503 : 200,
+        json: fail
+          ? { success: false, message: "Refresh temporarily unavailable" }
+          : {
+              success: true,
+              data: ledger
+                ? { totals, collections: [] }
+                : {
+                    totalEarnings: 240,
+                    completedDeliveries: 6,
+                    totalShipments: 9,
+                    performanceRate: 75,
+                    shipments: [],
+                  },
+            },
+      }),
+    );
+    await page.goto(`/en/courier/${ledger ? "collections" : "earnings"}`);
+    const button = page.getByRole("button", {
+      name: ledger ? "Refresh ledger" : "Refresh earnings",
+      exact: true,
+    });
+    await expect(button).toBeEnabled();
+    fail = true;
+    await button.click();
+    await expect(
+      page.locator("[data-courier-header]").getByRole("alert"),
+    ).toContainText("Refresh temporarily unavailable");
+    await expect(
+      page.locator("[data-courier-header]").getByRole("status"),
+    ).toHaveCount(0);
+    await expect(button).toBeEnabled();
+    fail = false;
+    await button.click();
+    await expect(
+      page.locator("[data-courier-header]").getByRole("status"),
+    ).toContainText("Latest server data loaded");
+    await expect(
+      page.locator("[data-courier-header]").getByRole("alert"),
+    ).toHaveCount(0);
+  });
+}
+
 const courierId = "11111111-1111-4111-8111-111111111111";
 const shipmentId = "22222222-2222-4222-8222-222222222222";
 const user = {
