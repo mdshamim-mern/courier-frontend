@@ -1,3 +1,11 @@
+import { pageMetadata } from "@/lib/metadata";
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  return pageMetadata("services", params);
+}
 import {
   Package,
   Zap,
@@ -8,17 +16,6 @@ import {
 } from "lucide-react";
 import { useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import type { Metadata } from "next";
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}): Promise<Metadata> {
-  const { locale } = await params;
-  return {
-    title: locale === "bn" ? "আমাদের সেবাসমূহ | Dropzo" : "Our Services | Dropzo",
-  };
-}
 export default function ServicesPage() {
   const bn = useLocale() === "bn",
     t = (en: string, bangla: string) => (bn ? bangla : en);

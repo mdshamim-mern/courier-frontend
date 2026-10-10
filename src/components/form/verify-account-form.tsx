@@ -1,5 +1,7 @@
 "use client";
 
+import { SchemaForm } from "./schema-form";
+import { z } from "zod";
 import { useUiText } from "@/i18n/use-ui-text";
 import { authDestination } from "@/lib/auth-destination";
 import { useSearchParams } from "next/navigation";
@@ -77,7 +79,12 @@ export default function VerifyAccountForm() {
         </CardDescription>
       </CardHeader>
       <CardContent className="flex justify-center py-6">
-        <form
+        <SchemaForm
+          schema={z.object({
+            email: z.email(),
+            otp: z.string().regex(/^\d{6}$/),
+          })}
+          values={{ email, otp }}
           method="post"
           id="otp-form"
           onSubmit={(e) => {
@@ -137,7 +144,7 @@ export default function VerifyAccountForm() {
               {ui("Please enter the code to complete registration")}{" "}
             </FieldDescription>
           </Field>
-        </form>
+        </SchemaForm>
       </CardContent>
       <CardFooter>
         <Button

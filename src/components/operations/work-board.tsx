@@ -1,5 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useUrlState } from "@/hooks/use-url-state";
+import { AssignmentSchema } from "@/validation/operations.validation";
+import { SchemaForm } from "@/components/form/schema-form";
 import { useLocale } from "next-intl";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import apiClient from "@/lib/apiClient";
@@ -17,14 +19,16 @@ import {
   TestRecordBadge,
   isTestRecord,
 } from "@/components/modules/admin/admin-ui";
+import DataSkeleton from "@/components/ui/data-skeleton";
+import { EmptyStatePanel } from "@/components/ui/empty-state-panel";
 import styles from "@/components/modules/admin/admin.module.css";
 export default function WorkBoard({ admin = false }: { admin?: boolean }) {
   const ui = useUiText();
   const bn = useLocale() === "bn",
     t = (en: string, bangla: string) => (bn ? bangla : en);
-  const [task, setTask] = useState(""),
-    [page, setPage] = useState(1),
-    [search, setSearch] = useState("");
+  const [task, setTask] = useUrlState("task", ""),
+    [page, setPage] = useUrlState("page", 1),
+    [search, setSearch] = useUrlState("search", "");
   const records = useGetAllShipments({
     page,
     limit: 10,
@@ -117,9 +121,7 @@ export default function WorkBoard({ admin = false }: { admin?: boolean }) {
           }}
         />
       </div>
-      {records.isPending && (
-        <p role="status">{t("Loading parcels…", "পার্সেল লোড হচ্ছে…")}</p>
-      )}
+      {records.isPending && <DataSkeleton />}
       {assign.isSuccess && (
         <AdminFeedback
           success={t("Work allocation saved.", "কাজের বরাদ্দ সংরক্ষিত।")}
@@ -129,7 +131,11 @@ export default function WorkBoard({ admin = false }: { admin?: boolean }) {
         <p role="alert">{t("Tasks unavailable.", "কাজের তালিকা পাওয়া যায়নি।")}</p>
       )}
       {!records.isPending && !records.isError && !records.data?.data.length && (
-        <p>{t("No matching tasks.", "এই ধরনের কোনো কাজ নেই।")}</p>
+        <p>
+          <EmptyStatePanel
+            title={t("No matching tasks.", "এই ধরনের কোনো কাজ নেই।")}
+          />
+        </p>
       )}
       {records.data?.data.map((shipment) => (
         <article
@@ -185,7 +191,8 @@ export default function WorkBoard({ admin = false }: { admin?: boolean }) {
             ["PENDING", "AT_ORIGIN_HUB", "AT_DESTINATION_HUB"].includes(
               shipment.status,
             ) && (
-              <form
+              <SchemaForm
+                schema={AssignmentSchema}
                 className="flex flex-wrap gap-3"
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -235,7 +242,7 @@ export default function WorkBoard({ admin = false }: { admin?: boolean }) {
                     ? t("Assign pickup worker", "সংগ্রহের কর্মী বরাদ্দ")
                     : t("Handover at hub", "হাবে কর্মী হস্তান্তর")}
                 </Button>
-              </form>
+              </SchemaForm>
             )}
           <ShipmentActions
             shipment={shipment}

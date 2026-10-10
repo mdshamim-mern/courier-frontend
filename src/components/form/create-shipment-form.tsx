@@ -10,7 +10,13 @@ import apiClient from "@/lib/apiClient";
 import { Button } from "@/components/ui/button";
 import type { ApiResponse, Shipment } from "@/types";
 import type { ServiceArea, Quote } from "@/types/operations.type";
-import { BookingSchema } from "@/validation/shipment.validation";
+import { SchemaForm } from "./schema-form";
+import {
+  PickupSchema,
+  BookingFormSchema,
+} from "@/validation/operations.validation";
+import DataSkeleton from "@/components/ui/data-skeleton";
+import QueryError from "@/components/ui/query-error";
 export default function CreateShipmentForm() {
   const locale = useLocale(),
     bn = locale === "bn",
@@ -40,10 +46,12 @@ export default function CreateShipmentForm() {
     requestedPickupAt: "",
     deliveryInstructions: "",
   });
+  const [step, setStep] = useState(0);
   const [accepted, setAccepted] = useState(false);
   const requestId = useRef("");
   const [invalid, setInvalid] = useState(false);
   const quote = useMutation({
+    onSuccess: () => setStep(2),
     mutationFn: () =>
       apiClient<ApiResponse<Quote>>("/operations/quote", {
         method: "POST",
@@ -138,6 +146,15 @@ export default function CreateShipmentForm() {
       "datetime-local",
     ],
   ];
+  if (areas.isPending) return <DataSkeleton />;
+  if (areas.isError)
+    return (
+      <QueryError
+        retry={() => {
+          void areas.refetch();
+        }}
+      />
+    );
   return (
     <section className="glass-panel mx-auto max-w-3xl space-y-6 p-5 sm:p-8">
       <h1 className="text-2xl font-bold">
@@ -157,27 +174,39 @@ export default function CreateShipmentForm() {
           )}
         </p>
       )}
-      <form
+      <ol
+        aria-label={t("Booking steps", "বুকিংয়ের ধাপ")}
+        className="grid grid-cols-3 gap-2 text-sm"
+      >
+        {[
+          t("1. Addresses", "১. ঠিকানা"),
+          t("2. Parcel & service", "২. পণ্য ও সেবা"),
+          t("3. Review & confirm", "৩. যাচাই ও নিশ্চিত"),
+        ].map((label, index) => (
+          <li
+            key={label}
+            aria-current={step === index ? "step" : undefined}
+            className={`rounded-xl border p-3 ${step === index ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+          >
+            {label}
+          </li>
+        ))}
+      </ol>
+      <SchemaForm
+        schema={step === 0 ? PickupSchema : BookingFormSchema}
+        values={payload}
         id={formId}
         autoComplete="off"
         className="grid gap-4 sm:grid-cols-2"
         onSubmit={(event) => {
           event.preventDefault();
-          const date = new Date(String(payload.requestedPickupAt));
-          const valid =
-            !Number.isNaN(date.getTime()) &&
-            BookingSchema.safeParse({
-              ...payload,
-              requestedPickupAt: date.toISOString(),
-            }).success;
-          setInvalid(!valid);
-          if (!valid) return;
-          if (!quote.data) quote.mutate();
+          if (step === 0) setStep(1);
+          else if (step === 1) quote.mutate();
           else if (accepted) create.mutate();
         }}
       >
         {(["pickupAreaId", "receiverAreaId"] as const).map((key) => (
-          <label key={key} htmlFor={`${formId}-${key}`}>
+          <label hidden={step !== 0} key={key} htmlFor={`${formId}-${key}`}>
             {key === "pickupAreaId"
               ? t(
                   "Pickup area (district / upazila / locality)",
@@ -188,6 +217,7 @@ export default function CreateShipmentForm() {
                   "প্রাপকের এলাকা (জেলা / উপজেলা / এলাকা)",
                 )}
             <select
+              disabled={quote.isPending || create.isPending}
               id={`${formId}-${key}`}
               name={key}
               autoComplete="off"
@@ -219,6 +249,7 @@ export default function CreateShipmentForm() {
           <label key={key} htmlFor={`${formId}-${key}`}>
             {t(en, bangla)}
             <input
+              disabled={quote.isPending || create.isPending}
               required
               id={`${formId}-${key}`}
               autoComplete={autocomplete[key] || "off"}
@@ -253,9 +284,10 @@ export default function CreateShipmentForm() {
             />
           </label>
         ))}
-        <label htmlFor={`${formId}-productType`}>
+        <label hidden={step !== 1} htmlFor={`${formId}-productType`}>
           {t("Product type", "পণ্যের ধরন")}
           <select
+            disabled={quote.isPending || create.isPending}
             id={`${formId}-productType`}
             name="productType"
             autoComplete="off"
@@ -274,9 +306,10 @@ export default function CreateShipmentForm() {
             ))}
           </select>
         </label>
-        <label htmlFor={`${formId}-serviceType`}>
+        <label hidden={step !== 1} htmlFor={`${formId}-serviceType`}>
           {t("Service", "সেবা")}
           <select
+            disabled={quote.isPending || create.isPending}
             id={`${formId}-serviceType`}
             name="serviceType"
             autoComplete="off"
@@ -299,9 +332,10 @@ export default function CreateShipmentForm() {
             </option>
           </select>
         </label>
-        <label htmlFor={`${formId}-pickupMode`}>
+        <label hidden={step !== 0} htmlFor={`${formId}-pickupMode`}>
           {t("Pickup method", "সংগ্রহের পদ্ধতি")}
           <select
+            disabled={quote.isPending || create.isPending}
             id={`${formId}-pickupMode`}
             name="pickupMode"
             autoComplete="off"
@@ -317,9 +351,10 @@ export default function CreateShipmentForm() {
             </option>
           </select>
         </label>
-        <label htmlFor={`${formId}-deliveryInstructions`}>
+        <label hidden={step !== 1} htmlFor={`${formId}-deliveryInstructions`}>
           {t("Special instructions", "বিশেষ নির্দেশনা")}
           <textarea
+            disabled={quote.isPending || create.isPending}
             id={`${formId}-deliveryInstructions`}
             name="deliveryInstructions"
             autoComplete="off"
@@ -329,11 +364,47 @@ export default function CreateShipmentForm() {
             onChange={(e) => update("deliveryInstructions", e.target.value)}
           />
         </label>
-        {quote.data && (
+        {step === 2 && quote.data && (
           <div
             className="space-y-2 rounded-xl border p-4 sm:col-span-2"
             aria-live="polite"
           >
+            <h2 className="text-xl font-semibold">
+              {t("Review your parcel", "পার্সেলের তথ্য যাচাই করুন")}
+            </h2>
+            <dl className="grid gap-3 rounded-lg bg-primary/5 p-4 text-sm sm:grid-cols-2">
+              <div>
+                <dt className="font-semibold">{t("Pickup", "সংগ্রহ")}</dt>
+                <dd>
+                  {String(payload.pickupAddress)} ·{" "}
+                  {String(payload.senderPhone)}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-semibold">{t("Recipient", "প্রাপক")}</dt>
+                <dd>
+                  {String(payload.receiverName)} ·{" "}
+                  {String(payload.receiverAddress)} ·{" "}
+                  {String(payload.receiverPhone)}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-semibold">{t("Parcel", "পার্সেল")}</dt>
+                <dd>
+                  {String(payload.weight)} kg · {String(payload.productType)} ·
+                  BDT {String(payload.declaredValue)}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-semibold">
+                  {t("Pickup time", "সংগ্রহের সময়")}
+                </dt>
+                <dd>
+                  {String(payload.requestedPickupAt)} · COD BDT{" "}
+                  {String(payload.codAmount)}
+                </dd>
+              </div>
+            </dl>
             <p role="status">
               {t("Confirmed service: ", "নিশ্চিত সেবা: ")}
               {
@@ -433,14 +504,26 @@ export default function CreateShipmentForm() {
             quote.isPending ||
             create.isPending ||
             areas.isPending ||
-            (!!quote.data && !accepted)
+            (step === 2 && !accepted)
           }
         >
-          {quote.data
-            ? t("Confirm booking", "বুকিং নিশ্চিত করুন")
-            : t("Review cost before booking", "বুকিংয়ের আগে মাশুল দেখুন")}
+          {step === 0
+            ? t("Continue to parcel details", "পণ্যের তথ্যে যান")
+            : step === 2
+              ? t("Confirm booking", "বুকিং নিশ্চিত করুন")
+              : t("Review cost before booking", "বুকিংয়ের আগে মাশুল দেখুন")}
         </Button>
-      </form>
+        {step > 0 && (
+          <Button
+            type="button"
+            variant="outline"
+            disabled={quote.isPending || create.isPending}
+            onClick={() => setStep(step - 1)}
+          >
+            {t("Back", "পেছনে")}
+          </Button>
+        )}
+      </SchemaForm>
     </section>
   );
 }

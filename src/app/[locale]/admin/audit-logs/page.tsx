@@ -1,4 +1,5 @@
 "use client";
+import { useUrlState } from "@/hooks/use-url-state";
 import { useState } from "react";
 import { useGetAuditLogs } from "@/hooks";
 import { useUiText, useUiFormat } from "@/i18n/use-ui-text";
@@ -20,12 +21,14 @@ import {
   RefreshButton,
   useAdminText,
 } from "@/components/modules/admin/admin-ui";
+import DataSkeleton from "@/components/ui/data-skeleton";
+import { EmptyStatePanel } from "@/components/ui/empty-state-panel";
 import styles from "@/components/modules/admin/admin.module.css";
 export default function AuditLogsPage() {
   const ui = useUiText(),
     display = useUiFormat(),
     t = useAdminText();
-  const [page, setPage] = useState(1),
+  const [page, setPage] = useUrlState("page", 1),
     [selected, setSelected] = useState<AuditLog | null>(null);
   const result = useGetAuditLogs({ page, limit: 10 });
   return (
@@ -66,13 +69,13 @@ export default function AuditLogsPage() {
               {result.isPending ? (
                 <TableRow>
                   <TableCell colSpan={5} className={styles.empty}>
-                    {t("Loading audit history…", "ইতিহাস লোড হচ্ছে…")}
+                    <DataSkeleton />
                   </TableCell>
                 </TableRow>
               ) : !result.data?.data.length ? (
                 <TableRow>
                   <TableCell colSpan={5} className={styles.empty}>
-                    {ui("No logs found.")}
+                    <EmptyStatePanel title={ui("No logs found.")} />
                   </TableCell>
                 </TableRow>
               ) : (

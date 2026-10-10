@@ -1,4 +1,11 @@
-import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/metadata";
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  return pageMetadata("faq", params);
+}
 import { useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useUiText } from "@/i18n/use-ui-text";
@@ -59,20 +66,6 @@ const questions = {
     ],
   ],
 };
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}): Promise<Metadata> {
-  const { locale } = await params;
-  return {
-    title:
-      locale === "bn"
-        ? "সচরাচর প্রশ্ন | Dropzo"
-        : "Frequently Asked Questions | Dropzo",
-  };
-}
 
 export default function FaqPage() {
   const locale = useLocale();

@@ -1,4 +1,13 @@
 "use client";
+import {
+  AreaSchema,
+  RateSchema,
+  WorkerReviewSchema,
+  ReviewSchema,
+  SettlementSchema,
+} from "@/validation/operations.validation";
+import DataSkeleton from "@/components/ui/data-skeleton";
+import { SchemaForm } from "@/components/form/schema-form";
 import { useState, useRef } from "react";
 import { useLocale } from "next-intl";
 import { placeName } from "@/i18n/geography";
@@ -41,7 +50,8 @@ function SettingForm({
     onSuccess: refresh,
   });
   return (
-    <form
+    <SchemaForm
+      schema={endpoint.includes("/areas") ? AreaSchema : RateSchema}
       className="space-y-4 rounded-xl border p-5"
       onSubmit={(e) => {
         e.preventDefault();
@@ -116,7 +126,7 @@ function SettingForm({
         {bn ? "সংরক্ষণ করুন" : "Save"}
       </Button>
       <AdminFeedback error={mutation.error} />
-    </form>
+    </SchemaForm>
   );
 }
 export default function AdminSettings() {
@@ -240,9 +250,7 @@ export default function AdminSettings() {
           </a>
         ))}
       </nav>
-      {query.isPending && (
-        <p role="status">{t("Loading settings…", "সেটিংস লোড হচ্ছে…")}</p>
-      )}
+      {query.isPending && <DataSkeleton />}
       {mutation.isSuccess && (
         <AdminFeedback
           success={t(
@@ -441,7 +449,8 @@ export default function AdminSettings() {
         </p>
       )}
       {query.data?.data.applications.map((application) => (
-        <form
+        <SchemaForm
+          schema={WorkerReviewSchema}
           className="space-y-3 rounded-xl border p-5"
           key={application.id}
           onSubmit={(e) =>
@@ -480,7 +489,7 @@ export default function AdminSettings() {
           <Button type="submit" disabled={mutation.isPending}>
             {t("Record decision", "সিদ্ধান্ত নথিভুক্ত করুন")}
           </Button>
-        </form>
+        </SchemaForm>
       ))}
       <h2 id="business-reviews" className="scroll-mt-44 text-2xl font-bold">
         {t("Business account reviews", "ব্যবসার অ্যাকাউন্ট যাচাই")}
@@ -494,7 +503,8 @@ export default function AdminSettings() {
         </p>
       )}
       {query.data?.data.businesses.map((business) => (
-        <form
+        <SchemaForm
+          schema={ReviewSchema}
           className="space-y-3 rounded-xl border p-5"
           key={business.id}
           onSubmit={(e) =>
@@ -529,14 +539,15 @@ export default function AdminSettings() {
           <Button type="submit" disabled={mutation.isPending}>
             {t("Record decision", "সিদ্ধান্ত নথিভুক্ত করুন")}
           </Button>
-        </form>
+        </SchemaForm>
       ))}
       <h2 id="cash-records" className="scroll-mt-44 text-2xl font-bold">
         {t("Cash collection records", "নগদ সংগ্রহের হিসাব")}
       </h2>
       <CollectionTable records={query.data?.data.collections || []} />
       {query.data?.data.collections.map((record) => (
-        <form
+        <SchemaForm
+          schema={SettlementSchema}
           key={record.id}
           className="space-y-3 rounded-xl border p-4"
           onSubmit={(e) => {
@@ -598,7 +609,7 @@ export default function AdminSettings() {
               ? t("Record cash received", "নগদ গ্রহণ নথিভুক্ত করুন")
               : t("Record completed payout", "সম্পন্ন টাকা দেওয়া নথিভুক্ত করুন")}
           </Button>
-        </form>
+        </SchemaForm>
       ))}
       {mutation.isError && (
         <p role="alert">

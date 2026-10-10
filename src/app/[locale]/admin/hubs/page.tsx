@@ -1,4 +1,7 @@
 "use client";
+import { useUrlState } from "@/hooks/use-url-state";
+import { HubSchema, DecisionSchema } from "@/validation/operations.validation";
+import { SchemaForm } from "@/components/form/schema-form";
 import { useLocale } from "next-intl";
 import { useState } from "react";
 import { Plus, MapPin } from "lucide-react";
@@ -30,6 +33,8 @@ import {
   RefreshButton,
   useAdminText,
 } from "@/components/modules/admin/admin-ui";
+import DataSkeleton from "@/components/ui/data-skeleton";
+import { EmptyStatePanel } from "@/components/ui/empty-state-panel";
 import styles from "@/components/modules/admin/admin.module.css";
 
 export default function HubsManagementPage() {
@@ -37,8 +42,8 @@ export default function HubsManagementPage() {
     ui = useUiText(),
     display = useUiFormat(),
     t = useAdminText();
-  const [page, setPage] = useState(1),
-    [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useUrlState("page", 1),
+    [searchTerm, setSearchTerm] = useUrlState("search", "");
   const [selection, setSelection] = useState<{
     mode: "create" | "view" | "edit" | "delete";
     hub?: Hub;
@@ -131,13 +136,13 @@ export default function HubsManagementPage() {
               {result.isPending ? (
                 <TableRow>
                   <TableCell colSpan={4} className={styles.empty}>
-                    {t("Loading hubs…", "হাব লোড হচ্ছে…")}
+                    <DataSkeleton />
                   </TableCell>
                 </TableRow>
               ) : !hubs.length ? (
                 <TableRow>
                   <TableCell colSpan={4} className={styles.empty}>
-                    {ui("No hubs found.")}
+                    <EmptyStatePanel title={ui("No hubs found.")} />
                   </TableCell>
                 </TableRow>
               ) : (
@@ -229,7 +234,7 @@ export default function HubsManagementPage() {
       >
         {selection?.mode === "view" &&
           (detail.isPending ? (
-            <p>{t("Loading details…", "বিস্তারিত লোড হচ্ছে…")}</p>
+            <DataSkeleton />
           ) : detail.isError ? (
             <>
               <AdminFeedback error={detail.error} />
@@ -263,7 +268,8 @@ export default function HubsManagementPage() {
             )
           ))}
         {(selection?.mode === "create" || selection?.mode === "edit") && (
-          <form
+          <SchemaForm
+            schema={HubSchema}
             key={selection.hub?.id || "new-hub"}
             className="space-y-4"
             onSubmit={(e) => {
@@ -339,10 +345,11 @@ export default function HubsManagementPage() {
                   : t("Save hub", "হাব সংরক্ষণ")}
               </Button>
             </div>
-          </form>
+          </SchemaForm>
         )}
         {selection?.mode === "delete" && selection.hub && (
-          <form
+          <SchemaForm
+            schema={DecisionSchema}
             className="space-y-4"
             onSubmit={(e) => {
               e.preventDefault();
@@ -362,7 +369,7 @@ export default function HubsManagementPage() {
               {hubAddress(selection.hub.address, locale)}
             </p>
             <label className="flex min-h-11 items-center gap-3">
-              <input name="confirmed" type="checkbox" required />
+              <input name="confirmation" type="checkbox" required />
               {t("I confirm deletion of this hub.", "এই হাব মুছতে সম্মতি দিচ্ছি।")}
             </label>
             <AdminFeedback error={error} />
@@ -381,7 +388,7 @@ export default function HubsManagementPage() {
                   : t("Confirm deletion", "মুছতে নিশ্চিত করুন")}
               </Button>
             </div>
-          </form>
+          </SchemaForm>
         )}
       </AdminDialog>
     </div>

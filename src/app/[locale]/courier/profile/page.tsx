@@ -1,5 +1,8 @@
 "use client";
-
+import { ProfileSchema } from "@/validation/operations.validation";
+import DataSkeleton from "@/components/ui/data-skeleton";
+import QueryError from "@/components/ui/query-error";
+import { SchemaForm } from "@/components/form/schema-form";
 import { useUiText } from "@/i18n/use-ui-text";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +15,7 @@ import { useEffect, useState } from "react";
 
 export default function CourierProfilePage() {
   const ui = useUiText();
-  const { data, isLoading } = useGetMe();
+  const { data, isLoading, isError, refetch } = useGetMe();
   const { mutate: updateProfile, isPending } = useUpdateMyProfile();
 
   const [name, setName] = useState("");
@@ -42,12 +45,16 @@ export default function CourierProfilePage() {
     );
   };
 
-  if (isLoading) {
+  if (isError)
     return (
-      <div className="flex h-64 items-center justify-center">
-        <Spinner className="size-8" />
-      </div>
+      <QueryError
+        retry={() => {
+          void refetch();
+        }}
+      />
     );
+  if (isLoading) {
+    return <DataSkeleton />;
   }
 
   return (
@@ -65,7 +72,11 @@ export default function CourierProfilePage() {
           <CardTitle>{ui("Profile Details")}</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <SchemaForm
+            schema={ProfileSchema}
+            onSubmit={handleSubmit}
+            className="space-y-4"
+          >
             <Field>
               <FieldLabel>{ui("Full Name")}</FieldLabel>
               <Input
@@ -98,7 +109,7 @@ export default function CourierProfilePage() {
               {isPending ? <Spinner className="mr-2" /> : null}
               {ui("Save Changes")}{" "}
             </Button>
-          </form>
+          </SchemaForm>
         </CardContent>
       </Card>
     </div>

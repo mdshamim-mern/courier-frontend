@@ -1,4 +1,9 @@
 "use client";
+import {
+  AcknowledgmentSchema,
+  FailureSchema,
+} from "@/validation/operations.validation";
+import { SchemaForm } from "@/components/form/schema-form";
 import { useRef, useState } from "react";
 import { useLocale } from "next-intl";
 import { useMutation } from "@tanstack/react-query";
@@ -84,7 +89,8 @@ export default function ShipmentActions({
           ))}
       </div>
       {target && (
-        <form
+        <SchemaForm
+          schema={target === "DELIVERED" ? AcknowledgmentSchema : FailureSchema}
           className="space-y-4 rounded-xl border p-4"
           onSubmit={(e) => {
             e.preventDefault();
@@ -212,7 +218,7 @@ export default function ShipmentActions({
               {t("Close", "বন্ধ করুন")}
             </Button>
           </div>
-        </form>
+        </SchemaForm>
       )}
       {mutation.isError && (
         <p role="alert">

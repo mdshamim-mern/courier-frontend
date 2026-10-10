@@ -8,7 +8,7 @@ import { getSingleShipment, reconcilePayment } from "@/api";
 import { Link } from "@/i18n/navigation";
 import { getApiErrorStatus, getApiErrorMessage } from "@/lib/api-error";
 import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
+import DataSkeleton from "@/components/ui/data-skeleton";
 import QueryError from "@/components/ui/query-error";
 
 export default function PaymentStatus({ shipmentId }: { shipmentId: string }) {
@@ -71,7 +71,7 @@ export default function PaymentStatus({ shipmentId }: { shipmentId: string }) {
         }}
       />
     );
-  if (result.isPending) return <Spinner />;
+  if (result.isPending) return <DataSkeleton />;
   return (
     <div className="space-y-4" aria-live="polite">
       <h1 className="text-3xl font-bold">

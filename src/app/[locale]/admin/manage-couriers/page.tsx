@@ -1,4 +1,10 @@
 "use client";
+import { useUrlState } from "@/hooks/use-url-state";
+import {
+  CourierSchema,
+  CourierEditSchema,
+} from "@/validation/operations.validation";
+import { SchemaForm } from "@/components/form/schema-form";
 import { useState } from "react";
 import { useLocale } from "next-intl";
 import { Plus, Truck } from "lucide-react";
@@ -34,6 +40,8 @@ import {
   isTestRecord,
   useAdminText,
 } from "@/components/modules/admin/admin-ui";
+import DataSkeleton from "@/components/ui/data-skeleton";
+import { EmptyStatePanel } from "@/components/ui/empty-state-panel";
 import styles from "@/components/modules/admin/admin.module.css";
 
 export default function ManageCouriersPage() {
@@ -41,8 +49,8 @@ export default function ManageCouriersPage() {
     ui = useUiText(),
     display = useUiFormat(),
     t = useAdminText();
-  const [page, setPage] = useState(1),
-    [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useUrlState("page", 1),
+    [searchTerm, setSearchTerm] = useUrlState("search", "");
   const [selection, setSelection] = useState<{
     mode: "view" | "edit" | "create";
     courier?: Courier;
@@ -135,13 +143,13 @@ export default function ManageCouriersPage() {
               {result.isPending ? (
                 <TableRow>
                   <TableCell colSpan={4} className={styles.empty}>
-                    {t("Loading couriers…", "কর্মী লোড হচ্ছে…")}
+                    <DataSkeleton />
                   </TableCell>
                 </TableRow>
               ) : !result.data?.data.length ? (
                 <TableRow>
                   <TableCell colSpan={4} className={styles.empty}>
-                    {ui("No couriers found.")}
+                    <EmptyStatePanel title={ui("No couriers found.")} />
                   </TableCell>
                 </TableRow>
               ) : (
@@ -249,7 +257,7 @@ export default function ManageCouriersPage() {
       >
         {selection?.mode === "view" &&
           (detail.isPending ? (
-            <p>{t("Loading details…", "বিস্তারিত লোড হচ্ছে…")}</p>
+            <DataSkeleton />
           ) : detail.isError ? (
             <>
               <AdminFeedback error={detail.error} />
@@ -321,7 +329,8 @@ export default function ManageCouriersPage() {
             )
           ))}
         {(selection?.mode === "create" || selection?.mode === "edit") && (
-          <form
+          <SchemaForm
+            schema={selection.courier ? CourierEditSchema : CourierSchema}
             key={selection.courier?.id || "new-courier"}
             className="space-y-4"
             onSubmit={(e) => {
@@ -488,7 +497,7 @@ export default function ManageCouriersPage() {
                   : t("Save courier", "কর্মীর তথ্য সংরক্ষণ")}
               </Button>
             </div>
-          </form>
+          </SchemaForm>
         )}
       </AdminDialog>
     </div>

@@ -1,3 +1,4 @@
+import { setSession } from "./support/session";
 import { test, expect, type Page } from "@playwright/test";
 import {
   getLegalDocument,
@@ -30,6 +31,7 @@ async function mockGuest(page: Page) {
 }
 
 async function mockRole(page: Page, role: string) {
+  await setSession(page, role);
   await page.route("**/api/backend/**", async (route) => {
     const path = new URL(route.request().url()).pathname.replace(
       "/api/backend",
@@ -129,17 +131,19 @@ for (const locale of ["en", "bn"]) {
       locale +
         " " +
         route +
-        " is a clearly marked legal draft with the configured operator",
+        " is a clearly marked evaluation policy with the configured operator",
       async ({ page }) => {
         await mockGuest(page);
         await page.goto(`/${locale}/${route}`);
+        const article = page.getByRole("article");
+        await expect(article).toHaveCount(1);
         await expect(
           page.getByRole("heading", { name: title, exact: true }),
         ).toBeVisible();
         await expect(page.getByRole("note")).toContainText(
           locale === "bn"
-            ? "খসড়া — চূড়ান্ত আইনি নথি নয়"
-            : "Draft — not a final legal document",
+            ? "মূল্যায়ন পরিবেশ — বাস্তব সেবা চুক্তি নয়"
+            : "Evaluation environment — not a live service contract",
         );
         for (const placeholder of [
           "[Company Name]",
@@ -147,14 +151,14 @@ for (const locale of ["en", "bn"]) {
           "[Address]",
           "[Effective Date]",
         ])
-          await expect(page.locator("article")).not.toContainText(placeholder);
+          await expect(article).not.toContainText(placeholder);
         for (const value of [
           legalOperator.companyName,
           legalOperator.contactEmail,
           legalOperator.address,
         ])
-          await expect(page.locator("article")).toContainText(value);
-        await expect(page.locator("article")).toContainText(
+          await expect(article).toContainText(value);
+        await expect(article).toContainText(
           getLegalDocument(locale, route as LegalKind).sections[0]
             .paragraphs[0],
         );
@@ -163,7 +167,7 @@ for (const locale of ["en", "bn"]) {
           /noindex/,
         );
         await expect(
-          page.locator('article a[href^="mailto:"]'),
+          article.locator('a[href^="mailto:"]'),
         ).toHaveAttribute("href", `mailto:${legalOperator.contactEmail}`);
       },
     );

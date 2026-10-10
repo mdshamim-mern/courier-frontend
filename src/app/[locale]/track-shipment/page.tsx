@@ -1,22 +1,15 @@
-import { translateUi } from "@/i18n/ui";
-import type { Metadata } from "next";
-import { getLocale } from "next-intl/server";
-import TrackForm from "@/components/modules/shipment-tracking/track-form";
-
+import { pageMetadata } from "@/lib/metadata";
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ locale: string }>;
-}): Promise<Metadata> {
-  const { locale } = await params;
-  return {
-    title: locale === "bn" ? "পার্সেল অনুসরণ | Dropzo" : "Track Shipment | Dropzo",
-    description:
-      locale === "bn"
-        ? "অনুসন্ধানসংখ্যা দিয়ে পার্সেলের সর্বশেষ অবস্থা দেখুন।"
-        : "Track your parcel using its tracking ID.",
-  };
+}) {
+  return pageMetadata("track-shipment", params);
 }
+import { translateUi } from "@/i18n/ui";
+import { getLocale } from "next-intl/server";
+import TrackForm from "@/components/modules/shipment-tracking/track-form";
+
 export default async function TrackShipmentPage() {
   const locale = await getLocale();
   const ui = (text: string) => translateUi(locale, text);

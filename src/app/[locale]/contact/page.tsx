@@ -1,3 +1,11 @@
+import { pageMetadata } from "@/lib/metadata";
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  return pageMetadata("contact", params);
+}
 import { Link } from "@/i18n/navigation";
 import { useUiText } from "@/i18n/use-ui-text";
 import { MapPin, Mail, Clock3, ArrowUpRight, BadgeCheck } from "lucide-react";

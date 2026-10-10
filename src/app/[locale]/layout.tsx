@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import DataSkeleton from "@/components/ui/data-skeleton";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "../globals.css";
@@ -18,6 +20,10 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   return {
+    metadataBase: new URL(
+      process.env.NEXT_PUBLIC_FRONTEND_URL ||
+        "https://courier-frontend-sigma.vercel.app",
+    ),
     title: locale === "bn" ? "Dropzo" : "Dropzo",
     description:
       locale === "bn"
@@ -45,7 +51,9 @@ export default async function RootLayout({
         <NextIntlClientProvider messages={messages}>
           <Providers>
             <Header />
-            <main id="main-content" className="site-content">{children}</main>
+            <main id="main-content" className="site-content">
+              <Suspense fallback={<DataSkeleton />}>{children}</Suspense>
+            </main>
             <Footer />
             <Toaster />
           </Providers>

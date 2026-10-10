@@ -4,6 +4,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 export function useInitiatePayment() {
   return useMutation({
     mutationFn: initiatePayment,
+    meta: { errorToastHandled: true },
   });
 }
 

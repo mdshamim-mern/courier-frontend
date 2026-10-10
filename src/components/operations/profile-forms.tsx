@@ -1,4 +1,11 @@
 "use client";
+import {
+  BusinessSchema,
+  ApplicationSchema,
+} from "@/validation/operations.validation";
+import DataSkeleton from "@/components/ui/data-skeleton";
+import QueryError from "@/components/ui/query-error";
+import { SchemaForm } from "@/components/form/schema-form";
 import { useLocale } from "next-intl";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useGetMe } from "@/hooks";
@@ -31,7 +38,18 @@ export default function ProfileForms({
       void mine.refetch();
     },
   });
-  if (user.isPending) return <p>{t("Loading…", "তথ্য আসছে…")}</p>;
+  if (
+    user.isError &&
+    (user.error as { response?: { status?: number } }).response?.status !== 401
+  )
+    return (
+      <QueryError
+        retry={() => {
+          void user.refetch();
+        }}
+      />
+    );
+  if (user.isPending) return <DataSkeleton />;
   if (!user.data?.data)
     return (
       <div className="space-y-4">
@@ -63,9 +81,15 @@ export default function ProfileForms({
         </Link>
       </div>
     );
+  if (mine.isPending && user.data.data.role !== "ADMIN")
+    return <DataSkeleton />;
   if (kind === "collections")
     return mine.isError ? (
-      <p role="alert">{t("Records unavailable.", "হিসাব পাওয়া যায়নি।")}</p>
+      <QueryError
+        retry={() => {
+          void mine.refetch();
+        }}
+      />
     ) : (
       <CollectionTable
         totals={mine.data?.data.totals}
@@ -81,15 +105,14 @@ export default function ProfileForms({
         )}
       </p>
     );
-  if (mine.isPending) return <p>{t("Loading…", "তথ্য আসছে…")}</p>;
+  if (mine.isPending) return <DataSkeleton />;
   if (mine.isError)
     return (
-      <p role="alert">
-        {t(
-          "Records unavailable. Please retry.",
-          "হিসাব পাওয়া যায়নি। আবার চেষ্টা করুন।",
-        )}
-      </p>
+      <QueryError
+        retry={() => {
+          void mine.refetch();
+        }}
+      />
     );
   const record =
     kind === "business"
@@ -144,7 +167,8 @@ export default function ProfileForms({
           "যাচাইয়ের জন্য পাঠালে আবেদন Dropzo প্রশাসকের Admin → Operations পাতায় জমা হয়। এটি ইমেইল পাঠায় না বা টাকা হস্তান্তর করে না। পণ্যের টাকা সংগ্রহের বুকিং বা কর্মীর প্রবেশাধিকার পেতে অনুমোদন লাগবে।",
         )}
       </p>
-      <form
+      <SchemaForm
+        schema={kind === "business" ? BusinessSchema : ApplicationSchema}
         key={record?.id || kind}
         className="glass-panel grid gap-5 p-5 sm:grid-cols-2 sm:p-8"
         onSubmit={(e) => {
@@ -214,7 +238,7 @@ export default function ProfileForms({
         >
           {t("Submit for review", "যাচাইয়ের জন্য পাঠান")}
         </Button>
-      </form>
+      </SchemaForm>
       {submit.isError && (
         <p role="alert">
           {t(

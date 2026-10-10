@@ -1,8 +1,10 @@
 "use client";
+import { useUrlState } from "@/hooks/use-url-state";
 import { useQuery } from "@tanstack/react-query";
 import { MapPin, Search, Check, Minus } from "lucide-react";
 import { useLocale } from "next-intl";
-import { useState } from "react";
+import DataSkeleton from "@/components/ui/data-skeleton";
+import QueryError from "@/components/ui/query-error";
 import { placeName, placeSearch } from "@/i18n/geography";
 import apiClient from "@/lib/apiClient";
 import type { ApiResponse } from "@/types";
@@ -11,7 +13,7 @@ import QuoteCalculator from "./quote-calculator";
 export default function CoverageList() {
   const locale = useLocale(),
     bn = locale === "bn",
-    [search, setSearch] = useState("");
+    [search, setSearch] = useUrlState("search", "");
   const t = (en: string, bangla: string) => (bn ? bangla : en);
   const result = useQuery({
     queryKey: ["coverage"],
@@ -54,9 +56,13 @@ export default function CoverageList() {
           />
         </span>
       </label>
-      {result.isPending && <p role="status">{t("Loading…", "তথ্য আসছে…")}</p>}
+      {result.isPending && <DataSkeleton />}
       {result.isError && (
-        <p role="alert">{t("Coverage unavailable.", "এলাকার তথ্য পাওয়া যায়নি।")}</p>
+        <QueryError
+          retry={() => {
+            void result.refetch();
+          }}
+        />
       )}
       {!result.isPending && !result.isError && !result.data?.data.length && (
         <p>

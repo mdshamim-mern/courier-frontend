@@ -4,7 +4,7 @@ import { useUiText } from "@/i18n/use-ui-text";
 import { useParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { useGetMe, useGetSingleShipment } from "@/hooks";
-import { Spinner } from "@/components/ui/spinner";
+import DataSkeleton from "@/components/ui/data-skeleton";
 import QueryError from "@/components/ui/query-error";
 import TrackingTimeline from "@/components/modules/shipment-tracking/tracking-timeline";
 import ParcelLabel from "@/components/operations/parcel-label";
@@ -18,7 +18,7 @@ export default function ShipmentDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const result = useGetSingleShipment(id);
   const user = useGetMe();
-  if (result.isPending) return <Spinner />;
+  if (result.isPending) return <DataSkeleton />;
   if (result.isError)
     return (
       <QueryError

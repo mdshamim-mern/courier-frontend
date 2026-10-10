@@ -1,3 +1,4 @@
+import { setSession } from "./support/session";
 import { test, expect, type Page } from "@playwright/test";
 
 const pickup = "22222222-2222-4222-8222-222222222222";
@@ -22,6 +23,7 @@ const quote = {
   originHub: hub,
 };
 async function setup(page: Page, role = "CUSTOMER") {
+  await setSession(page, role);
   await page.route("**/api/backend/**", (route) => {
     const path = new URL(route.request().url()).pathname.replace(
       "/api/backend",
@@ -106,8 +108,10 @@ async function fill(page: Page, cod = "0.06") {
       "requestedPickupAt",
       new Date(Date.now() + 86400000).toISOString().slice(0, 16),
     ],
-  ])
+  ]) {
+    if (["declaredValue", "codAmount", "weight", "requestedPickupAt"].includes(name) && await page.getByRole("button", { name: /Continue to parcel details|পণ্যের তথ্যে যান/ }).isVisible()) await page.getByRole("button", { name: /Continue to parcel details|পণ্যের তথ্যে যান/ }).click();
     await page.locator('input[name="' + name + '"]').fill(value);
+  }
   await page.locator('select[name="serviceType"]').selectOption("NEXT_DAY");
 }
 for (const width of [390, 1366]) {
@@ -118,6 +122,7 @@ for (const width of [390, 1366]) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto("/en/dashboard/new-shipment");
       await fill(page);
+      await page.getByRole("button", { name: "Back", exact: true }).click();
       await page.locator('label[for$="-receiverName"]').click();
       await expect(
         page.getByRole("textbox", { name: "Receiver name", exact: true }),
@@ -169,6 +174,7 @@ for (const width of [390, 1366]) {
       await page.locator('select[name="pickupMode"]').selectOption("BRANCH");
       await expect(page.locator('select[name="pickupAreaId"]')).toHaveValue("");
       await page.locator('select[name="pickupAreaId"]').selectOption(pickup);
+      await page.getByRole("button", { name: "Continue to parcel details" }).click();
       await page
         .getByRole("button", { name: "Review cost before booking" })
         .click();

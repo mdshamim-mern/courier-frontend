@@ -56,13 +56,13 @@ export default function LegalDocument({ kind }: { kind: LegalKind }) {
       >
         <strong className="block text-amber-900">
           {locale === "bn"
-            ? "খসড়া — চূড়ান্ত আইনি নথি নয়"
-            : "Draft — not a final legal document"}
+            ? "মূল্যায়ন পরিবেশ — বাস্তব সেবা চুক্তি নয়"
+            : "Evaluation environment — not a live service contract"}
         </strong>
         <p className="text-amber-900/80">
           {locale === "bn"
-            ? "বন্ধনীর তথ্য পূরণ, বাস্তব কার্যক্রমের যাচাই এবং আইনি পর্যালোচনার পরে এই নীতি চূড়ান্ত হবে।"
-            : "Complete the bracketed details, verify operating practices and obtain legal review before treating this policy as final."}
+            ? "শুধু পরীক্ষামূলক বুকিং ও sandbox অর্থপ্রদান ব্যবহার করুন। নিবন্ধন, প্রস্তাবিত নীতি ও স্বয়ংক্রিয় আর্থিক সুবিধা যাচাইকৃত দাবি নয়।"
+            : "Use test bookings and sandbox payments only. Registration details and proposed policies are not verified operational or legal claims."}
         </p>
       </aside>
 

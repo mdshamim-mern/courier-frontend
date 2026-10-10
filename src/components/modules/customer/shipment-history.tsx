@@ -1,5 +1,5 @@
 "use client";
-
+import { useUrlState } from "@/hooks/use-url-state";
 import { useUiText, useUiFormat } from "@/i18n/use-ui-text";
 import { useMutation } from "@tanstack/react-query";
 import { initiateStripePayment } from "@/api/payment.api";
@@ -19,7 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
+import DataSkeleton from "@/components/ui/data-skeleton";
 import { toast } from "@/components/ui/toast";
 import QueryError from "@/components/ui/query-error";
 import TablePagination from "@/components/ui/table-pagination";
@@ -36,7 +36,7 @@ import { Link } from "@/i18n/navigation";
 export default function ShipmentHistory() {
   const ui = useUiText();
   const display = useUiFormat();
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useUrlState("page", 1);
   const [selectedId, setSelectedId] = useState("");
   const { data, isPending, error, refetch } = useGetAllShipments({
     page,
@@ -45,7 +45,10 @@ export default function ShipmentHistory() {
   const details = useGetSingleShipment(selectedId);
   const { mutate: cancel, isPending: canceling } = useCancelShipment();
   const { mutate: initiate, isPending: paying } = useInitiatePayment();
-  const stripe = useMutation({ mutationFn: initiateStripePayment });
+  const stripe = useMutation({
+    mutationFn: initiateStripePayment,
+    meta: { errorToastHandled: true },
+  });
   if (error)
     return (
       <QueryError
@@ -54,7 +57,7 @@ export default function ShipmentHistory() {
         }}
       />
     );
-  if (isPending) return <Spinner />;
+  if (isPending) return <DataSkeleton />;
   return (
     <div className="space-y-4">
       <div className="rounded-md border bg-card">
@@ -230,7 +233,7 @@ export default function ShipmentHistory() {
                 }}
               />
             ) : details.isFetching ? (
-              <Spinner />
+              <DataSkeleton />
             ) : (
               <TrackingTimeline
                 trackings={details.data?.data.trackings || []}

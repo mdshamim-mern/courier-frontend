@@ -1,7 +1,11 @@
 "use client";
 
 import { useUiText, useUiFormat } from "@/i18n/use-ui-text";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { SchemaForm } from "@/components/form/schema-form";
+import { TrackingSchema } from "@/validation/operations.validation";
+import { useUrlState } from "@/hooks/use-url-state";
+import DataSkeleton from "@/components/ui/data-skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { useLocale } from "next-intl";
 import { trackShipment } from "@/api";
@@ -15,8 +19,11 @@ export default function TrackForm() {
   const ui = useUiText();
   const display = useUiFormat();
   const bn = useLocale() === "bn";
-  const [input, setInput] = useState("");
-  const [trackingId, setTrackingId] = useState("");
+  const [trackingId, setTrackingId] = useUrlState("tracking", "");
+  const [input, setInput] = useState(trackingId);
+  useEffect(() => {
+    setInput(trackingId);
+  }, [trackingId]);
   const result = useQuery({
     queryKey: ["public-tracking", trackingId],
     queryFn: () => trackShipment(trackingId),
@@ -25,7 +32,8 @@ export default function TrackForm() {
   });
   return (
     <div className="space-y-6">
-      <form
+      <SchemaForm
+        schema={TrackingSchema}
         className="flex flex-col sm:flex-row gap-3"
         onSubmit={(event) => {
           event.preventDefault();
@@ -36,6 +44,7 @@ export default function TrackForm() {
         }}
       >
         <Input
+          name="trackingId"
           value={input}
           onChange={(event) => setInput(event.target.value)}
           required
@@ -47,7 +56,8 @@ export default function TrackForm() {
         <Button type="submit" disabled={result.isFetching}>
           {result.isFetching ? <Spinner /> : bn ? "খুঁজুন" : ui("Track")}
         </Button>
-      </form>
+      </SchemaForm>
+      {result.isFetching && <DataSkeleton />}
       {result.isError && (
         <p role="alert">
           {display.error(

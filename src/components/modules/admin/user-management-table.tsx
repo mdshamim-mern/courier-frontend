@@ -1,4 +1,7 @@
 "use client";
+import { useUrlState } from "@/hooks/use-url-state";
+import { DecisionSchema } from "@/validation/operations.validation";
+import { SchemaForm } from "@/components/form/schema-form";
 import { useState } from "react";
 import {
   useGetAllUsers,
@@ -26,14 +29,16 @@ import {
   isTestRecord,
   useAdminText,
 } from "./admin-ui";
+import DataSkeleton from "@/components/ui/data-skeleton";
+import { EmptyStatePanel } from "@/components/ui/empty-state-panel";
 import styles from "./admin.module.css";
 
 export default function UserManagementTable() {
   const ui = useUiText(),
     display = useUiFormat(),
     t = useAdminText();
-  const [page, setPage] = useState(1),
-    [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useUrlState("page", 1),
+    [searchTerm, setSearchTerm] = useUrlState("search", "");
   const [viewing, setViewing] = useState<User | null>(null);
   const [change, setChange] = useState<{
     user: User;
@@ -102,13 +107,13 @@ export default function UserManagementTable() {
               {result.isPending ? (
                 <TableRow>
                   <TableCell colSpan={4} className={styles.empty}>
-                    {t("Loading users…", "ব্যবহারকারী লোড হচ্ছে…")}
+                    <DataSkeleton />
                   </TableCell>
                 </TableRow>
               ) : !result.data?.data.length ? (
                 <TableRow>
                   <TableCell colSpan={4} className={styles.empty}>
-                    {ui("No users found.")}
+                    <EmptyStatePanel title={ui("No users found.")} />
                   </TableCell>
                 </TableRow>
               ) : (
@@ -234,7 +239,8 @@ export default function UserManagementTable() {
         )}
       >
         {change && (
-          <form
+          <SchemaForm
+            schema={DecisionSchema}
             className="space-y-4"
             onSubmit={(e) => {
               e.preventDefault();
@@ -270,7 +276,7 @@ export default function UserManagementTable() {
               → {ui(change.value)}
             </p>
             <label className="flex min-h-11 items-center gap-3">
-              <input type="checkbox" required />
+              <input name="confirmation" type="checkbox" required />
               {t(
                 "I verified this account and approve this change.",
                 "অ্যাকাউন্ট যাচাই করে এই পরিবর্তন অনুমোদন করছি।",
@@ -292,7 +298,7 @@ export default function UserManagementTable() {
                   : t("Confirm change", "পরিবর্তন নিশ্চিত করুন")}
               </Button>
             </div>
-          </form>
+          </SchemaForm>
         )}
       </AdminDialog>
     </div>

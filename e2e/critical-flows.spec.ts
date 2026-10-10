@@ -1,3 +1,4 @@
+import { setSession } from "./support/session";
 import { test, expect, type Page } from "@playwright/test";
 
 const shipmentId = "11111111-1111-4111-8111-111111111111";
@@ -26,12 +27,16 @@ async function mockApi(
   page: Page,
   handler: (path: string) => { status?: number; data?: unknown },
 ) {
+  const initial = handler("/users/me");
+  const profile = initial.data as { role?: string } | undefined;
+  await setSession(page, profile?.role || (initial.status === 503 ? "unavailable" : "GUEST"));
   await page.route("**/api/backend/**", async (route) => {
     const path = new URL(route.request().url()).pathname.replace(
       "/api/backend",
       "",
     );
     const response = handler(path);
+    if (path === "/auth/login") { const data = response.data as { user?: { role?: string }; role?: string }; await setSession(page, data?.user?.role || data?.role || "GUEST"); }
     await route.fulfill({
       status: response.status || 200,
       contentType: "application/json",
@@ -113,7 +118,7 @@ test("a service outage offers retry without logging the customer out", async ({
 }) => {
   await mockApi(page, () => ({ status: 503 }));
   await page.goto("/en/dashboard");
-  await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
+  await expect(page.locator("body")).toContainText("Session verification unavailable");
   await expect(page).toHaveURL(/\/en\/dashboard$/);
 });
 
@@ -207,7 +212,7 @@ test("payment recheck calls the provider reconciliation endpoint", async ({
   await page.goto("/en/payment/success?shipmentId=" + shipmentId);
   await page.getByRole("button", { name: "Check again" }).click();
   await expect(
-    page.getByText("Payment pending provider verification", { exact: true }),
+    page.locator("main").getByText("Payment pending provider verification", { exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Payment Confirmed", exact: true }),

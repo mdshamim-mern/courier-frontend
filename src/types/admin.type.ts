@@ -5,6 +5,7 @@ export interface DashboardStats {
   totalCouriers: number;
   totalShipments: number;
   totalRevenue: number;
+  monthlyRevenue?: Array<{ month: string; amount: number }>;
   shipmentsByStatus: Array<{
     status: string;
     _count: { status: number };

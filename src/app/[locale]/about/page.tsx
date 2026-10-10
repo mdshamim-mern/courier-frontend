@@ -1,3 +1,11 @@
+import { pageMetadata } from "@/lib/metadata";
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  return pageMetadata("about", params);
+}
 import {
   ArrowDown,
   ArrowUpRight,
@@ -14,19 +22,8 @@ import {
 } from "lucide-react";
 import { useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import type { Metadata } from "next";
 import styles from "./about.module.css";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}): Promise<Metadata> {
-  const { locale } = await params;
-  return {
-    title: locale === "bn" ? "ড্রপজো সম্পর্কে | Dropzo" : "About Dropzo | Dropzo",
-  };
-}
 export default function AboutPage() {
   const bn = useLocale() === "bn",
     t = (en: string, bangla: string) => (bn ? bangla : en);

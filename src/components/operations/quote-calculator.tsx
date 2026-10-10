@@ -3,6 +3,10 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocale } from "next-intl";
 import { placeName } from "@/i18n/geography";
 import { useState } from "react";
+import { SchemaForm } from "@/components/form/schema-form";
+import { QuoteSchema } from "@/validation/operations.validation";
+import DataSkeleton from "@/components/ui/data-skeleton";
+import QueryError from "@/components/ui/query-error";
 import apiClient from "@/lib/apiClient";
 import type { ApiResponse } from "@/types";
 import type { Quote, ServiceArea } from "@/types/operations.type";
@@ -37,17 +41,22 @@ export default function QuoteCalculator() {
       style: "currency",
       currency: "BDT",
     }).format(Number(value));
+  if (areas.isPending) return <DataSkeleton />;
   return (
     <section className="glass-panel space-y-5 p-6 sm:p-8">
       <h2 className="text-2xl font-bold">
         {t("Calculate delivery cost", "ডেলিভারির খরচ হিসাব করুন")}
       </h2>
       {areas.isError ? (
-        <p role="alert">
-          {t("Coverage could not be loaded.", "সেবার এলাকার তথ্য পাওয়া যায়নি।")}
-        </p>
+        <QueryError
+          retry={() => {
+            void areas.refetch();
+          }}
+        />
       ) : (
-        <form
+        <SchemaForm
+          schema={QuoteSchema}
+          values={input}
           className="grid gap-4 sm:grid-cols-2"
           onSubmit={(event) => {
             event.preventDefault();
@@ -168,7 +177,7 @@ export default function QuoteCalculator() {
           <Button disabled={quote.isPending || areas.isPending} type="submit">
             {t("Calculate", "হিসাব দেখুন")}
           </Button>
-        </form>
+        </SchemaForm>
       )}
       {quote.isError && (
         <p role="alert">

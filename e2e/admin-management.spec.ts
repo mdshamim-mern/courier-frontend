@@ -1,8 +1,10 @@
+import { setSession } from "./support/session";
 import { test, expect, type Page } from "@playwright/test";
 const id = "11111111-1111-4111-8111-111111111111";
 const hubId = "22222222-2222-4222-8222-222222222222";
 const at = "2026-10-10T00:00:00.000Z";
 async function setup(page: Page, rejectDelete = false) {
+  await setSession(page, "ADMIN");
   let hubs = [
     {
       id: hubId,
@@ -369,8 +371,7 @@ for (const locale of ["en", "bn"])
         ).toBe(true);
         if (["/hubs", "/manage-users", "/manage-couriers"].includes(route)) {
           await expect(page.locator("tbody tr").first()).toBeVisible();
-          const bounds = await page.locator("tbody tr").first().boundingBox();
-          expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
+          await expect.poll(async () => { const bounds = await page.locator("tbody tr").first().boundingBox(); return bounds ? bounds.x + bounds.width : Number.POSITIVE_INFINITY; }).toBeLessThanOrEqual(width);
         }
         if (route === "/hubs" && width !== 768)
           await page.screenshot({

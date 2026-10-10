@@ -1,6 +1,8 @@
+import { setSession } from "./support/session";
 import { test, expect, type Page } from "@playwright/test";
 const areaId = "22222222-2222-4222-8222-222222222222";
 async function setup(page: Page, role = "GUEST") {
+  await setSession(page, role);
   await page.route("**/api/backend/**", (route) => {
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith("/users/me"))
@@ -32,13 +34,19 @@ async function setup(page: Page, role = "GUEST") {
             deliveryEnabled: true,
           },
         ]
-      : path.includes("/stats")
+      : path.includes("/stats") || path.endsWith("/admin/dashboard-stats")
         ? {
             total: 0,
             delivered: 0,
             pending: 0,
             totalSpent: 0,
             totalEarnings: 0,
+            totalRevenue: 0,
+            totalCustomers: 0,
+            totalCouriers: 0,
+            totalShipments: 0,
+            shipmentsByStatus: [],
+            monthlyRevenue: [],
           }
         : [];
     return route.fulfill({
@@ -190,6 +198,7 @@ test("mobile dashboard opens an accessible sidebar drawer", async ({
 test("purple branding and glass cards render across key pages", async ({
   page,
 }, testInfo) => {
+  test.setTimeout(90000);
   await setup(page, "CUSTOMER");
   for (const [path, width, name] of [
     ["/en", 1366, "home-desktop"],

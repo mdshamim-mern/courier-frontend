@@ -1,3 +1,4 @@
+import { setSession } from "./support/session";
 import { test, expect, type Page } from "@playwright/test";
 const id = "11111111-1111-4111-8111-111111111111",
   from = "22222222-2222-4222-8222-222222222222",
@@ -59,6 +60,7 @@ const shipment = {
   trackings: [],
 };
 async function mock(page: Page, role = "CUSTOMER") {
+  await setSession(page, role);
   await page.route("**/api/backend/**", (route) => {
     const path = new URL(route.request().url()).pathname.replace(
       "/api/backend",
@@ -117,8 +119,10 @@ async function fillBooking(page: Page) {
       "requestedPickupAt",
       new Date(Date.now() + 86400000).toISOString().slice(0, 16),
     ],
-  ])
+  ]) {
+    if (["declaredValue", "codAmount", "weight", "requestedPickupAt"].includes(name) && await page.getByRole("button", { name: /Continue to parcel details|পণ্যের তথ্যে যান/ }).isVisible()) await page.getByRole("button", { name: /Continue to parcel details|পণ্যের তথ্যে যান/ }).click();
     await page.locator(`input[name="${name}"]`).fill(value);
+  }
 }
 test("mobile Bengali home exposes booking, tracking and functional menu without invented statistics", async ({
   page,
@@ -157,7 +161,8 @@ test("booking login preserves the requested customer destination", async ({
       json: { success: loggedIn, data: loggedIn ? user : undefined },
     }),
   );
-  await page.route("**/api/backend/auth/login", (route) => {
+  await page.route("**/api/backend/auth/login", async (route) => {
+    await setSession(page, "CUSTOMER");
     loggedIn = true;
     return route.fulfill({
       json: { success: true, data: { user, role: "CUSTOMER" } },

@@ -26,7 +26,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { useLogin } from "@/hooks";
-import { useRouter } from "@/i18n/navigation";
+import { useLocale } from "next-intl";
 import { toast } from "../ui/toast";
 import { Spinner } from "../ui/spinner";
 import { Link } from "@/i18n/navigation";
@@ -36,7 +36,7 @@ export default function LoginForm() {
   const ui = useUiText();
   const next = useSearchParams().get("next");
   const [showPassword, setShowPassword] = useState(false);
-  const router = useRouter();
+  const locale = useLocale();
   const queryClient = useQueryClient();
   const { mutate: login, isPending: loginPending } = useLogin();
 
@@ -58,7 +58,7 @@ export default function LoginForm() {
             type: "success",
           });
           const role = res.data.user.role;
-          router.push(authDestination(role, next));
+          window.location.assign(`/${locale}${authDestination(role, next)}`);
         },
         onError: (err) => {
           toast.add({
@@ -189,7 +189,7 @@ export default function LoginForm() {
             )}
           </Button>
 
-          {process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === "true" && (
+          {process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN !== "false" && (
             <div className="flex flex-col gap-3 pt-2">
               <div className="text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 {ui("One-Click Demo Login")}{" "}
@@ -198,9 +198,11 @@ export default function LoginForm() {
                 <Button
                   type="button"
                   variant="outline"
+                  disabled={loginPending}
                   onClick={() => {
                     form.setFieldValue("email", "admin@courier.com");
                     form.setFieldValue("password", "Admin@12345");
+                    void form.handleSubmit();
                   }}
                   className="h-auto flex-col gap-1.5 border-border/60 bg-white/40 py-3 backdrop-blur-sm hover:border-primary/40 hover:bg-primary/5 dark:bg-white/3"
                 >
@@ -211,9 +213,11 @@ export default function LoginForm() {
                 <Button
                   type="button"
                   variant="outline"
+                  disabled={loginPending}
                   onClick={() => {
                     form.setFieldValue("email", "courier@courier.com");
                     form.setFieldValue("password", "Courier@1234");
+                    void form.handleSubmit();
                   }}
                   className="h-auto flex-col gap-1.5 border-border/60 bg-white/40 py-3 backdrop-blur-sm hover:border-primary/40 hover:bg-primary/5 dark:bg-white/3"
                 >
@@ -222,9 +226,11 @@ export default function LoginForm() {
                 <Button
                   type="button"
                   variant="outline"
+                  disabled={loginPending}
                   onClick={() => {
                     form.setFieldValue("email", "customer@courier.com");
                     form.setFieldValue("password", "Customer@1234");
+                    void form.handleSubmit();
                   }}
                   className="h-auto flex-col gap-1.5 border-border/60 bg-white/40 py-3 backdrop-blur-sm hover:border-primary/40 hover:bg-primary/5 dark:bg-white/3"
                 >

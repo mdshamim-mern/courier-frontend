@@ -1,7 +1,7 @@
 "use client";
-
+import { useUrlState } from "@/hooks/use-url-state";
 import { useUiText, useUiFormat } from "@/i18n/use-ui-text";
-import { useState } from "react";
+import QueryError from "@/components/ui/query-error";
 import { useGetPayments } from "@/hooks";
 import {
   Table,
@@ -17,10 +17,22 @@ import TablePagination from "@/components/ui/table-pagination";
 export default function PaymentsPage() {
   const ui = useUiText();
   const display = useUiFormat();
-  const [page, setPage] = useState(1);
-  const { data, isLoading } = useGetPayments({ page, limit: 10 });
+  const [page, setPage] = useUrlState("page", 1);
+  const { data, isLoading, isError, refetch } = useGetPayments({
+    page,
+    limit: 10,
+  });
   const payments = data?.data || [];
   const meta = data?.meta;
+
+  if (isError)
+    return (
+      <QueryError
+        retry={() => {
+          void refetch();
+        }}
+      />
+    );
 
   return (
     <div className="flex flex-col gap-6">
