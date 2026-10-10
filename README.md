@@ -4,7 +4,7 @@ A bilingual courier workspace for Customers, Delivery Workers and Administrators
 
 ![Next.js](https://img.shields.io/badge/Next.js-16-171717?logo=nextdotjs) ![React](https://img.shields.io/badge/React-19-149eca?logo=react) ![TypeScript](https://img.shields.io/badge/TypeScript-typed-3178c6?logo=typescript) ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06b6d4?logo=tailwindcss)
 
-[Live App](https://courier-frontend-sigma.vercel.app) · [Backend Source](https://github.com/mdshamim-mern/courier-logistics-backend) · [Updated API Docs](https://courier-logistics-backend-lake.vercel.app/docs) · [Report a Bug](https://github.com/mdshamim-mern/courier-frontend/issues)
+[Live App](https://courier-frontend-sigma.vercel.app) · [Backend Source](https://github.com/mdshamim-mern/courier-logistics-backend) · [Postman API Docs](https://documenter.getpostman.com/view/56161283/2sBYHQ2hrg) · [API Reference](https://courier-logistics-backend-lake.vercel.app/docs) · [Report a Bug](https://github.com/mdshamim-mern/courier-frontend/issues)
 
 ## 📖 Overview
 
@@ -17,11 +17,12 @@ Dropzo is the frontend of a full-stack courier platform developed for the B7A7 a
 | Frontend repository | [mdshamim-mern/courier-frontend](https://github.com/mdshamim-mern/courier-frontend) |
 | Backend repository | [mdshamim-mern/courier-logistics-backend](https://github.com/mdshamim-mern/courier-logistics-backend) |
 | Current API documentation | [Endpoint reference and examples](https://courier-logistics-backend-lake.vercel.app/docs) |
+| Published Postman documentation | [Complete Dropzo API documentation](https://documenter.getpostman.com/view/56161283/2sBYHQ2hrg) |
 | Postman collection | [Download updated collection](https://courier-logistics-backend-lake.vercel.app/docs/postman/collection) |
 | Postman environment | [Download safe evaluation environment](https://courier-logistics-backend-lake.vercel.app/docs/postman/environment) |
 | Earlier Postman publication | [Original backend documentation](https://documenter.getpostman.com/view/56161283/2sBYB1P8Wz) |
 
-The earlier Postman publication is historical, not the current endpoint inventory. Use the updated documentation and collection for current APIs. A real shareable demo video is still required; the [Bangla recording script](docs/demo-recording.bn.md) is not a video substitute.
+The earlier Postman publication is preserved as historical documentation. The new Postman publication and updated collection contain the current endpoint inventory. A real shareable demo video is still required; the [Bangla recording script](docs/demo-recording.bn.md) is not a video substitute.
 
 ## 📑 Table of Contents
 
@@ -211,6 +212,8 @@ Next.js → /api/backend rewrite → Express /api/v1 → Prisma/PostgreSQL + Red
 
 [Current API documentation](https://courier-logistics-backend-lake.vercel.app/docs) covers **58 versioned endpoints plus three root/health endpoints**, organized into **67 Postman request examples**, with request bodies, response examples, workflow rules and testing boundaries.
 
+The same collection is available as [public Postman documentation](https://documenter.getpostman.com/view/56161283/2sBYHQ2hrg), with **131 sanitized illustrative response examples**. No private environment values are published; import the safe evaluation environment separately.
+
 | Workflow | API paths relative to `/api/v1` |
 | --- | --- |
 | Session/profile | `/auth/*`, `/users/me`, `/users/profile-image` |
@@ -270,13 +273,14 @@ Backend Repo        : https://github.com/mdshamim-mern/courier-logistics-backend
 Frontend Repo       : https://github.com/mdshamim-mern/courier-frontend
 Live Backend URL    : https://courier-logistics-backend-lake.vercel.app
 Live Frontend URL   : https://courier-frontend-sigma.vercel.app
-API Documentation   : https://courier-logistics-backend-lake.vercel.app/docs
+API Documentation   : https://documenter.getpostman.com/view/56161283/2sBYHQ2hrg
+API Reference       : https://courier-logistics-backend-lake.vercel.app/docs
 Demo Video          : PENDING — add your real shareable 5–10 minute recording
 Demo Admin Email    : admin@courier.com
 Demo Admin Password : Admin@12345
 ```
 
-The [recording guide](docs/demo-recording.bn.md) covers public pages, authorization, booking, Stripe test payment, worker tasks and administration. Do not submit a placeholder video URL. For a specifically requested Postman-hosted link, publish the updated imported collection and use its new Documenter URL; the earlier publication lacks the latest APIs.
+The [recording guide](docs/demo-recording.bn.md) covers public pages, authorization, booking, Stripe test payment, worker tasks and administration. Do not submit a placeholder video URL. Submit the new Postman-hosted link above; the earlier publication lacks the latest APIs.
 
 ## ⚠️ Operational Boundaries
 
