@@ -1,4 +1,4 @@
-import ProfileForms from "@/components/operations/profile-forms";
+import CourierCollections from "@/components/modules/courier/courier-collections";
 export default function CollectionsPage() {
-  return <ProfileForms kind="collections" />;
+  return <CourierCollections />;
 }

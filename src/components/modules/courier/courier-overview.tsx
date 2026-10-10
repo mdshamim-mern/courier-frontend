@@ -1,62 +1,104 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import { useUiText, useUiFormat } from "@/i18n/use-ui-text";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PackageCheck, Wallet } from "lucide-react";
 import { useGetMe, useGetCourierHistoryAndEarnings } from "@/hooks";
-import { Skeleton } from "@/components/ui/skeleton";
+import DataSkeleton from "@/components/ui/data-skeleton";
+import QueryError from "@/components/ui/query-error";
+import { Link } from "@/i18n/navigation";
+import { CourierMetric, CourierNote, CourierQuickLinks } from "./courier-ui";
+import styles from "./courier.module.css";
 
 export default function CourierOverview() {
-  const ui = useUiText();
-  const display = useUiFormat();
-  const { data: userData, isLoading: isUserLoading } = useGetMe();
+  const bn = useLocale() === "bn",
+    ui = useUiText(),
+    display = useUiFormat();
+  const {
+    data: userData,
+    isLoading: userLoading,
+    isError: userError,
+    refetch: refreshUser,
+  } = useGetMe();
   const courierId = userData?.data?.courier?.id;
-
-  const { data: statsData, isLoading: isStatsLoading } =
-    useGetCourierHistoryAndEarnings(courierId || "");
-  const stats = statsData?.data;
-
-  const isLoading = isUserLoading || isStatsLoading;
-
-  if (isLoading) {
+  const { data, isLoading, isError, refetch } = useGetCourierHistoryAndEarnings(
+    courierId || "",
+  );
+  const stats = data?.data;
+  if (userLoading || isLoading) return <DataSkeleton />;
+  if (userError || isError)
     return (
-      <div className="grid gap-4 md:grid-cols-2">
-        <Skeleton className="h-32 w-full rounded-xl" />
-        <Skeleton className="h-32 w-full rounded-xl" />
-      </div>
+      <QueryError
+        retry={() => {
+          void refreshUser();
+          if (courierId) void refetch();
+        }}
+      />
     );
-  }
-
   return (
-    <div className="grid gap-4 md:grid-cols-2">
-      <Card className="border-muted/20 shadow-sm">
-        <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-          <CardTitle className="text-sm font-medium">
-            {ui("Total Deliveries")}
-          </CardTitle>
-          <PackageCheck className="size-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">
-            {ui(stats?.completedDeliveries || 0)}
-          </div>
-        </CardContent>
-      </Card>
-      <Card className="border-muted/20 shadow-sm">
-        <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-          <CardTitle className="text-sm font-medium">
-            {ui("Total Earnings")}
-          </CardTitle>
-          <Wallet className="size-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">
-            {stats?.totalEarnings == null
+    <div className="space-y-6">
+      <div className={styles.metrics}>
+        <CourierMetric
+          icon="route"
+          label={bn ? "মোট বরাদ্দ করা পার্সেল" : "Assigned parcels"}
+          value={stats ? display.number(stats.totalShipments ?? 0) : "—"}
+          detail={
+            bn ? "সার্ভারে নথিভুক্ত মোট বরাদ্দ" : "Your server-recorded assignments"
+          }
+        />
+        <CourierMetric
+          icon="parcels"
+          label={ui("Total Deliveries")}
+          value={stats ? display.number(stats.completedDeliveries ?? 0) : "—"}
+          detail={bn ? "ডেলিভারি সম্পন্ন হিসেবে নথিভুক্ত" : "Recorded as delivered"}
+        />
+        <CourierMetric
+          icon="check"
+          label={ui("Performance Rate")}
+          value={stats ? display.number(stats.performanceRate ?? 0) + "%" : "—"}
+          detail={
+            bn
+              ? "ডেলিভারির চেষ্টা অনুযায়ী সফলতার হার"
+              : "Successful deliveries among attempted deliveries"
+          }
+        />
+        <CourierMetric
+          icon="wallet"
+          accent
+          label={ui("Total Earnings")}
+          value={
+            stats?.totalEarnings == null
               ? ui("Compensation needs configuration")
-              : `৳ ${display.money(stats.totalEarnings)}`}
-          </div>
-        </CardContent>
-      </Card>
+              : "৳ " + display.money(stats.totalEarnings)
+          }
+          detail={
+            bn
+              ? "কনফিগার করা পারিশ্রমিক; পণ্যের নগদ টাকা নয়"
+              : "Configured compensation, not product COD"
+          }
+        />
+      </div>
+      {!courierId && (
+        <CourierNote>
+          {bn
+            ? "কুরিয়ার প্রোফাইল যুক্ত নেই। কাজের বরাদ্দের জন্য প্রশাসকের সঙ্গে যোগাযোগ করুন।"
+            : "Your courier profile is not linked. Contact an administrator before accepting work."}
+        </CourierNote>
+      )}
+      <div className={styles.sectionTitle}>
+        <h2>{bn ? "কাজ শুরু করুন" : "Your work, in one place"}</h2>
+        <Link
+          href="/courier/earnings"
+          className="text-sm font-medium text-primary underline underline-offset-4"
+        >
+          {ui("Earnings & History")}
+        </Link>
+      </div>
+      <CourierQuickLinks bn={bn} />
+      <CourierNote>
+        {bn
+          ? "কাজের তালিকা থেকে পার্সেল বাছুন। সংগ্রহ ও হাবে হস্তান্তরের ধাপ নথিভুক্ত করুন; ডেলিভারি শেষে প্রাপকের গ্রহণের প্রমাণ ও সংগৃহীত সঠিক নগদ টাকা দিন।"
+          : "Open an assigned task, record pickup and hub handovers, then confirm delivery with recipient acknowledgment and the exact cash collected."}
+      </CourierNote>
     </div>
   );
 }

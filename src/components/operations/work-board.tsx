@@ -22,6 +22,7 @@ import {
 import DataSkeleton from "@/components/ui/data-skeleton";
 import { EmptyStatePanel } from "@/components/ui/empty-state-panel";
 import styles from "@/components/modules/admin/admin.module.css";
+import courierStyles from "@/components/modules/courier/courier.module.css";
 export default function WorkBoard({ admin = false }: { admin?: boolean }) {
   const ui = useUiText();
   const bn = useLocale() === "bn",
@@ -79,14 +80,15 @@ export default function WorkBoard({ admin = false }: { admin?: boolean }) {
           }
         />
       ) : (
-        <h1 className="text-2xl font-bold">
+        <h2 className="text-lg font-semibold">
           {t("My pickup and delivery tasks", "আমার সংগ্রহ ও ডেলিভারির কাজ")}
-        </h1>
+        </h2>
       )}
-      <div className={admin ? styles.toolbar : "flex flex-wrap gap-3"}>
+      <div className={admin ? styles.toolbar : courierStyles.toolbar}>
         <label>
           {t("Task filter", "কাজের ধরন")}
           <select
+            aria-label={t("Task filter", "কাজের ধরন")}
             className="ml-2 min-h-11 rounded-md border p-2"
             value={task}
             onChange={(e) => {
@@ -110,16 +112,30 @@ export default function WorkBoard({ admin = false }: { admin?: boolean }) {
             ))}
           </select>
         </label>
-        <input
-          className="min-h-11 rounded-md border px-3"
-          aria-label={t("Search parcel", "পার্সেল খুঁজুন")}
-          placeholder={t("Tracking number or receiver", "অনুসন্ধানসংখ্যা বা প্রাপক")}
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-        />
+        <label className={admin ? "contents" : ""}>
+          {!admin && <span>{t("Search parcel", "পার্সেল খুঁজুন")}</span>}
+          <input
+            className="min-h-11 rounded-md border px-3"
+            aria-label={t("Search parcel", "পার্সেল খুঁজুন")}
+            placeholder={t("Tracking number or receiver", "অনুসন্ধানসংখ্যা বা প্রাপক")}
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+          />
+        </label>
+        {!admin && (
+          <Button
+            variant="outline"
+            disabled={records.isFetching}
+            onClick={() => {
+              void records.refetch();
+            }}
+          >
+            {t("Refresh tasks", "কাজ হালনাগাদ করুন")}
+          </Button>
+        )}
       </div>
       {records.isPending && <DataSkeleton />}
       {assign.isSuccess && (
@@ -128,19 +144,34 @@ export default function WorkBoard({ admin = false }: { admin?: boolean }) {
         />
       )}
       {records.isError && (
-        <p role="alert">{t("Tasks unavailable.", "কাজের তালিকা পাওয়া যায়নি।")}</p>
+        <div role="alert" className={admin ? "" : courierStyles.note}>
+          {t("Tasks unavailable.", "কাজের তালিকা পাওয়া যায়নি।")}{" "}
+          <Button
+            variant="outline"
+            onClick={() => {
+              void records.refetch();
+            }}
+          >
+            {t("Try again", "আবার চেষ্টা করুন")}
+          </Button>
+        </div>
       )}
       {!records.isPending && !records.isError && !records.data?.data.length && (
-        <p>
+        <div className={admin ? "" : courierStyles.panel}>
           <EmptyStatePanel
             title={t("No matching tasks.", "এই ধরনের কোনো কাজ নেই।")}
           />
-        </p>
+        </div>
       )}
       {records.data?.data.map((shipment) => (
         <article
           key={shipment.id}
-          className="space-y-3 rounded-xl border bg-card p-5"
+          className={
+            admin
+              ? "space-y-3 rounded-xl border bg-card p-5"
+              : `${courierStyles.task} space-y-3`
+          }
+          data-courier-task={!admin || undefined}
         >
           <h2 className="break-all font-semibold">{shipment.trackingId}</h2>
           <div className="flex flex-wrap gap-2">
@@ -261,7 +292,11 @@ export default function WorkBoard({ admin = false }: { admin?: boolean }) {
         </p>
       )}
       {records.data?.meta && (
-        <div className="flex items-center gap-3">
+        <div
+          className={
+            admin ? "flex items-center gap-3" : courierStyles.pagination
+          }
+        >
           <Button
             variant="outline"
             disabled={page <= 1}
