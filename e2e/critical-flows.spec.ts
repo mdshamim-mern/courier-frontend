@@ -29,14 +29,20 @@ async function mockApi(
 ) {
   const initial = handler("/users/me");
   const profile = initial.data as { role?: string } | undefined;
-  await setSession(page, profile?.role || (initial.status === 503 ? "unavailable" : "GUEST"));
+  await setSession(
+    page,
+    profile?.role || (initial.status === 503 ? "unavailable" : "GUEST"),
+  );
   await page.route("**/api/backend/**", async (route) => {
     const path = new URL(route.request().url()).pathname.replace(
       "/api/backend",
       "",
     );
     const response = handler(path);
-    if (path === "/auth/login") { const data = response.data as { user?: { role?: string }; role?: string }; await setSession(page, data?.user?.role || data?.role || "GUEST"); }
+    if (path === "/auth/login") {
+      const data = response.data as { user?: { role?: string }; role?: string };
+      await setSession(page, data?.user?.role || data?.role || "GUEST");
+    }
     await route.fulfill({
       status: response.status || 200,
       contentType: "application/json",
@@ -75,6 +81,92 @@ test("public tracking returns a timeline without receiver details", async ({
     .fill(shipment.trackingId);
   await page.getByRole("button", { name: "Track", exact: true }).click();
   await expect(page.getByText("PICKED UP", { exact: true })).toBeVisible();
+  await expect(page.getByText("Receiver", { exact: true })).toHaveCount(0);
+});
+
+test("public tracking waits for hydration before accepting input", async ({
+  page,
+}) => {
+  await mockApi(page, (path) =>
+    path.startsWith("/shipments/track/")
+      ? {
+          data: {
+            trackingId: shipment.trackingId,
+            trackings: [
+              {
+                id: "event",
+                status: "PICKED_UP",
+                createdAt: shipment.createdAt,
+              },
+            ],
+          },
+        }
+      : { status: 401 },
+  );
+  let releaseScripts!: () => void;
+  const scriptsReady = new Promise<void>((resolve) => {
+    releaseScripts = resolve;
+  });
+  await page.route("**/_next/static/**/*.js", async (route) => {
+    await scriptsReady;
+    await route.continue();
+  });
+  try {
+    await page.goto("/en/track-shipment", { waitUntil: "commit" });
+    await expect(
+      page.getByRole("textbox", { name: "Tracking ID" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("textbox", { name: "Tracking ID" }),
+    ).toBeDisabled();
+    await expect(
+      page.getByRole("button", { name: "Track", exact: true }),
+    ).toBeDisabled();
+  } finally {
+    releaseScripts();
+  }
+  await page
+    .getByRole("textbox", { name: "Tracking ID" })
+    .fill(shipment.trackingId);
+  const response = page.waitForResponse((result) =>
+    result.url().endsWith("/shipments/track/" + shipment.trackingId),
+  );
+  await page.getByRole("button", { name: "Track", exact: true }).click();
+  expect((await response).status()).toBe(200);
+  await expect(page).toHaveURL(/tracking=TRK-TEST1234$/);
+  await expect(page.getByText("PICKED UP", { exact: true })).toBeVisible();
+  await expect(page.getByText("Receiver", { exact: true })).toHaveCount(0);
+});
+
+test("public tracking submits autofilled values and refetches the same number", async ({
+  page,
+}) => {
+  let lookups = 0;
+  await mockApi(page, (path) => {
+    if (!path.startsWith("/shipments/track/")) return { status: 401 };
+    lookups++;
+    return {
+      data: {
+        trackingId: shipment.trackingId,
+        trackings: [
+          { id: "event", status: "PICKED_UP", createdAt: shipment.createdAt },
+        ],
+      },
+    };
+  });
+  await page.goto("/en/track-shipment");
+  const input = page.getByRole("textbox", { name: "Tracking ID" });
+  await expect(input).toBeEnabled();
+  await input.evaluate((element, value) => {
+    (element as HTMLInputElement).value = value;
+  }, shipment.trackingId.toLowerCase());
+  await page.getByRole("button", { name: "Track", exact: true }).click();
+  await expect(page).toHaveURL(/tracking=TRK-TEST1234$/);
+  await expect(page.getByText("PICKED UP", { exact: true })).toBeVisible();
+  await expect(input).toHaveValue(shipment.trackingId);
+  expect(lookups).toBe(1);
+  await page.getByRole("button", { name: "Track", exact: true }).click();
+  await expect.poll(() => lookups).toBe(2);
   await expect(page.getByText("Receiver", { exact: true })).toHaveCount(0);
 });
 
@@ -118,7 +210,9 @@ test("a service outage offers retry without logging the customer out", async ({
 }) => {
   await mockApi(page, () => ({ status: 503 }));
   await page.goto("/en/dashboard");
-  await expect(page.locator("body")).toContainText("Session verification unavailable");
+  await expect(page.locator("body")).toContainText(
+    "Session verification unavailable",
+  );
   await expect(page).toHaveURL(/\/en\/dashboard$/);
 });
 
@@ -212,7 +306,9 @@ test("payment recheck calls the provider reconciliation endpoint", async ({
   await page.goto("/en/payment/success?shipmentId=" + shipmentId);
   await page.getByRole("button", { name: "Check again" }).click();
   await expect(
-    page.locator("main").getByText("Payment pending provider verification", { exact: true }),
+    page
+      .locator("main")
+      .getByText("Payment pending provider verification", { exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Payment Confirmed", exact: true }),

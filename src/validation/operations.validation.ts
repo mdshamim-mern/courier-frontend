@@ -111,6 +111,7 @@ export const TrackingSchema = z.object({
   trackingId: z
     .string()
     .trim()
+    .toUpperCase()
     .regex(
       /^TRK-[A-Za-z0-9-]{4,76}$/,
       "Enter a tracking number beginning with TRK-",

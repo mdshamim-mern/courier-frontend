@@ -21,8 +21,10 @@ export default function TrackForm() {
   const bn = useLocale() === "bn";
   const [trackingId, setTrackingId] = useUrlState("tracking", "");
   const [input, setInput] = useState(trackingId);
+  const [ready, setReady] = useState(false);
   useEffect(() => {
     setInput(trackingId);
+    setReady(true);
   }, [trackingId]);
   const result = useQuery({
     queryKey: ["public-tracking", trackingId],
@@ -37,23 +39,29 @@ export default function TrackForm() {
         className="flex flex-col sm:flex-row gap-3"
         onSubmit={(event) => {
           event.preventDefault();
-          const value = input.trim().toUpperCase();
+          const value = String(
+            new FormData(event.currentTarget).get("trackingId") ?? "",
+          )
+            .trim()
+            .toUpperCase();
           if (!/^TRK-[A-Z0-9-]{4,76}$/.test(value)) return;
+          setInput(value);
           if (trackingId === value) void result.refetch();
           else setTrackingId(value);
         }}
       >
         <Input
           name="trackingId"
+          disabled={!ready}
           value={input}
           onChange={(event) => setInput(event.target.value)}
           required
           maxLength={80}
-          pattern={"TRK-[A-Za-z0-9\\-]{4,76}"}
+          pattern={"[Tt][Rr][Kk]-[A-Za-z0-9\\-]{4,76}"}
           placeholder="TRK-..."
           aria-label={bn ? "পার্সেলের অনুসন্ধানসংখ্যা" : "Tracking ID"}
         />
-        <Button type="submit" disabled={result.isFetching}>
+        <Button type="submit" disabled={!ready || result.isFetching}>
           {result.isFetching ? <Spinner /> : bn ? "খুঁজুন" : ui("Track")}
         </Button>
       </SchemaForm>
