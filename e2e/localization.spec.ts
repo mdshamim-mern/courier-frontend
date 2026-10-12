@@ -196,6 +196,16 @@ for (const locale of ["en", "bn"]) {
     expect(links.length).toBeGreaterThan(10);
     for (const href of [...new Set(links)]) {
       expect(href).not.toBe("#");
+      if (href.startsWith("mailto:")) {
+        expect(href).toBe(`mailto:${legalOperator.contactEmail}`);
+        continue;
+      }
+      if (href.startsWith("tel:")) {
+        expect(href).toBe(
+          `tel:${legalOperator.contactPhone.replaceAll("-", "")}`,
+        );
+        continue;
+      }
       expect(href).toMatch(new RegExp(`^/${locale}(?:/|#|$)`));
       const url = new URL(href, page.url());
       const response = await page.request.get(url.toString());

@@ -1,15 +1,15 @@
 "use client";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useLocale } from "next-intl";
 import { placeName } from "@/i18n/geography";
 import { useState } from "react";
 import { SchemaForm } from "@/components/form/schema-form";
 import { QuoteSchema } from "@/validation/operations.validation";
-import DataSkeleton from "@/components/ui/data-skeleton";
-import QueryError from "@/components/ui/query-error";
+import { usePublicCoverage } from "@/hooks/use-public-coverage";
+import PublicDataState from "./public-data-state";
 import apiClient from "@/lib/apiClient";
 import type { ApiResponse } from "@/types";
-import type { Quote, ServiceArea } from "@/types/operations.type";
+import type { Quote } from "@/types/operations.type";
 import { Button } from "@/components/ui/button";
 import { Calculator, ShieldCheck, ArrowUpRight } from "lucide-react";
 import { Link } from "@/i18n/navigation";
@@ -25,17 +25,13 @@ export default function QuoteCalculator() {
     serviceType: "STANDARD",
     pickupMode: "HOME",
   });
-  const areas = useQuery({
-    queryKey: ["coverage"],
-    queryFn: () =>
-      apiClient<ApiResponse<ServiceArea[]>>("/operations/coverage"),
-    retry: false,
-  });
+  const areas = usePublicCoverage();
   const quote = useMutation({
     mutationFn: () =>
       apiClient<ApiResponse<Quote>>("/operations/quote", {
         method: "POST",
         body: input,
+        timeout: 15000,
       }),
   });
   const money = (value: string) =>
@@ -43,7 +39,6 @@ export default function QuoteCalculator() {
       style: "currency",
       currency: "BDT",
     }).format(Number(value));
-  if (areas.isPending) return <DataSkeleton />;
   return (
     <section className="quote-workspace">
       <div className="glass-panel quote-form-panel">
@@ -59,12 +54,20 @@ export default function QuoteCalculator() {
             "পথ, সেবা ও পার্সেলের ওজন বাছুন। সার্ভারের অনুমোদিত মূল্যতালিকা থেকে হিসাব আসবে।",
           )}
         </p>
-        {areas.isError ? (
-          <QueryError
+        {areas.isPending || areas.isError ? (
+          <PublicDataState
+            pending={areas.isPending}
             retry={() => {
               void areas.refetch();
             }}
           />
+        ) : !areas.data?.data.length ? (
+          <p className="tool-caption" role="status">
+            {t(
+              "No approved service areas are available yet. Please check again later.",
+              "এখনো অনুমোদিত সেবার এলাকা নেই। পরে আবার দেখুন।",
+            )}
+          </p>
         ) : (
           <SchemaForm
             schema={QuoteSchema}

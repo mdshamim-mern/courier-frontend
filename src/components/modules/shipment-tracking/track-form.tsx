@@ -64,7 +64,8 @@ export default function TrackForm() {
           required
           maxLength={80}
           pattern={"[Tt][Rr][Kk]-[A-Za-z0-9\\-]{4,76}"}
-          placeholder="TRK-..."
+          placeholder="TRK-12345"
+          aria-describedby={`${inputId}-hint`}
           aria-label={bn ? "পার্সেলের অনুসন্ধানসংখ্যা" : "Tracking ID"}
         />
         <Button type="submit" disabled={!ready || result.isFetching}>
@@ -76,6 +77,11 @@ export default function TrackForm() {
           {bn ? "খুঁজুন" : ui("Track")}
         </Button>
       </SchemaForm>
+      <p id={`${inputId}-hint`} className="tool-caption">
+        {bn
+          ? "রসিদে থাকা অনুসন্ধানসংখ্যা দিন। ঘরের নমুনাটি শুধু বিন্যাসের উদাহরণ, আসল পার্সেলের নম্বর নয়।"
+          : "Use the ID on your receipt. TRK-12345 is a format example, not a real parcel number."}
+      </p>
       {result.isFetching && <DataSkeleton />}
       {result.isError && (
         <p role="alert" className="tracking-error">

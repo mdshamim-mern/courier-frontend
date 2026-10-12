@@ -1,27 +1,18 @@
 "use client";
 import { useUrlState } from "@/hooks/use-url-state";
-import { useQuery } from "@tanstack/react-query";
 import { MapPin, Search, Check, Minus, ArrowUpRight } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { useLocale } from "next-intl";
-import DataSkeleton from "@/components/ui/data-skeleton";
-import QueryError from "@/components/ui/query-error";
+import { usePublicCoverage } from "@/hooks/use-public-coverage";
+import PublicDataState from "./public-data-state";
 import { placeName, placeSearch } from "@/i18n/geography";
-import apiClient from "@/lib/apiClient";
-import type { ApiResponse } from "@/types";
-import type { ServiceArea } from "@/types/operations.type";
 import QuoteCalculator from "./quote-calculator";
 export default function CoverageList() {
   const locale = useLocale(),
     bn = locale === "bn",
     [search, setSearch] = useUrlState("search", "");
   const t = (en: string, bangla: string) => (bn ? bangla : en);
-  const result = useQuery({
-    queryKey: ["coverage"],
-    queryFn: () =>
-      apiClient<ApiResponse<ServiceArea[]>>("/operations/coverage"),
-    retry: false,
-  });
+  const result = usePublicCoverage();
   const filtered =
     result.data?.data.filter((area) =>
       placeSearch([area.name, area.district, area.upazila], search),
@@ -73,9 +64,9 @@ export default function CoverageList() {
           </strong>
         </p>
       )}
-      {result.isPending && <DataSkeleton />}
-      {result.isError && (
-        <QueryError
+      {(result.isPending || result.isError) && (
+        <PublicDataState
+          pending={result.isPending}
           retry={() => {
             void result.refetch();
           }}

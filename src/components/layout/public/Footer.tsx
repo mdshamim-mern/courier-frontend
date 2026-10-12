@@ -3,7 +3,17 @@ import { useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useUiText } from "@/i18n/use-ui-text";
 import Logo from "@/assets/svg/Logo";
-import { ArrowUp, ArrowUpRight, PackageCheck, ScanLine } from "lucide-react";
+import {
+  ArrowUp,
+  ArrowUpRight,
+  PackageCheck,
+  ScanLine,
+  Phone,
+  Mail,
+  MapPin,
+} from "lucide-react";
+import { legalOperator } from "@/content/legal";
+import DeliveryScene from "@/components/home/delivery-scene";
 
 const groups = [
   {
@@ -29,7 +39,6 @@ const groups = [
         href: "/services#ecommerce-fulfillment",
         label: "E-commerce Logistics",
       },
-      { href: "/contact", label: "Contact and delivery information" },
     ],
   },
   {
@@ -39,6 +48,7 @@ const groups = [
       { href: "/terms", label: "Terms of Service" },
       { href: "/cookies", label: "Cookie Policy" },
       { href: "/faq", label: "FAQ" },
+      { href: "/contact", label: "Contact and delivery information" },
     ],
   },
 ];
@@ -52,7 +62,10 @@ export default function Footer() {
       <div className="footer-wrap">
         <div className="footer-glass glass-panel">
           <section className="footer-action-bar">
-            <div>
+            <div className="footer-delivery-art">
+              <DeliveryScene />
+            </div>
+            <div className="footer-action-copy">
               <span className="icon-tile">
                 <PackageCheck aria-hidden="true" />
               </span>
@@ -95,6 +108,22 @@ export default function Footer() {
                   "Dropzo serves approved areas through its own delivery team. Check coverage and pricing before booking.",
                 )}
               </p>
+              <address className="footer-contact-details">
+                <a
+                  href={`tel:${legalOperator.contactPhone.replaceAll("-", "")}`}
+                >
+                  <Phone size={16} aria-hidden="true" />
+                  {legalOperator.contactPhone}
+                </a>
+                <a href={`mailto:${legalOperator.contactEmail}`}>
+                  <Mail size={16} aria-hidden="true" />
+                  {legalOperator.contactEmail}
+                </a>
+                <p>
+                  <MapPin size={16} aria-hidden="true" />
+                  {legalOperator.address}
+                </p>
+              </address>
               <Link className="text-link" href="/contact">
                 {t("Talk to our team", "আমাদের দলের সঙ্গে যোগাযোগ")}
                 <ArrowUpRight size={16} aria-hidden="true" />

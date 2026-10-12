@@ -13,6 +13,8 @@ import {
 import DeliveryScene from "./delivery-scene";
 import TrackForm from "@/components/modules/shipment-tracking/track-form";
 import QuoteCalculator from "@/components/operations/quote-calculator";
+import { HomeNetworkStats, HomePricingExample } from "./home-network";
+import SampleReviews from "./sample-reviews";
 export default function ParcelHero() {
   const bn = useLocale() === "bn",
     t = (en: string, bangla: string) => (bn ? bangla : en);
@@ -86,6 +88,7 @@ export default function ParcelHero() {
         </div>
         <TrackForm />
       </section>
+      <HomeNetworkStats />
       <section className="home-estimate-section">
         <div className="home-section-heading">
           <div>
@@ -101,6 +104,7 @@ export default function ParcelHero() {
             <ArrowUpRight size={16} aria-hidden="true" />
           </Link>
         </div>
+        <HomePricingExample />
         <QuoteCalculator />
       </section>
       <section className="home-process-section">
@@ -179,6 +183,7 @@ export default function ParcelHero() {
           })}
         </div>
       </section>
+      <SampleReviews />
       <section className="glass-panel home-team-panel">
         <div className="home-team-copy">
           <span className="icon-tile">
