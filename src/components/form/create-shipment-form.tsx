@@ -23,6 +23,9 @@ export default function CreateShipmentForm() {
     t = (en: string, bangla: string) => (bn ? bangla : en),
     router = useRouter();
   const formId = useId();
+  const formRef = useRef<HTMLFormElement>(null);
+  const requestedStep = useRef(1);
+  const [stepHint, setStepHint] = useState("");
   const areas = useQuery({
     queryKey: ["coverage"],
     queryFn: () =>
@@ -91,6 +94,7 @@ export default function CreateShipmentForm() {
     onSuccess: (res) => router.push(`/dashboard/my-shipments/${res.data.id}`),
   });
   const update = (key: string, value: string | number) => {
+    if (step === 2) setStep(1);
     setPayload((previous) => ({
       ...previous,
       [key]: value,
@@ -186,13 +190,42 @@ export default function CreateShipmentForm() {
           <li
             key={label}
             aria-current={step === index ? "step" : undefined}
-            className={`rounded-xl border p-3 ${step === index ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+            className="min-w-0"
           >
-            {label}
+            <button
+              type="button"
+              className={`booking-step ${step === index ? "is-current" : ""}`}
+              disabled={quote.isPending || create.isPending}
+              aria-current={step === index ? "step" : undefined}
+              onClick={() => {
+                setStepHint("");
+                if (index === step) return;
+                if (index < step) {
+                  setStep(index);
+                  setAccepted(false);
+                  return;
+                }
+                requestedStep.current = index;
+                formRef.current?.requestSubmit();
+              }}
+            >
+              {label}
+            </button>
           </li>
         ))}
       </ol>
+      <p
+        className="text-sm text-muted-foreground"
+        role={stepHint ? "status" : undefined}
+      >
+        {stepHint ||
+          t(
+            "Choose a step to continue or edit. Details are validated before moving forward; review calculates the approved delivery charge.",
+            "ধাপ বেছে এগিয়ে যান বা তথ্য বদলান। সামনে যাওয়ার আগে তথ্য যাচাই হবে; যাচাইয়ের ধাপে অনুমোদিত মাশুল হিসাব হবে।",
+          )}
+      </p>
       <SchemaForm
+        ref={formRef}
         schema={step === 0 ? PickupSchema : BookingFormSchema}
         values={payload}
         id={formId}
@@ -200,8 +233,17 @@ export default function CreateShipmentForm() {
         className="grid gap-4 sm:grid-cols-2"
         onSubmit={(event) => {
           event.preventDefault();
-          if (step === 0) setStep(1);
-          else if (step === 1) quote.mutate();
+          if (step === 0) {
+            setStep(1);
+            if (requestedStep.current === 2)
+              setStepHint(
+                t(
+                  "Complete parcel details, then choose Review & confirm to calculate the charge.",
+                  "পণ্যের তথ্য পূরণ করে যাচাইয়ের ধাপ বেছে মাশুল হিসাব করুন।",
+                ),
+              );
+            requestedStep.current = 1;
+          } else if (step === 1) quote.mutate();
           else if (accepted) create.mutate();
         }}
       >

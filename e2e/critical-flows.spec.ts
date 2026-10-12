@@ -259,6 +259,7 @@ test("payment initiation sends shipmentId to the API", async ({ page }) => {
     });
   });
   await page.goto("/en/dashboard/my-shipments");
+  await page.getByRole("button", { name: "Actions", exact: true }).click();
   await page.getByRole("button", { name: "Pay Now" }).click();
   await expect(
     page.getByText("Provider unavailable", { exact: true }),

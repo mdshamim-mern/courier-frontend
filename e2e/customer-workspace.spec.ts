@@ -2,6 +2,73 @@ import { test, expect, type Page } from "@playwright/test";
 import { setSession } from "./support/session";
 
 const id = "11111111-1111-4111-8111-111111111111";
+
+test("compact shipment actions keep payment choices accessible and confirm cancellation", async ({
+  page,
+}) => {
+  await fixture(page);
+  let cancellations = 0;
+  await page.route(`**/api/backend/shipments/${id}/cancel`, (route) => {
+    cancellations++;
+    return route.fulfill({
+      json: { success: true, data: { id, status: "CANCELLED" } },
+    });
+  });
+  await page.goto("/en/dashboard/my-shipments");
+  await expect(
+    page.locator("tbody tr").first().getByRole("button"),
+  ).toHaveCount(2);
+  await page.getByRole("button", { name: "Actions", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(
+    dialog.getByRole("button", { name: "Pay Now", exact: true }),
+  ).toBeVisible();
+  await expect(
+    dialog.getByRole("button", { name: "Pay with Stripe", exact: true }),
+  ).toBeVisible();
+  await expect(
+    dialog.getByRole("link", { name: "Check Payment", exact: true }),
+  ).toHaveAttribute("href", `/en/payment/success?shipmentId=${id}`);
+  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+  expect(cancellations).toBe(0);
+  await expect(
+    dialog.getByRole("button", { name: "Confirm cancellation", exact: true }),
+  ).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await page.getByRole("button", { name: "Actions", exact: true }).click();
+  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+  const response = page.waitForResponse((r) =>
+    r.url().endsWith(`/${id}/cancel`),
+  );
+  await dialog
+    .getByRole("button", { name: "Confirm cancellation", exact: true })
+    .click();
+  await response;
+  expect(cancellations).toBe(1);
+});
+
+test("ledger refresh is beside its heading and profile reset discards only local edits", async ({
+  page,
+}) => {
+  await fixture(page);
+  await page.goto("/en/dashboard/collections");
+  const heading = page.locator(".ledger-heading");
+  await expect(
+    heading.getByRole("heading", { name: "Product cash collection ledger" }),
+  ).toBeVisible();
+  await expect(
+    heading.getByRole("button", { name: "Refresh ledger" }),
+  ).toBeVisible();
+  await page.goto("/en/dashboard/profile");
+  await page.getByLabel("Full Name", { exact: true }).fill("Unsaved Customer");
+  await page
+    .getByRole("button", { name: "Reset changes", exact: true })
+    .click();
+  await expect(page.getByLabel("Full Name", { exact: true })).toHaveValue(
+    "Test Customer",
+  );
+});
 async function fixture(page: Page) {
   await setSession(page, "CUSTOMER");
   await page.route("**/api/backend/**", (route) => {
@@ -130,10 +197,17 @@ for (const locale of ["en", "bn"])
             .locator(".customer-hero")
             .evaluate((el) => getComputedStyle(el).backdropFilter),
         ).toContain("blur");
-        if (suffix === "/payments" || suffix === "")
+        if (
+          suffix === "/payments" ||
+          suffix === "" ||
+          ((width === 360 || width === 1366) &&
+            ["/profile", "/business", "/collections", "/my-shipments"].includes(
+              suffix,
+            ))
+        )
           await page.screenshot({
             path: info.outputPath(
-              `customer-${locale}-${width}-${suffix ? "payments" : "overview"}.png`,
+              `customer-${locale}-${width}-${suffix ? suffix.slice(1) : "overview"}.png`,
             ),
             fullPage: true,
           });

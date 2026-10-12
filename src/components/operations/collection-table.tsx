@@ -1,12 +1,15 @@
 "use client";
 import { useLocale } from "next-intl";
+import type { ReactNode } from "react";
 import type { Collection, OperationsMine } from "@/types/operations.type";
 export default function CollectionTable({
   records,
   totals,
+  action,
 }: {
   records: Collection[];
   totals?: OperationsMine["totals"];
+  action?: ReactNode;
 }) {
   const bn = useLocale() === "bn",
     money = (value: string) =>
@@ -21,9 +24,12 @@ export default function CollectionTable({
   };
   return (
     <section className="space-y-4">
-      <h2 className="text-2xl font-bold">
-        {bn ? "পণ্যের টাকা সংগ্রহের হিসাব" : "Product cash collection ledger"}
-      </h2>
+      <div className="ledger-heading">
+        <h2 className="text-2xl font-bold">
+          {bn ? "পণ্যের টাকা সংগ্রহের হিসাব" : "Product cash collection ledger"}
+        </h2>
+        {action}
+      </div>
       <p className="text-sm">
         {bn
           ? "ডেলিভারি মাশুলের অনলাইন অর্থপ্রদান এই হিসাবের অংশ নয়। এখানে প্রাপকের কাছ থেকে সংগৃহীত পণ্যের টাকা দেখানো হয়।"

@@ -4,6 +4,8 @@ import { useUiText, useUiFormat } from "@/i18n/use-ui-text";
 import { useMutation } from "@tanstack/react-query";
 import { initiateStripePayment } from "@/api/payment.api";
 import { useState } from "react";
+import { useLocale } from "next-intl";
+import { MoreHorizontal } from "lucide-react";
 import {
   useGetAllShipments,
   useGetSingleShipment,
@@ -29,12 +31,15 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { Link } from "@/i18n/navigation";
 
 export default function ShipmentHistory() {
   const ui = useUiText();
+  const bn = useLocale() === "bn";
+  const [confirmCancelId, setConfirmCancelId] = useState("");
   const display = useUiFormat();
   const [page, setPage] = useUrlState("page", 1);
   const [selectedId, setSelectedId] = useState("");
@@ -82,6 +87,7 @@ export default function ShipmentHistory() {
                   <TableCell className="font-mono">
                     <Link
                       className="customer-record-link"
+                      title={shipment.trackingId}
                       href={`/dashboard/my-shipments/${shipment.id}`}
                     >
                       {shipment.trackingId}
@@ -97,73 +103,7 @@ export default function ShipmentHistory() {
                     <p className="text-xs">{ui(shipment.paymentStatus)}</p>
                   </TableCell>
                   <TableCell>
-                    <div className="flex flex-wrap gap-2">
-                      {!["PAID", "REFUNDED"].includes(shipment.paymentStatus) &&
-                        !["CANCELLED", "RETURNED"].includes(
-                          shipment.status,
-                        ) && (
-                          <>
-                            <Button
-                              size="sm"
-                              disabled={paying || stripe.isPending || canceling}
-                              onClick={() =>
-                                initiate(
-                                  { shipmentId: shipment.id },
-                                  {
-                                    onSuccess: (response) => {
-                                      const url = new URL(
-                                        response.data.paymentUrl,
-                                      );
-                                      if (url.protocol !== "https:") return;
-                                      window.location.assign(url.href);
-                                    },
-                                    onError: (failure) =>
-                                      toast.add({
-                                        title: ui("Payment Failed"),
-                                        description: display.error(
-                                          getApiErrorMessage(failure),
-                                        ),
-                                        type: "error",
-                                      }),
-                                  },
-                                )
-                              }
-                            >
-                              {ui("Pay Now")}
-                            </Button>
-                            <Button
-                              type="button"
-                              size="sm"
-                              disabled={paying || stripe.isPending || canceling}
-                              onClick={() =>
-                                stripe.mutate(
-                                  { shipmentId: shipment.id },
-                                  {
-                                    onSuccess: (response) => {
-                                      const url = new URL(
-                                        response.data.paymentUrl,
-                                      );
-                                      if (
-                                        url.protocol === "https:" &&
-                                        url.hostname === "checkout.stripe.com"
-                                      )
-                                        window.location.assign(url.href);
-                                    },
-                                    onError: (failure) =>
-                                      toast.add({
-                                        title: "Payment Failed",
-                                        description:
-                                          getApiErrorMessage(failure),
-                                        type: "error",
-                                      }),
-                                  },
-                                )
-                              }
-                            >
-                              {ui("Pay with Stripe")}
-                            </Button>
-                          </>
-                        )}
+                    <div className="shipment-row-actions">
                       <Button
                         variant="outline"
                         size="sm"
@@ -171,39 +111,158 @@ export default function ShipmentHistory() {
                       >
                         {ui("Track")}
                       </Button>
-                      {shipment.paymentStatus === "UNPAID" && (
-                        <Link
-                          className="text-sm underline"
-                          href={`/payment/success?shipmentId=${shipment.id}`}
+                      <Dialog onOpenChange={() => setConfirmCancelId("")}>
+                        <DialogTrigger
+                          render={<Button variant="outline" size="sm" />}
                         >
-                          {ui("Check Payment")}
-                        </Link>
-                      )}
-                      {shipment.status === "PENDING" &&
-                        shipment.paymentStatus !== "PAID" && (
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            disabled={canceling || paying || stripe.isPending}
-                            onClick={() =>
-                              cancel(shipment.id, {
-                                onSuccess: () =>
-                                  toast.add({
-                                    title: "Shipment Cancelled",
-                                    type: "success",
-                                  }),
-                                onError: (failure) =>
-                                  toast.add({
-                                    title: "Cancellation Failed",
-                                    description: getApiErrorMessage(failure),
-                                    type: "error",
-                                  }),
-                              })
-                            }
-                          >
-                            {ui("Cancel")}
-                          </Button>
-                        )}
+                          <MoreHorizontal size={18} aria-hidden="true" />
+                          {ui("Actions")}
+                        </DialogTrigger>
+                        <DialogContent className="shipment-action-panel sm:max-w-md">
+                          <DialogHeader>
+                            <DialogTitle>{ui("Actions")}</DialogTitle>
+                          </DialogHeader>
+                          <p className="break-all font-mono text-xs text-muted-foreground">
+                            {shipment.trackingId}
+                          </p>
+                          <div className="shipment-action-options">
+                            {!["PAID", "REFUNDED"].includes(
+                              shipment.paymentStatus,
+                            ) &&
+                              !["CANCELLED", "RETURNED"].includes(
+                                shipment.status,
+                              ) && (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    disabled={
+                                      paying || stripe.isPending || canceling
+                                    }
+                                    onClick={() =>
+                                      initiate(
+                                        { shipmentId: shipment.id },
+                                        {
+                                          onSuccess: (response) => {
+                                            const url = new URL(
+                                              response.data.paymentUrl,
+                                            );
+                                            if (url.protocol !== "https:")
+                                              return;
+                                            window.location.assign(url.href);
+                                          },
+                                          onError: (failure) =>
+                                            toast.add({
+                                              title: ui("Payment Failed"),
+                                              description: display.error(
+                                                getApiErrorMessage(failure),
+                                              ),
+                                              type: "error",
+                                            }),
+                                        },
+                                      )
+                                    }
+                                  >
+                                    {ui("Pay Now")}
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    disabled={
+                                      paying || stripe.isPending || canceling
+                                    }
+                                    onClick={() =>
+                                      stripe.mutate(
+                                        { shipmentId: shipment.id },
+                                        {
+                                          onSuccess: (response) => {
+                                            const url = new URL(
+                                              response.data.paymentUrl,
+                                            );
+                                            if (
+                                              url.protocol === "https:" &&
+                                              url.hostname ===
+                                                "checkout.stripe.com"
+                                            )
+                                              window.location.assign(url.href);
+                                          },
+                                          onError: (failure) =>
+                                            toast.add({
+                                              title: "Payment Failed",
+                                              description:
+                                                getApiErrorMessage(failure),
+                                              type: "error",
+                                            }),
+                                        },
+                                      )
+                                    }
+                                  >
+                                    {ui("Pay with Stripe")}
+                                  </Button>
+                                </>
+                              )}
+                            <Link
+                              className="secondary-button"
+                              href={`/dashboard/my-shipments/${shipment.id}`}
+                            >
+                              {bn ? "রসিদ ও বিস্তারিত" : "Receipt & details"}
+                            </Link>
+                            {shipment.paymentStatus === "UNPAID" && (
+                              <Link
+                                className="secondary-button"
+                                href={`/payment/success?shipmentId=${shipment.id}`}
+                              >
+                                {ui("Check Payment")}
+                              </Link>
+                            )}
+                            {shipment.status === "PENDING" &&
+                              shipment.paymentStatus !== "PAID" && (
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  disabled={
+                                    canceling || paying || stripe.isPending
+                                  }
+                                  onClick={() => {
+                                    if (confirmCancelId !== shipment.id) {
+                                      setConfirmCancelId(shipment.id);
+                                      return;
+                                    }
+                                    cancel(shipment.id, {
+                                      onSuccess: () =>
+                                        toast.add({
+                                          title: "Shipment Cancelled",
+                                          type: "success",
+                                        }),
+                                      onError: (failure) =>
+                                        toast.add({
+                                          title: "Cancellation Failed",
+                                          description:
+                                            getApiErrorMessage(failure),
+                                          type: "error",
+                                        }),
+                                    });
+                                  }}
+                                >
+                                  {confirmCancelId === shipment.id
+                                    ? bn
+                                      ? "বাতিল নিশ্চিত করুন"
+                                      : "Confirm cancellation"
+                                    : ui("Cancel")}
+                                </Button>
+                              )}
+                            {confirmCancelId === shipment.id && (
+                              <p
+                                role="alert"
+                                className="text-sm text-destructive"
+                              >
+                                {bn
+                                  ? "এই পার্সেলের বুকিং বাতিল করবেন? নিশ্চিত করতে আবার চাপুন।"
+                                  : "Cancel this parcel booking? Confirm above to proceed."}
+                              </p>
+                            )}
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                     </div>
                   </TableCell>
                 </TableRow>

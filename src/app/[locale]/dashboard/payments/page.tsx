@@ -13,12 +13,17 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import TablePagination from "@/components/ui/table-pagination";
+import { useLocale } from "next-intl";
+import { CreditCard, CircleCheck, Clock3 } from "lucide-react";
+import CourierRefresh from "@/components/modules/courier/courier-refresh";
 
 export default function PaymentsPage() {
   const ui = useUiText();
+  const bn = useLocale() === "bn";
+  const t = (en: string, bangla: string) => (bn ? bangla : en);
   const display = useUiFormat();
   const [page, setPage] = useUrlState("page", 1);
-  const { data, isLoading, isError, refetch } = useGetPayments({
+  const { data, isLoading, isFetching, isError, refetch } = useGetPayments({
     page,
     limit: 10,
   });
@@ -45,8 +50,64 @@ export default function PaymentsPage() {
         </p>
       </div>
 
+      <section
+        className="payment-page-summary"
+        aria-label={t(
+          "Current page payment summary",
+          "এই পাতার অর্থপ্রদানের সংক্ষিপ্ত হিসাব",
+        )}
+      >
+        {[
+          {
+            Icon: CreditCard,
+            label: t("Records on this page", "এই পাতার লেনদেন"),
+            value: display.number(payments.length),
+          },
+          {
+            Icon: CircleCheck,
+            label: t("Paid records on this page", "এই পাতায় পরিশোধিত"),
+            value: display.number(
+              payments.filter((p) => p.status === "PAID").length,
+            ),
+          },
+          {
+            Icon: Clock3,
+            label: t("Unpaid / failed on this page", "এই পাতায় অপরিশোধিত / ব্যর্থ"),
+            value: display.number(
+              payments.filter(
+                (p) => p.status === "UNPAID" || p.status === "FAILED",
+              ).length,
+            ),
+          },
+        ].map(({ Icon, label, value }) => (
+          <article key={label} className="glass-panel payment-summary-card">
+            <Icon size={21} aria-hidden="true" />
+            <p>{label}</p>
+            <strong>{isLoading ? "—" : value}</strong>
+          </article>
+        ))}
+      </section>
+
       <div className="customer-table rounded-md border bg-card">
-        <Table>
+        <div className="payment-ledger-heading">
+          <div>
+            <h2>{t("Transaction ledger", "লেনদেনের হিসাব")}</h2>
+            <p>
+              {t(
+                "Server-recorded delivery-fee payments. Product COD is tracked separately.",
+                "সার্ভারে নথিভুক্ত ডেলিভারি মাশুলের অর্থপ্রদান। পণ্যের টাকা সংগ্রহ আলাদা হিসাবে থাকে।",
+              )}
+            </p>
+          </div>
+          <CourierRefresh
+            label={t("Refresh payments", "অর্থপ্রদান হালনাগাদ করুন")}
+            fetching={isFetching}
+            refresh={async () => {
+              await refetch({ throwOnError: true });
+            }}
+          />
+        </div>
+        <Table className="customer-payment-table">
           <TableHeader>
             <TableRow>
               <TableHead>{ui("Transaction ID")}</TableHead>
@@ -95,17 +156,27 @@ export default function PaymentsPage() {
             ) : (
               payments.map((payment) => (
                 <TableRow key={payment.id}>
-                  <TableCell className="font-mono text-xs">
+                  <TableCell
+                    data-label={ui("Transaction ID")}
+                    className="font-mono text-xs"
+                  >
                     {payment.transactionId || ui("N/A")}
                   </TableCell>
-                  <TableCell>
+                  <TableCell data-label={ui("Date")}>
                     {display.date(new Date(payment.createdAt))}
                   </TableCell>
-                  <TableCell className="font-medium text-foreground">
+                  <TableCell
+                    data-label={ui("Amount")}
+                    className="font-medium text-foreground"
+                  >
                     ৳{display.money(payment.amount)}
                   </TableCell>
-                  <TableCell>{ui(payment.paymentGateway)}</TableCell>
-                  <TableCell>
+                  <TableCell data-label={ui("Gateway")}>
+                    <span className="payment-gateway">
+                      {ui(payment.paymentGateway)}
+                    </span>
+                  </TableCell>
+                  <TableCell data-label={ui("Status")}>
                     <span
                       className={`px-2 py-1 rounded-full text-xs font-medium ${payment.status === "PAID" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : payment.status === "FAILED" ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"}`}
                     >

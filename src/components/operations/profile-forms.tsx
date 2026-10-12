@@ -16,6 +16,7 @@ import type { OperationsMine } from "@/types/operations.type";
 import { Button } from "@/components/ui/button";
 import CollectionTable from "./collection-table";
 import CourierRefresh from "@/components/modules/courier/courier-refresh";
+import { ShieldCheck, ClipboardCheck } from "lucide-react";
 export default function ProfileForms({
   kind,
 }: {
@@ -96,14 +97,16 @@ export default function ProfileForms({
       />
     ) : (
       <div className="space-y-5">
-        <CourierRefresh
-          label={t("Refresh ledger", "হিসাব হালনাগাদ করুন")}
-          fetching={mine.isFetching}
-          refresh={async () => {
-            await mine.refetch({ throwOnError: true });
-          }}
-        />
         <CollectionTable
+          action={
+            <CourierRefresh
+              label={t("Refresh ledger", "হিসাব হালনাগাদ করুন")}
+              fetching={mine.isFetching}
+              refresh={async () => {
+                await mine.refetch({ throwOnError: true });
+              }}
+            />
+          }
           totals={mine.data?.data.totals}
           records={mine.data?.data.collections || []}
         />
@@ -163,23 +166,41 @@ export default function ProfileForms({
                 : t("Awaiting review", "যাচাইয়ের অপেক্ষায়")}
         </p>
       )}
-      <p className="text-sm text-muted-foreground">
-        {kind === "business"
-          ? t(
-              "Payout details require administrator verification. Editing them removes approval until reviewed. Delivery charges are paid separately; this is not an instant withdrawal facility.",
-              "টাকা পাওয়ার তথ্য প্রশাসক যাচাই করবেন। তথ্য বদলালে পুনরায় অনুমোদন লাগবে। ডেলিভারি মাশুল আলাদা পরিশোধযোগ্য; এটি তাৎক্ষণিক টাকা তোলার ব্যবস্থা নয়।",
-            )
-          : t(
-              "Approval does not happen automatically. A hub is assigned after review; sign in again after approval.",
-              "স্বয়ংক্রিয় অনুমোদন হয় না। যাচাইয়ের পরে হাব বরাদ্দ হবে; অনুমোদনের পরে আবার প্রবেশ করতে হবে।",
-            )}
-      </p>
-      <p className="rounded-xl border bg-background/70 p-4 text-sm">
-        {t(
-          "Submit for review saves your application for Dropzo administrators in Admin → Operations. It does not send an email or transfer money. Approval is required before COD bookings or staff access.",
-          "যাচাইয়ের জন্য পাঠালে আবেদন Dropzo প্রশাসকের Admin → Operations পাতায় জমা হয়। এটি ইমেইল পাঠায় না বা টাকা হস্তান্তর করে না। পণ্যের টাকা সংগ্রহের বুকিং বা কর্মীর প্রবেশাধিকার পেতে অনুমোদন লাগবে।",
-        )}
-      </p>
+      <div className="business-guidance">
+        <aside className="business-note glass-panel">
+          <ShieldCheck aria-hidden="true" />
+          <div>
+            <h2>
+              {kind === "business"
+                ? t("Verification & payouts", "যাচাই ও টাকা পাওয়ার তথ্য")
+                : t("Application review", "আবেদন যাচাই")}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {kind === "business"
+                ? t(
+                    "Payout details require administrator verification. Editing them removes approval until reviewed. Delivery charges are paid separately; this is not an instant withdrawal facility.",
+                    "টাকা পাওয়ার তথ্য প্রশাসক যাচাই করবেন। তথ্য বদলালে পুনরায় অনুমোদন লাগবে। ডেলিভারি মাশুল আলাদা পরিশোধযোগ্য; এটি তাৎক্ষণিক টাকা তোলার ব্যবস্থা নয়।",
+                  )
+                : t(
+                    "Approval does not happen automatically. A hub is assigned after review; sign in again after approval.",
+                    "স্বয়ংক্রিয় অনুমোদন হয় না। যাচাইয়ের পরে হাব বরাদ্দ হবে; অনুমোদনের পরে আবার প্রবেশ করতে হবে।",
+                  )}
+            </p>
+          </div>
+        </aside>
+        <aside className="business-note glass-panel">
+          <ClipboardCheck aria-hidden="true" />
+          <div>
+            <h2>{t("Where your application goes", "আপনার আবেদন কোথায় যায়")}</h2>
+            <p className="text-sm text-muted-foreground">
+              {t(
+                "Submit for review saves your application for Dropzo administrators in Admin → Operations. It does not send an email or transfer money. Approval is required before COD bookings or staff access.",
+                "যাচাইয়ের জন্য পাঠালে আবেদন Dropzo প্রশাসকের Admin → Operations পাতায় জমা হয়। এটি ইমেইল পাঠায় না বা টাকা হস্তান্তর করে না। পণ্যের টাকা সংগ্রহের বুকিং বা কর্মীর প্রবেশাধিকার পেতে অনুমোদন লাগবে।",
+              )}
+            </p>
+          </div>
+        </aside>
+      </div>
       <SchemaForm
         schema={kind === "business" ? BusinessSchema : ApplicationSchema}
         key={record?.id || kind}

@@ -465,6 +465,7 @@ test("Stripe delivery fee button uses the existing Stripe checkout route without
     }),
   );
   await page.goto("/bn/dashboard/my-shipments");
+  await page.getByRole("button", { name: "করণীয়", exact: true }).click();
   await page
     .getByRole("button", { name: "স্ট্রাইপ দিয়ে পরিশোধ", exact: true })
     .click();
@@ -727,6 +728,7 @@ test("Bengali Stripe minimum-fee rejection explains the payment limitation", asy
     }),
   );
   await page.goto("/bn/dashboard/my-shipments");
+  await page.getByRole("button", { name: "করণীয়", exact: true }).click();
   await page.getByRole("button", { name: "স্ট্রাইপ দিয়ে পরিশোধ" }).click();
   await expect(
     page.getByText(

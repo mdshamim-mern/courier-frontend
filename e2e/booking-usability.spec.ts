@@ -22,6 +22,49 @@ const quote = {
   rateUpdatedAt: "2026-10-09T00:00:00.000Z",
   originHub: hub,
 };
+
+test("booking step buttons validate before advancing and invalidate edited quotes", async ({
+  page,
+}) => {
+  await setup(page);
+  await page.goto("/en/dashboard/new-shipment");
+  await page
+    .getByRole("button", { name: "2. Parcel & service", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "1. Addresses", exact: true }),
+  ).toHaveAttribute("aria-current", "step");
+  await expect(page.locator('[aria-invalid="true"]').first()).toBeVisible();
+  await fill(page);
+  await page
+    .getByRole("button", { name: "3. Review & confirm", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Review your parcel" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "1. Addresses", exact: true }).click();
+  await expect(page.locator('select[name="pickupAreaId"]')).toHaveValue(pickup);
+  await page
+    .getByRole("button", { name: "2. Parcel & service", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "3. Review & confirm", exact: true })
+    .click();
+  const consent = page.getByRole("checkbox");
+  await expect(consent).not.toBeChecked();
+  await consent.check();
+  await page.locator('input[name="weight"]').fill("2");
+  await expect(
+    page.getByRole("button", { name: "2. Parcel & service", exact: true }),
+  ).toHaveAttribute("aria-current", "step");
+  await expect(
+    page.getByRole("heading", { name: "Review your parcel" }),
+  ).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "3. Review & confirm", exact: true })
+    .click();
+  await expect(page.getByRole("checkbox")).not.toBeChecked();
+});
 async function setup(page: Page, role = "CUSTOMER") {
   await setSession(page, role);
   await page.route("**/api/backend/**", (route) => {
@@ -109,7 +152,21 @@ async function fill(page: Page, cod = "0.06") {
       new Date(Date.now() + 86400000).toISOString().slice(0, 16),
     ],
   ]) {
-    if (["declaredValue", "codAmount", "weight", "requestedPickupAt"].includes(name) && await page.getByRole("button", { name: /Continue to parcel details|পণ্যের তথ্যে যান/ }).isVisible()) await page.getByRole("button", { name: /Continue to parcel details|পণ্যের তথ্যে যান/ }).click();
+    if (
+      ["declaredValue", "codAmount", "weight", "requestedPickupAt"].includes(
+        name,
+      ) &&
+      (await page
+        .getByRole("button", {
+          name: /Continue to parcel details|পণ্যের তথ্যে যান/,
+        })
+        .isVisible())
+    )
+      await page
+        .getByRole("button", {
+          name: /Continue to parcel details|পণ্যের তথ্যে যান/,
+        })
+        .click();
     await page.locator('input[name="' + name + '"]').fill(value);
   }
   await page.locator('select[name="serviceType"]').selectOption("NEXT_DAY");
@@ -174,7 +231,9 @@ for (const width of [390, 1366]) {
       await page.locator('select[name="pickupMode"]').selectOption("BRANCH");
       await expect(page.locator('select[name="pickupAreaId"]')).toHaveValue("");
       await page.locator('select[name="pickupAreaId"]').selectOption(pickup);
-      await page.getByRole("button", { name: "Continue to parcel details" }).click();
+      await page
+        .getByRole("button", { name: "Continue to parcel details" })
+        .click();
       await page
         .getByRole("button", { name: "Review cost before booking" })
         .click();

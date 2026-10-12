@@ -1002,3 +1002,315 @@ h1.page-heading {
     padding-left: 0;
   }
 }
+
+/* Customer workspace refinements: clear information, focused actions. */
+.business-guidance {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+.business-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.4rem;
+}
+.business-note > svg {
+  width: 42px;
+  height: 42px;
+  padding: 10px;
+  flex-shrink: 0;
+  border-radius: 13px;
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 9%, transparent);
+}
+.business-note h2 {
+  margin-bottom: 0.55rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+.business-note p {
+  line-height: 1.8;
+}
+.ledger-heading,
+.payment-ledger-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.25rem;
+}
+.ledger-heading h2 {
+  flex: 1;
+  padding-top: 0.5rem;
+}
+.booking-step {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  padding: 0.8rem;
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  color: var(--muted-foreground);
+  background: var(--card);
+  font-weight: 600;
+  transition: background 150ms;
+}
+.booking-step:hover,
+.booking-step:focus-visible {
+  background: var(--accent);
+  color: var(--primary);
+}
+.booking-step.is-current {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+.booking-step:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.shipment-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.shipment-action-panel {
+  max-height: calc(100svh - 2rem);
+  overflow-y: auto;
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  background: var(--card);
+  backdrop-filter: blur(28px);
+}
+.shipment-action-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+.shipment-action-options :is(button, a) {
+  min-height: 48px;
+  height: auto;
+  padding: 0.8rem;
+  white-space: normal;
+  text-align: center;
+  justify-content: center;
+  border-radius: 0.85rem;
+}
+.shipment-action-options p {
+  grid-column: 1 / -1;
+  line-height: 1.7;
+}
+.customer-record-link {
+  display: block;
+  max-width: 15rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.payment-page-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+.payment-summary-card {
+  position: relative;
+  padding: 1.5rem;
+}
+.payment-summary-card > svg {
+  position: absolute;
+  right: 1.25rem;
+  top: 1.25rem;
+  color: var(--primary);
+}
+.payment-summary-card p {
+  padding-right: 2rem;
+  font-size: 0.8rem;
+  color: var(--muted-foreground);
+  line-height: 1.6;
+}
+.payment-summary-card strong {
+  display: block;
+  margin-top: 1rem;
+  font-size: 2rem;
+}
+.payment-ledger-heading {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--primary) 4%, transparent);
+}
+.payment-ledger-heading h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+.payment-ledger-heading p {
+  margin-top: 0.4rem;
+  max-width: 30rem;
+  color: var(--muted-foreground);
+  font-size: 0.8rem;
+  line-height: 1.7;
+}
+.payment-gateway {
+  display: inline-flex;
+  padding: 0.3rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 6%, transparent);
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+.customer-profile-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.6fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+.customer-identity {
+  padding: 1.6rem;
+  text-align: center;
+}
+.customer-avatar {
+  display: grid;
+  place-items: center;
+  width: 90px;
+  height: 90px;
+  margin: 0 auto 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--primary) 9%, var(--card));
+  color: var(--primary);
+}
+.customer-identity h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.customer-identity-email {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+  font-size: 0.78rem;
+  color: var(--muted-foreground);
+  overflow-wrap: anywhere;
+}
+.customer-identity-email svg {
+  flex-shrink: 0;
+}
+.customer-account-badge {
+  display: inline-block;
+  margin-top: 1.25rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  color: var(--primary);
+  background: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+.customer-profile-note {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+  color: var(--muted-foreground);
+  font-size: 0.8rem;
+  line-height: 1.8;
+}
+.customer-profile-note svg {
+  margin: 0 auto 0.5rem;
+  color: var(--primary);
+}
+.customer-profile-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+.customer-profile-footer p {
+  max-width: 24rem;
+  color: var(--muted-foreground);
+  font-size: 0.8rem;
+  line-height: 1.7;
+}
+.customer-profile-footer > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+@media (max-width: 1000px) {
+  .customer-profile-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 639px) {
+  .business-guidance,
+  .payment-page-summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ledger-heading,
+  .payment-ledger-heading {
+    flex-direction: column;
+  }
+  .ledger-heading > div,
+  .payment-ledger-heading > div {
+    width: 100%;
+  }
+  .booking-step {
+    padding: 0.55rem;
+    font-size: 0.75rem;
+  }
+  .customer-table .customer-payment-table {
+    min-width: 0;
+  }
+  .customer-payment-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .customer-payment-table tbody {
+    display: block;
+  }
+  .customer-payment-table tr {
+    display: grid;
+    padding: 1rem;
+    gap: 0.8rem;
+  }
+  .customer-table .customer-payment-table td {
+    display: grid;
+    grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+    gap: 1rem;
+    padding: 0;
+    min-width: 0;
+    max-width: none;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .customer-payment-table td::before {
+    content: attr(data-label);
+    color: var(--muted-foreground);
+    font-family: inherit;
+    font-size: 0.75rem;
+  }
+  .customer-payment-table td[colspan] {
+    display: block;
+  }
+  .customer-payment-table td[colspan]::before {
+    content: none;
+  }
+  .customer-profile-footer > div {
+    width: 100%;
+  }
+  .customer-profile-footer button {
+    flex: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .booking-step {
+    transition: none;
+  }
+}

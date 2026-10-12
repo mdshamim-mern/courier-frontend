@@ -12,9 +12,17 @@ import { Spinner } from "@/components/ui/spinner";
 import { toast } from "@/components/ui/toast";
 import { useGetMe, useUpdateMyProfile } from "@/hooks";
 import { useEffect, useState, useId } from "react";
+import { useLocale } from "next-intl";
+import { UserRound, ShieldCheck, Mail } from "lucide-react";
 
 export default function CustomerProfilePage() {
   const ui = useUiText();
+  const bn = useLocale() === "bn";
+  const reset = () => {
+    setName(data?.data.name || "");
+    setContactNumber(data?.data.contactNumber || "");
+    setAddress(data?.data.customer?.address || "");
+  };
   const formId = useId();
   const { data, isLoading, isError, refetch } = useGetMe();
   const { mutate: updateProfile, isPending } = useUpdateMyProfile();
@@ -70,80 +78,123 @@ export default function CustomerProfilePage() {
           {ui("Manage your personal information and settings.")}
         </p>
       </div>
-      <Card className="max-w-xl shadow-sm border-muted/20">
-        <CardHeader>
-          <CardTitle>{ui("Profile Details")}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <SchemaForm
-            schema={ProfileSchema}
-            onSubmit={handleSubmit}
-            className="space-y-4"
-          >
-            <Field>
-              <FieldLabel htmlFor={`${formId}-name`}>
-                {ui("Full Name")}
-              </FieldLabel>
-              <Input
-                id={`${formId}-name`}
-                name="name"
-                autoComplete="name"
-                maxLength={255}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor={`${formId}-email`}>
-                {ui("Email Address")}
-              </FieldLabel>
-              <Input
-                id={`${formId}-email`}
-                value={data?.data?.email || ""}
-                disabled
-                className="bg-muted/50 cursor-not-allowed"
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor={`${formId}-phone`}>
-                {ui("Contact Number")}
-              </FieldLabel>
-              <Input
-                id={`${formId}-phone`}
-                name="contactNumber"
-                type="tel"
-                autoComplete="tel"
-                value={contactNumber}
-                onChange={(e) => setContactNumber(e.target.value)}
-                required
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor={`${formId}-address`}>
-                {ui("Default Address")}
-              </FieldLabel>
-              <Input
-                id={`${formId}-address`}
-                name="address"
-                autoComplete="street-address"
-                maxLength={500}
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                placeholder={ui("House, Street, City")}
-              />
-            </Field>
-            <Button
-              type="submit"
-              disabled={isPending}
-              className="mt-4 w-full sm:w-auto"
+      <div className="customer-profile-grid">
+        <aside className="glass-panel customer-identity">
+          <div className="customer-avatar" aria-hidden="true">
+            <UserRound size={40} />
+          </div>
+          <h2>{data?.data.name}</h2>
+          <p className="customer-identity-email">
+            <Mail size={16} aria-hidden="true" />
+            {data?.data.email}
+          </p>
+          <span className="customer-account-badge">
+            {ui("Customer")} · {ui(data?.data.status || "—")}
+          </span>
+          <div className="customer-profile-note">
+            <ShieldCheck size={20} aria-hidden="true" />
+            <p>
+              {bn
+                ? "আপনার যোগাযোগ ও ঠিকানা সঠিক রাখুন। পাসওয়ার্ড বা ওটিপি কারও সঙ্গে ভাগ করবেন না।"
+                : "Keep your contact and address up to date. Never share your password or OTP."}
+            </p>
+          </div>
+        </aside>
+        <Card className="customer-profile-form shadow-sm border-muted/20">
+          <CardHeader>
+            <CardTitle>{ui("Profile Details")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <SchemaForm
+              schema={ProfileSchema}
+              onSubmit={handleSubmit}
+              className="grid gap-5 md:grid-cols-2"
             >
-              {isPending ? <Spinner className="mr-2" /> : null}
-              {ui("Save Changes")}{" "}
-            </Button>
-          </SchemaForm>
-        </CardContent>
-      </Card>
+              <Field>
+                <FieldLabel htmlFor={`${formId}-name`}>
+                  {ui("Full Name")}
+                </FieldLabel>
+                <Input
+                  id={`${formId}-name`}
+                  name="name"
+                  autoComplete="name"
+                  maxLength={255}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  disabled={isPending}
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor={`${formId}-email`}>
+                  {ui("Email Address")}
+                </FieldLabel>
+                <Input
+                  id={`${formId}-email`}
+                  value={data?.data?.email || ""}
+                  disabled
+                  className="bg-muted/50 cursor-not-allowed"
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor={`${formId}-phone`}>
+                  {ui("Contact Number")}
+                </FieldLabel>
+                <Input
+                  id={`${formId}-phone`}
+                  name="contactNumber"
+                  type="tel"
+                  autoComplete="tel"
+                  value={contactNumber}
+                  onChange={(e) => setContactNumber(e.target.value)}
+                  required
+                  disabled={isPending}
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor={`${formId}-address`}>
+                  {ui("Default Address")}
+                </FieldLabel>
+                <Input
+                  id={`${formId}-address`}
+                  name="address"
+                  autoComplete="street-address"
+                  maxLength={500}
+                  disabled={isPending}
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder={ui("House, Street, City")}
+                />
+              </Field>
+              <div className="customer-profile-footer md:col-span-2">
+                <p>
+                  {bn
+                    ? "ইমেইল এখানে পরিবর্তনযোগ্য নয়। শুধু সংরক্ষণ করলে নতুন তথ্য কার্যকর হবে।"
+                    : "Email is read-only here. Your changes take effect only after saving."}
+                </p>
+                <div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={isPending}
+                    onClick={reset}
+                  >
+                    {bn ? "পরিবর্তন বাদ দিন" : "Reset changes"}
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={isPending}
+                    className="w-full sm:w-auto"
+                  >
+                    {isPending ? <Spinner className="mr-2" /> : null}
+                    {ui("Save Changes")}{" "}
+                  </Button>
+                </div>
+              </div>
+            </SchemaForm>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
