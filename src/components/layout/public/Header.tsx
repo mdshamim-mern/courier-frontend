@@ -159,7 +159,10 @@ export default function Header() {
             </Link>
           ))}
           <details ref={team} className="team-menu">
-            <summary className="nav-link">
+            <summary
+              className="nav-link"
+              aria-current={pathname === "/courier-apply" ? "page" : undefined}
+            >
               {bn ? "দল" : "Team"}
               <ChevronDown size={13} aria-hidden="true" />
             </summary>
@@ -184,7 +187,12 @@ export default function Header() {
           </summary>
           <nav aria-label={t("menu")} className="mobile-dropdown glass-panel">
             {links.map(([href, en, bangla]) => (
-              <Link key={href} href={href} onClick={closeMenus}>
+              <Link
+                key={href}
+                href={href}
+                aria-current={pathname === href ? "page" : undefined}
+                onClick={closeMenus}
+              >
                 {bn ? bangla : en}
               </Link>
             ))}

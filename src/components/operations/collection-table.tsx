@@ -46,9 +46,13 @@ export default function CollectionTable({
               ["pending", "Remaining payable", "ব্যবসায়ীর বাকি পাওনা"],
             ] as const
           ).map(([key, en, bangla]) => (
-            <p key={key} className="rounded-md border p-3">
-              {bn ? bangla : en}: {money(totals[key])}
-            </p>
+            <div
+              key={key}
+              className="customer-cash-metric rounded-md border p-3"
+            >
+              <p>{bn ? bangla : en}</p>
+              <strong>{money(totals[key])}</strong>
+            </div>
           ))}
         </div>
       )}

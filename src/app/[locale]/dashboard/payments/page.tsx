@@ -45,7 +45,7 @@ export default function PaymentsPage() {
         </p>
       </div>
 
-      <div className="rounded-md border bg-card">
+      <div className="customer-table rounded-md border bg-card">
         <Table>
           <TableHeader>
             <TableRow>

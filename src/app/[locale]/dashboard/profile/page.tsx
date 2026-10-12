@@ -11,10 +11,11 @@ import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "@/components/ui/toast";
 import { useGetMe, useUpdateMyProfile } from "@/hooks";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useId } from "react";
 
 export default function CustomerProfilePage() {
   const ui = useUiText();
+  const formId = useId();
   const { data, isLoading, isError, refetch } = useGetMe();
   const { mutate: updateProfile, isPending } = useUpdateMyProfile();
 
@@ -30,10 +31,10 @@ export default function CustomerProfilePage() {
     }
   }, [data]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     updateProfile(
-      { name, contactNumber, address },
+      ProfileSchema.parse(Object.fromEntries(new FormData(e.currentTarget))),
       {
         onSuccess: () =>
           toast.add({ title: "Profile Updated", type: "success" }),
@@ -80,32 +81,53 @@ export default function CustomerProfilePage() {
             className="space-y-4"
           >
             <Field>
-              <FieldLabel>{ui("Full Name")}</FieldLabel>
+              <FieldLabel htmlFor={`${formId}-name`}>
+                {ui("Full Name")}
+              </FieldLabel>
               <Input
+                id={`${formId}-name`}
+                name="name"
+                autoComplete="name"
+                maxLength={255}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
               />
             </Field>
             <Field>
-              <FieldLabel>{ui("Email Address")}</FieldLabel>
+              <FieldLabel htmlFor={`${formId}-email`}>
+                {ui("Email Address")}
+              </FieldLabel>
               <Input
+                id={`${formId}-email`}
                 value={data?.data?.email || ""}
                 disabled
                 className="bg-muted/50 cursor-not-allowed"
               />
             </Field>
             <Field>
-              <FieldLabel>{ui("Contact Number")}</FieldLabel>
+              <FieldLabel htmlFor={`${formId}-phone`}>
+                {ui("Contact Number")}
+              </FieldLabel>
               <Input
+                id={`${formId}-phone`}
+                name="contactNumber"
+                type="tel"
+                autoComplete="tel"
                 value={contactNumber}
                 onChange={(e) => setContactNumber(e.target.value)}
                 required
               />
             </Field>
             <Field>
-              <FieldLabel>{ui("Default Address")}</FieldLabel>
+              <FieldLabel htmlFor={`${formId}-address`}>
+                {ui("Default Address")}
+              </FieldLabel>
               <Input
+                id={`${formId}-address`}
+                name="address"
+                autoComplete="street-address"
+                maxLength={500}
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 placeholder={ui("House, Street, City")}

@@ -9,6 +9,7 @@ import type { ApiResponse, Shipment } from "@/types";
 import type { Quote } from "@/types/operations.type";
 import ParcelLabel from "./parcel-label";
 import { Button } from "@/components/ui/button";
+import { Link } from "@/i18n/navigation";
 const columns = [
   "pickupAreaId",
   "receiverAreaId",
@@ -122,7 +123,7 @@ export default function BulkBookings() {
     });
   }
   return (
-    <section className="space-y-5">
+    <section className="customer-bulk glass-panel space-y-5">
       <h1 className="text-2xl font-bold">
         {t("Bulk parcel booking", "একসঙ্গে একাধিক পার্সেল বুকিং")}
       </h1>
@@ -134,7 +135,7 @@ export default function BulkBookings() {
       </p>
       <a
         download="dropzo-booking-template.csv"
-        className="inline-block underline"
+        className="secondary-button inline-flex"
         href={
           "data:text/csv;charset=utf-8," +
           encodeURIComponent(`${columns.join(",")}\n`)
@@ -142,7 +143,10 @@ export default function BulkBookings() {
       >
         {t("Download blank CSV template", "খালি সিএসভি নমুনা নামান")}
       </a>
-      <label className="block">
+      <Link className="secondary-button inline-flex" href="/coverage">
+        {t("Find area IDs", "এলাকার পরিচয়সংখ্যা দেখুন")}
+      </Link>
+      <label className="customer-upload block">
         {t("CSV file", "সিএসভি ফাইল")}
         <input
           className="block max-w-full p-3"

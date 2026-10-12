@@ -8,11 +8,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "@/i18n/navigation";
 import QueryError from "@/components/ui/query-error";
+import { Link } from "@/i18n/navigation";
+import { useLocale } from "next-intl";
+import CourierRefresh from "../courier/courier-refresh";
 
 export default function CustomerOverview() {
   const ui = useUiText();
   const router = useRouter();
-  const { data, isLoading, error, refetch } = useShipmentSummary();
+  const bn = useLocale() === "bn";
+  const { data, isLoading, isFetching, error, refetch } = useShipmentSummary();
   const totalShipments = data?.data.totalShipments ?? 0;
   const pendingShipments = data?.data.activeShipments ?? 0;
   const deliveredShipments = data?.data.deliveredShipments ?? 0;
@@ -37,7 +41,14 @@ export default function CustomerOverview() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end">
+      <div className="flex flex-wrap justify-end gap-3">
+        <CourierRefresh
+          label={bn ? "হিসাব হালনাগাদ" : "Refresh overview"}
+          fetching={isFetching}
+          refresh={async () => {
+            await refetch({ throwOnError: true });
+          }}
+        />
         <Button onClick={() => router.push("/dashboard/new-shipment")}>
           {ui("+ Create Shipment")}{" "}
         </Button>
@@ -77,6 +88,21 @@ export default function CustomerOverview() {
           </CardContent>
         </Card>
       </div>
+      <section className="customer-shortcuts glass-panel">
+        <h2>{bn ? "পরবর্তী কাজ" : "Your next move"}</h2>
+        <div>
+          {[
+            ["/dashboard/my-shipments", "My Shipments", "আমার পার্সেলসমূহ"],
+            ["/dashboard/bulk", "Bulk Shipments", "একসঙ্গে পার্সেল বুকিং"],
+            ["/dashboard/payments", "Payment History", "অর্থপ্রদানের ইতিহাস"],
+          ].map(([href, en, bangla]) => (
+            <Link key={href} href={href}>
+              {bn ? bangla : en}
+              <span aria-hidden="true">↗</span>
+            </Link>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

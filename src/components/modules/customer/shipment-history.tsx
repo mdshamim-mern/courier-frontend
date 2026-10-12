@@ -60,7 +60,10 @@ export default function ShipmentHistory() {
   if (isPending) return <DataSkeleton />;
   return (
     <div className="space-y-4">
-      <div className="rounded-md border bg-card">
+      <div className="customer-table rounded-md border bg-card">
+        <p className="p-4 text-xs text-muted-foreground sm:hidden">
+          {ui("Actions")} →
+        </p>
         <Table>
           <TableHeader>
             <TableRow>
@@ -77,7 +80,12 @@ export default function ShipmentHistory() {
               data.data.map((shipment) => (
                 <TableRow key={shipment.id}>
                   <TableCell className="font-mono">
-                    {shipment.trackingId}
+                    <Link
+                      className="customer-record-link"
+                      href={`/dashboard/my-shipments/${shipment.id}`}
+                    >
+                      {shipment.trackingId}
+                    </Link>
                   </TableCell>
                   <TableCell>
                     {display.date(new Date(shipment.createdAt))}
@@ -176,7 +184,7 @@ export default function ShipmentHistory() {
                           <Button
                             variant="destructive"
                             size="sm"
-                            disabled={canceling || paying}
+                            disabled={canceling || paying || stripe.isPending}
                             onClick={() =>
                               cancel(shipment.id, {
                                 onSuccess: () =>
