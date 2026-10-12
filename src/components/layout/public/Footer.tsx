@@ -1,7 +1,9 @@
+"use client";
 import { useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useUiText } from "@/i18n/use-ui-text";
 import Logo from "@/assets/svg/Logo";
+import { ArrowUp, ArrowUpRight, PackageCheck, ScanLine } from "lucide-react";
 
 const groups = [
   {
@@ -44,46 +46,81 @@ const groups = [
 export default function Footer() {
   const ui = useUiText();
   const locale = useLocale();
+  const t = (en: string, bn: string) => (locale === "bn" ? bn : en);
   return (
     <footer className="site-footer w-full text-foreground">
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
-        <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-4">
-          <div className="flex flex-col gap-4">
-            <Link href="/" className="brand-lockup">
-              <Logo className="size-9" />
-              <span className="brand-wordmark">
-                Dropzo<span className="brand-dot">.</span>
+      <div className="footer-wrap">
+        <div className="footer-glass glass-panel">
+          <section className="footer-action-bar">
+            <div>
+              <span className="icon-tile">
+                <PackageCheck aria-hidden="true" />
               </span>
-            </Link>
-            <p className="text-sm leading-relaxed text-muted-foreground">
-              {ui(
-                "Dropzo serves approved areas through its own delivery team. Check coverage and pricing before booking.",
-              )}
-            </p>
-          </div>
-          {groups.map((group) => (
-            <div key={group.title} className="flex flex-col gap-4">
-              <h2 className="font-semibold">{ui(group.title)}</h2>
-              <nav
-                aria-label={ui(group.title)}
-                className="flex flex-col gap-3 text-sm text-muted-foreground"
-              >
-                {group.links.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className="transition-colors hover:text-primary"
-                  >
-                    {ui(link.label)}
-                  </Link>
-                ))}
-              </nav>
+              <div>
+                <h2>
+                  {t(
+                    "Your next delivery starts here",
+                    "পরবর্তী ডেলিভারির শুরু এখানেই",
+                  )}
+                </h2>
+                <p>
+                  {t(
+                    "Check the route. Review the charge. Book with clear details.",
+                    "পথ যাচাই করুন। মাশুল দেখুন। সঠিক তথ্য দিয়ে বুকিং করুন।",
+                  )}
+                </p>
+              </div>
             </div>
-          ))}
+            <div className="footer-action-links">
+              <Link className="secondary-button" href="/track-shipment">
+                <ScanLine size={17} aria-hidden="true" />
+                {t("Track a parcel", "পার্সেল খুঁজুন")}
+              </Link>
+              <Link className="secondary-button" href="/pricing">
+                {t("Estimate delivery cost", "ডেলিভারির মাশুল দেখুন")}
+                <ArrowUpRight size={17} aria-hidden="true" />
+              </Link>
+            </div>
+          </section>
+          <div className="footer-link-grid">
+            <div className="footer-brand">
+              <Link href="/" className="brand-lockup">
+                <Logo className="size-9" />
+                <span className="brand-wordmark">
+                  Dropzo<span className="brand-dot">.</span>
+                </span>
+              </Link>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                {ui(
+                  "Dropzo serves approved areas through its own delivery team. Check coverage and pricing before booking.",
+                )}
+              </p>
+              <Link className="text-link" href="/contact">
+                {t("Talk to our team", "আমাদের দলের সঙ্গে যোগাযোগ")}
+                <ArrowUpRight size={16} aria-hidden="true" />
+              </Link>
+            </div>
+            {groups.map((group) => (
+              <div key={group.title} className="footer-link-group">
+                <h2 className="font-semibold">{ui(group.title)}</h2>
+                <nav aria-label={ui(group.title)} className="footer-nav-links">
+                  {group.links.map((link) => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className="footer-nav-link"
+                    >
+                      {ui(link.label)}
+                    </Link>
+                  ))}
+                </nav>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-      <div className="border-t bg-muted/20 py-6">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 sm:px-6 md:flex-row lg:px-8">
+      <div className="footer-bottom">
+        <div>
           <p className="text-sm text-muted-foreground">
             ©{" "}
             {new Intl.NumberFormat(locale === "bn" ? "bn-BD" : "en-US", {
@@ -94,6 +131,22 @@ export default function Footer() {
           <p className="text-sm text-muted-foreground">
             {ui("Designed for secure and fast logistics.")}
           </p>
+          <button
+            type="button"
+            className="footer-top-button"
+            onClick={() =>
+              window.scrollTo({
+                top: 0,
+                behavior: window.matchMedia("(prefers-reduced-motion: reduce)")
+                  .matches
+                  ? "instant"
+                  : "smooth",
+              })
+            }
+          >
+            <ArrowUp size={16} aria-hidden="true" />
+            {t("Back to top", "উপরে যান")}
+          </button>
         </div>
       </div>
     </footer>

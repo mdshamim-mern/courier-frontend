@@ -1,7 +1,15 @@
 "use client";
 import { useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { Package, Truck, MapPin, ClipboardCheck } from "lucide-react";
+import {
+  Package,
+  Truck,
+  MapPin,
+  ClipboardCheck,
+  ScanLine,
+  ArrowUpRight,
+  UsersRound,
+} from "lucide-react";
 import DeliveryScene from "./delivery-scene";
 import TrackForm from "@/components/modules/shipment-tracking/track-form";
 import QuoteCalculator from "@/components/operations/quote-calculator";
@@ -56,79 +64,147 @@ export default function ParcelHero() {
           </p>
         </div>
       </section>
-      <section className="glass-panel p-6 sm:p-8">
-        <h2 className="mb-4 text-2xl font-bold">
-          {t("Track your parcel", "পার্সেলের অবস্থা খুঁজুন")}
-        </h2>
+      <section className="glass-panel home-tracking-panel">
+        <div className="home-section-heading">
+          <div>
+            <span className="eyebrow">
+              <ScanLine size={16} aria-hidden="true" />
+              {t("SHIPMENT UPDATES", "পার্সেলের আপডেট")}
+            </span>
+            <h2>{t("Track your parcel", "পার্সেলের অবস্থা খুঁজুন")}</h2>
+            <p>
+              {t(
+                "Have a tracking number? Check the latest recorded progress here.",
+                "অনুসন্ধানসংখ্যা আছে? এখানে নথিভুক্ত সর্বশেষ অগ্রগতি দেখুন।",
+              )}
+            </p>
+          </div>
+          <Link className="text-link" href="/track-shipment">
+            {t("Open tracking page", "অনুসন্ধানের পাতা খুলুন")}
+            <ArrowUpRight size={16} aria-hidden="true" />
+          </Link>
+        </div>
         <TrackForm />
       </section>
-      <QuoteCalculator />
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          [
-            Package,
-            "Book",
-            "বুকিং",
-            "Provide sender and receiver details",
-            "প্রেরক ও প্রাপকের তথ্য দিন",
-          ],
-          [
-            Truck,
-            "Pickup",
-            "সংগ্রহ",
-            "Our assigned worker collects the parcel",
-            "বরাদ্দকৃত কর্মী পার্সেল সংগ্রহ করবেন",
-          ],
-          [
-            MapPin,
-            "Hub and route",
-            "হাব ও পথ",
-            "Follow recorded status updates",
-            "নথিভুক্ত অবস্থা অনুসরণ করুন",
-          ],
-          [
-            ClipboardCheck,
-            "Handover",
-            "হস্তান্তর",
-            "Recipient acknowledgment is recorded",
-            "প্রাপকের গ্রহণের প্রমাণ রাখা হবে",
-          ],
-        ].map(([Icon, en, bangla, description, bnDescription], index) => {
-          const StepIcon = Icon as typeof Package;
-          return (
-            <article key={String(en)} className="glass-panel info-card p-6">
-              <StepIcon className="icon-tile mb-4 p-3" />
-              <h2 className="font-semibold">
-                {new Intl.NumberFormat(bn ? "bn-BD" : "en-US").format(
-                  index + 1,
-                )}
-                . {t(String(en), String(bangla))}
-              </h2>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {t(String(description), String(bnDescription))}
-              </p>
-            </article>
-          );
-        })}
-      </section>
-      <section className="glass-panel flex flex-wrap items-center justify-between gap-4 p-6 sm:p-8">
-        <div>
-          <h2 className="text-xl font-bold">
-            {t("Join our delivery team", "আমাদের ডেলিভারিকর্মী দলে যোগ দিন")}
-          </h2>
-          <p>
-            {t(
-              "Applications require review and administrator approval.",
-              "আবেদনের পরে যাচাই ও প্রশাসকের অনুমোদন প্রয়োজন।",
-            )}
-          </p>
+      <section className="home-estimate-section">
+        <div className="home-section-heading">
+          <div>
+            <span className="eyebrow">
+              {t("PLAN YOUR DELIVERY", "ডেলিভারির পরিকল্পনা")}
+            </span>
+            <h2>
+              {t("Know the charge before you book", "বুকিংয়ের আগে মাশুল জানুন")}
+            </h2>
+          </div>
+          <Link className="text-link" href="/pricing">
+            {t("Open cost calculator", "মাশুলের হিসাব খুলুন")}
+            <ArrowUpRight size={16} aria-hidden="true" />
+          </Link>
         </div>
-        <Link className="secondary-button" href="/courier-apply">
-          {t("Apply as a delivery worker", "ডেলিভারিকর্মী হিসেবে আবেদন")}
-        </Link>
-        <Link className="underline" href="/login?staff=1">
-          {t("Staff sign in", "কর্মীদের প্রবেশ")}
-        </Link>
+        <QuoteCalculator />
+      </section>
+      <section className="home-process-section">
+        <div className="home-section-heading">
+          <div>
+            <span className="eyebrow">
+              {t("THE DELIVERY JOURNEY", "ডেলিভারির ধাপ")}
+            </span>
+            <h2>{t("From booking to handover", "বুকিং থেকে হস্তান্তর")}</h2>
+            <p>
+              {t(
+                "Four clear stages, with updates recorded along the way.",
+                "চারটি পরিষ্কার ধাপ এবং প্রতিটি পর্যায়ে নথিভুক্ত আপডেট।",
+              )}
+            </p>
+          </div>
+          <Link className="text-link" href="/services">
+            {t("Explore our services", "আমাদের সেবা দেখুন")}
+            <ArrowUpRight size={16} aria-hidden="true" />
+          </Link>
+        </div>
+        <div className="home-process-grid">
+          {[
+            [
+              Package,
+              "Book",
+              "বুকিং",
+              "Provide sender and receiver details",
+              "প্রেরক ও প্রাপকের তথ্য দিন",
+            ],
+            [
+              Truck,
+              "Pickup",
+              "সংগ্রহ",
+              "Our assigned worker collects the parcel",
+              "বরাদ্দকৃত কর্মী পার্সেল সংগ্রহ করবেন",
+            ],
+            [
+              MapPin,
+              "Hub and route",
+              "হাব ও পথ",
+              "Follow recorded status updates",
+              "নথিভুক্ত অবস্থা অনুসরণ করুন",
+            ],
+            [
+              ClipboardCheck,
+              "Handover",
+              "হস্তান্তর",
+              "Recipient acknowledgment is recorded",
+              "প্রাপকের গ্রহণের প্রমাণ রাখা হবে",
+            ],
+          ].map(([Icon, en, bangla, description, bnDescription], index) => {
+            const StepIcon = Icon as typeof Package;
+            return (
+              <article
+                key={String(en)}
+                className="glass-panel home-process-card"
+              >
+                <StepIcon className="icon-tile mb-4 p-3" />
+                <span className="home-step-number" aria-hidden="true">
+                  {new Intl.NumberFormat(bn ? "bn-BD" : "en-US")
+                    .format(index + 1)
+                    .padStart(bn ? 1 : 2, "0")}
+                </span>
+                <h2 className="font-semibold">
+                  {new Intl.NumberFormat(bn ? "bn-BD" : "en-US").format(
+                    index + 1,
+                  )}
+                  . {t(String(en), String(bangla))}
+                </h2>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {t(String(description), String(bnDescription))}
+                </p>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+      <section className="glass-panel home-team-panel">
+        <div className="home-team-copy">
+          <span className="icon-tile">
+            <UsersRound aria-hidden="true" />
+          </span>
+          <div>
+            <h2 className="text-xl font-bold">
+              {t("Join our delivery team", "আমাদের ডেলিভারিকর্মী দলে যোগ দিন")}
+            </h2>
+            <p>
+              {t(
+                "Applications require review and administrator approval.",
+                "আবেদনের পরে যাচাই ও প্রশাসকের অনুমোদন প্রয়োজন।",
+              )}
+            </p>
+          </div>
+        </div>
+        <div className="home-team-actions">
+          <Link className="secondary-button" href="/courier-apply">
+            {t("Apply as a delivery worker", "ডেলিভারিকর্মী হিসেবে আবেদন")}
+            <ArrowUpRight size={16} aria-hidden="true" />
+          </Link>
+          <Link className="secondary-button" href="/login?staff=1">
+            {t("Staff sign in", "কর্মীদের প্রবেশ")}
+          </Link>
+        </div>
       </section>
     </div>
   );

@@ -119,156 +119,30 @@ export default function RegisterForm() {
           form.handleSubmit();
         }}
       >
-        <FieldGroup>
-          <form.Field name="name">
-            {(field) => {
-              const isInvalid =
-                field.state.meta.isTouched && !field.state.meta.isValid;
-              return (
-                <Field data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>
-                    {ui("Full Name")}
-                  </FieldLabel>
-                  <div className="relative">
-                    <User className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      type="text"
-                      placeholder={ui("John Doe")}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      onBlur={field.handleBlur}
-                      value={field.state.value}
-                      aria-invalid={isInvalid}
-                      className="pl-10"
-                    />
-                  </div>
-                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                </Field>
-              );
-            }}
-          </form.Field>
-
-          <form.Field name="email">
-            {(field) => {
-              const isInvalid =
-                field.state.meta.isTouched && !field.state.meta.isValid;
-              return (
-                <Field data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>
-                    {ui("Email Address")}
-                  </FieldLabel>
-                  <div className="relative">
-                    <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      type="email"
-                      placeholder="you@example.com"
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      onBlur={field.handleBlur}
-                      value={field.state.value}
-                      aria-invalid={isInvalid}
-                      className="pl-10"
-                    />
-                  </div>
-                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                </Field>
-              );
-            }}
-          </form.Field>
-
-          <form.Field name="contactNumber">
-            {(field) => {
-              const isInvalid =
-                field.state.meta.isTouched && !field.state.meta.isValid;
-              return (
-                <Field data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>
-                    {ui("Phone Number")}
-                  </FieldLabel>
-                  <div className="relative">
-                    <Phone className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      type="text"
-                      placeholder="01XXXXXXXXX"
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      onBlur={field.handleBlur}
-                      value={field.state.value || ""}
-                      aria-invalid={isInvalid}
-                      className="pl-10"
-                    />
-                  </div>
-                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                </Field>
-              );
-            }}
-          </form.Field>
-
-          <div className="grid grid-cols-2 gap-4">
-            <form.Field name="password">
+        <fieldset
+          disabled={registerPending}
+          aria-label={ui("Create an Account")}
+          className="min-w-0"
+        >
+          <FieldGroup>
+            <form.Field name="name">
               {(field) => {
                 const isInvalid =
                   field.state.meta.isTouched && !field.state.meta.isValid;
                 return (
                   <Field data-invalid={isInvalid}>
                     <FieldLabel htmlFor={field.name}>
-                      {ui("Password")}
+                      {ui("Full Name")}
                     </FieldLabel>
                     <div className="relative">
-                      <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                      <User className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
                         id={field.name}
                         name={field.name}
-                        type={showPassword ? "text" : "password"}
-                        placeholder="••••••••"
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        onBlur={field.handleBlur}
-                        value={field.state.value}
-                        aria-invalid={isInvalid}
-                        className="pl-10 pr-10"
-                      />
-                      <button
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        type="button"
-                        onClick={() => setShowPassword((prev) => !prev)}
-                        aria-label={ui(
-                          showPassword ? "Hide password" : "Show password",
-                        )}
-                      >
-                        {showPassword ? (
-                          <EyeClosed className="size-4" />
-                        ) : (
-                          <Eye className="size-4" />
-                        )}
-                      </button>
-                    </div>
-                    {isInvalid && (
-                      <FieldError errors={field.state.meta.errors} />
-                    )}
-                  </Field>
-                );
-              }}
-            </form.Field>
-
-            <form.Field name="confirmPassword">
-              {(field) => {
-                const isInvalid =
-                  field.state.meta.isTouched && !field.state.meta.isValid;
-                return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>
-                      {ui("Confirm")}
-                    </FieldLabel>
-                    <div className="relative">
-                      <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        id={field.name}
-                        name={field.name}
-                        type={showPassword ? "text" : "password"}
-                        placeholder="••••••••"
+                        type="text"
+                        autoComplete="name"
+                        maxLength={255}
+                        placeholder={ui("John Doe")}
                         onChange={(e) => field.handleChange(e.target.value)}
                         onBlur={field.handleBlur}
                         value={field.state.value}
@@ -283,22 +157,170 @@ export default function RegisterForm() {
                 );
               }}
             </form.Field>
-          </div>
 
-          <Button
-            disabled={registerPending}
-            type="submit"
-            className="w-full shadow-lg shadow-primary/20"
-          >
-            {registerPending ? (
-              <>
-                <Spinner className="mr-2" /> {ui("Creating...")}{" "}
-              </>
-            ) : (
-              ui("Sign Up")
-            )}
-          </Button>
-        </FieldGroup>
+            <form.Field name="email">
+              {(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid;
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>
+                      {ui("Email Address")}
+                    </FieldLabel>
+                    <div className="relative">
+                      <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        id={field.name}
+                        name={field.name}
+                        type="email"
+                        autoComplete="email"
+                        placeholder="you@example.com"
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        onBlur={field.handleBlur}
+                        value={field.state.value}
+                        aria-invalid={isInvalid}
+                        className="pl-10"
+                      />
+                    </div>
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                );
+              }}
+            </form.Field>
+
+            <form.Field name="contactNumber">
+              {(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid;
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>
+                      {ui("Phone Number")}
+                    </FieldLabel>
+                    <div className="relative">
+                      <Phone className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        id={field.name}
+                        name={field.name}
+                        type="tel"
+                        autoComplete="tel"
+                        placeholder="01XXXXXXXXX"
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        onBlur={field.handleBlur}
+                        value={field.state.value || ""}
+                        aria-invalid={isInvalid}
+                        className="pl-10"
+                      />
+                    </div>
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                );
+              }}
+            </form.Field>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <form.Field name="password">
+                {(field) => {
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid;
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>
+                        {ui("Password")}
+                      </FieldLabel>
+                      <div className="relative">
+                        <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                          id={field.name}
+                          name={field.name}
+                          autoComplete="new-password"
+                          maxLength={72}
+                          type={showPassword ? "text" : "password"}
+                          placeholder="••••••••"
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          onBlur={field.handleBlur}
+                          value={field.state.value}
+                          aria-invalid={isInvalid}
+                          className="pl-10 pr-10"
+                        />
+                        <button
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          type="button"
+                          aria-pressed={showPassword}
+                          aria-controls="password confirmPassword"
+                          onClick={() => setShowPassword((prev) => !prev)}
+                          aria-label={ui(
+                            showPassword ? "Hide password" : "Show password",
+                          )}
+                        >
+                          {showPassword ? (
+                            <EyeClosed className="size-4" />
+                          ) : (
+                            <Eye className="size-4" />
+                          )}
+                        </button>
+                      </div>
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
+                    </Field>
+                  );
+                }}
+              </form.Field>
+
+              <form.Field name="confirmPassword">
+                {(field) => {
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid;
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>
+                        {ui("Confirm")}
+                      </FieldLabel>
+                      <div className="relative">
+                        <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                          id={field.name}
+                          name={field.name}
+                          autoComplete="new-password"
+                          maxLength={72}
+                          type={showPassword ? "text" : "password"}
+                          placeholder="••••••••"
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          onBlur={field.handleBlur}
+                          value={field.state.value}
+                          aria-invalid={isInvalid}
+                          className="pl-10"
+                        />
+                      </div>
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
+                    </Field>
+                  );
+                }}
+              </form.Field>
+            </div>
+
+            <Button
+              disabled={registerPending}
+              type="submit"
+              className="w-full shadow-lg shadow-primary/20"
+            >
+              {registerPending ? (
+                <>
+                  <Spinner className="mr-2" /> {ui("Creating...")}{" "}
+                </>
+              ) : (
+                ui("Sign Up")
+              )}
+            </Button>
+          </FieldGroup>
+        </fieldset>
       </form>
 
       <p className="text-center text-sm">
@@ -310,11 +332,14 @@ export default function RegisterForm() {
           {ui("Privacy Policy")}
         </Link>
       </p>
-      <FieldSeparator>{ui("Or continue with")}</FieldSeparator>
-
-      <div className="flex justify-center">
-        <GoogleLoginComponent />
-      </div>
+      {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
+        <>
+          <FieldSeparator>{ui("Or continue with")}</FieldSeparator>
+          <div className="flex justify-center">
+            <GoogleLoginComponent />
+          </div>
+        </>
+      )}
 
       <div className="text-center text-sm text-muted-foreground mt-2">
         {ui("Already have an account?")}{" "}
