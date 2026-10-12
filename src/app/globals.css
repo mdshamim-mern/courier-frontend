@@ -1314,3 +1314,403 @@ h1.page-heading {
     transition: none;
   }
 }
+
+/* Public logistics tools and print-ready shipment documents. */
+.logistics-public-page,
+.shipment-detail-workspace {
+  display: grid;
+  gap: 1.5rem;
+}
+.logistics-tool-hero,
+.shipment-detail-hero {
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+  background: linear-gradient(
+    120deg,
+    var(--card),
+    color-mix(in srgb, var(--primary) 10%, var(--card))
+  );
+}
+.logistics-tool-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+}
+.logistics-tool-hero > div {
+  display: grid;
+  gap: 1rem;
+}
+.logistics-tool-hero .eyebrow,
+.shipment-detail-hero .eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.logistics-tool-hero .secondary-button {
+  flex-shrink: 0;
+}
+.tracking-workspace,
+.quote-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+.tracking-search-panel,
+.tracking-help-panel,
+.quote-form-panel,
+.quote-result-panel,
+.shipment-activity-panel {
+  padding: clamp(1.25rem, 3vw, 2rem);
+  min-width: 0;
+}
+.tracking-search-panel h2,
+.tracking-help-panel h2,
+.quote-result-panel h2,
+.shipment-activity-panel h2,
+.receipt-toolbar h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+.tool-caption {
+  font-size: 0.85rem;
+  line-height: 1.8;
+  color: var(--muted-foreground);
+}
+.tracking-search-panel > .tool-caption {
+  margin: 0.75rem 0 1.5rem;
+}
+.tracking-help-panel,
+.quote-form-panel,
+.quote-result-panel {
+  display: grid;
+  gap: 1.25rem;
+}
+.tracking-help-panel ol {
+  display: grid;
+  gap: 1rem;
+  list-style: decimal;
+  padding-left: 1.25rem;
+  font-size: 0.9rem;
+  line-height: 1.8;
+}
+.text-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--primary);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.tracking-input-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.tracking-search-panel input {
+  min-height: 50px;
+  font-family: monospace;
+}
+.tracking-search-panel button[type="submit"] {
+  min-height: 50px;
+}
+.tracking-error {
+  padding: 1rem;
+  border: 1px solid color-mix(in srgb, var(--destructive) 25%, transparent);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--destructive) 5%, transparent);
+  font-size: 0.9rem;
+  line-height: 1.8;
+}
+.tracking-result {
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  background: color-mix(in srgb, var(--primary) 4%, transparent);
+}
+.tracking-result-heading {
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+.tracking-result-heading svg {
+  flex-shrink: 0;
+  color: var(--primary);
+}
+.tracking-result-heading p {
+  font-size: 0.8rem;
+}
+.tracking-result-heading strong {
+  display: block;
+  margin-top: 0.5rem;
+  color: var(--primary);
+}
+.quote-form-panel :is(select, input) {
+  border-radius: 0.85rem;
+  background: var(--background);
+  min-height: 48px;
+  margin-top: 0.5rem;
+}
+.quote-form-panel label {
+  font-size: 0.9rem;
+}
+.quote-form-panel button[type="submit"] {
+  min-height: 48px;
+}
+.quote-breakdown {
+  display: grid;
+  gap: 0.9rem;
+}
+.quote-breakdown > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.85rem;
+  line-height: 1.7;
+}
+.quote-breakdown dd {
+  flex-shrink: 0;
+  font-weight: 650;
+}
+.quote-breakdown .quote-total {
+  padding: 1rem;
+  border-radius: 0.85rem;
+  background: var(--accent);
+  color: var(--primary);
+  font-weight: 700;
+}
+.quote-disclaimer {
+  border-top: 1px solid var(--border);
+  padding-top: 1.25rem;
+}
+.coverage-result-count {
+  font-size: 0.85rem;
+  color: var(--muted-foreground);
+}
+.coverage-area-card {
+  border-top: 3px solid color-mix(in srgb, var(--primary) 35%, var(--border));
+}
+.coverage-area-card summary {
+  min-height: 36px;
+  padding-top: 0.5rem;
+}
+.coverage-estimate {
+  scroll-margin-top: 7rem;
+}
+.shipment-detail-hero h1 {
+  margin: 1.2rem 0;
+  font-size: clamp(1.25rem, 2.5vw, 2rem);
+  font-weight: 750;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.shipment-status-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+.shipment-detail-hero .shipment-status-line span {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+.shipment-detail-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin-top: 1.5rem;
+}
+.shipment-detail-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+.shipment-detail-stats article {
+  position: relative;
+  padding: 1.5rem;
+}
+.shipment-detail-stats svg {
+  position: absolute;
+  right: 1.25rem;
+  top: 1.25rem;
+  color: var(--primary);
+}
+.shipment-detail-stats p {
+  padding-right: 2rem;
+  font-size: 0.85rem;
+  color: var(--muted-foreground);
+}
+.shipment-detail-stats strong {
+  display: block;
+  margin-top: 1rem;
+  font-size: 1.75rem;
+}
+.shipment-activity-panel > .tool-caption {
+  margin-top: 0.65rem;
+  margin-bottom: 1.25rem;
+}
+.shipment-payment-link {
+  justify-self: start;
+}
+.shipment-instructions {
+  padding: 1.25rem;
+  overflow-wrap: anywhere;
+}
+.receipt-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+}
+.receipt-toolbar .tool-caption {
+  margin-top: 0.5rem;
+}
+.receipt-toolbar button {
+  flex-shrink: 0;
+  min-height: 48px;
+}
+.receipt-document {
+  padding: clamp(1.25rem, 3vw, 2rem);
+  border: 1px solid var(--border);
+  border-radius: 1.5rem;
+  background: white;
+  color: #2c2138;
+  box-shadow: 0 12px 40px rgb(72 33 108 / 5%);
+}
+.receipt-document .tool-caption {
+  color: #766785;
+}
+.receipt-document-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid #e5d9ee;
+  padding-bottom: 1.25rem;
+}
+.receipt-document-header svg {
+  color: #7135b9;
+}
+.receipt-document-header p {
+  font-size: 0.85rem;
+  line-height: 1.8;
+}
+.receipt-code-block {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1.25rem 0;
+}
+.receipt-code-block canvas {
+  max-width: 100%;
+  height: auto;
+}
+.receipt-code-block .font-mono {
+  margin: 0.5rem 0;
+  font-size: 0.95rem;
+}
+.receipt-address-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border: 1px solid #e5d9ee;
+  border-radius: 1rem;
+  overflow: hidden;
+}
+.receipt-address-grid section {
+  padding: 1.25rem;
+  overflow-wrap: anywhere;
+}
+.receipt-address-grid section + section {
+  border-left: 1px solid #e5d9ee;
+}
+.receipt-address-grid h3 {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #7135b9;
+  font-weight: 700;
+  margin-bottom: 0.8rem;
+}
+.receipt-address-grid p {
+  font-size: 0.9rem;
+  line-height: 1.9;
+}
+.receipt-amounts {
+  margin-top: 1.25rem;
+}
+.receipt-charge-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 0;
+  font-size: 0.9rem;
+}
+.receipt-charge-row dd {
+  font-weight: 650;
+  flex-shrink: 0;
+}
+.receipt-total {
+  border-top: 1px solid #e5d9ee;
+  border-bottom: 1px solid #e5d9ee;
+  font-weight: 700;
+}
+.receipt-footer-note {
+  margin-top: 1rem;
+  font-size: 0.75rem;
+  color: #766785;
+  line-height: 1.8;
+}
+@media (max-width: 900px) {
+  .tracking-workspace,
+  .quote-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 639px) {
+  .logistics-tool-hero,
+  .receipt-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .shipment-detail-stats,
+  .receipt-address-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .receipt-address-grid section + section {
+    border-left: 0;
+    border-top: 1px solid #e5d9ee;
+  }
+  .receipt-code-block {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .receipt-code-block canvas {
+    justify-self: center;
+  }
+  .shipment-detail-links > a {
+    width: 100%;
+  }
+}
+@media print {
+  .receipt-document {
+    border-radius: 0;
+    color: black;
+  }
+  .receipt-code-block {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .receipt-address-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .receipt-address-grid section + section {
+    border-left: 1px solid #aaa;
+    border-top: 0;
+  }
+  .receipt-document :is(header, section, dl) {
+    break-inside: avoid;
+  }
+}

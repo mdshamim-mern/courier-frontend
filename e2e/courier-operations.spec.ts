@@ -120,7 +120,21 @@ async function fillBooking(page: Page) {
       new Date(Date.now() + 86400000).toISOString().slice(0, 16),
     ],
   ]) {
-    if (["declaredValue", "codAmount", "weight", "requestedPickupAt"].includes(name) && await page.getByRole("button", { name: /Continue to parcel details|পণ্যের তথ্যে যান/ }).isVisible()) await page.getByRole("button", { name: /Continue to parcel details|পণ্যের তথ্যে যান/ }).click();
+    if (
+      ["declaredValue", "codAmount", "weight", "requestedPickupAt"].includes(
+        name,
+      ) &&
+      (await page
+        .getByRole("button", {
+          name: /Continue to parcel details|পণ্যের তথ্যে যান/,
+        })
+        .isVisible())
+    )
+      await page
+        .getByRole("button", {
+          name: /Continue to parcel details|পণ্যের তথ্যে যান/,
+        })
+        .click();
     await page.locator(`input[name="${name}"]`).fill(value);
   }
 }
@@ -134,7 +148,7 @@ test("mobile Bengali home exposes booking, tracking and functional menu without 
     page.getByRole("heading", { name: "পার্সেল পাঠান। প্রতিটি ধাপ জানুন।" }),
   ).toBeVisible();
   await expect(
-    page.locator('main a[href="/bn/dashboard/new-shipment"]'),
+    page.locator('main a.brand-button[href="/bn/dashboard/new-shipment"]'),
   ).toBeVisible();
   await expect(
     page.getByRole("textbox", { name: "পার্সেলের অনুসন্ধানসংখ্যা" }),

@@ -80,7 +80,9 @@ test("public tracking returns a timeline without receiver details", async ({
     .getByRole("textbox", { name: "Tracking ID" })
     .fill(shipment.trackingId);
   await page.getByRole("button", { name: "Track", exact: true }).click();
-  await expect(page.getByText("PICKED UP", { exact: true })).toBeVisible();
+  await expect(
+    page.locator(".tracking-events").getByText("PICKED UP", { exact: true }),
+  ).toBeVisible();
   await expect(page.getByText("Receiver", { exact: true })).toHaveCount(0);
 });
 
@@ -92,6 +94,7 @@ test("public tracking waits for hydration before accepting input", async ({
       ? {
           data: {
             trackingId: shipment.trackingId,
+            status: "PICKED_UP",
             trackings: [
               {
                 id: "event",
@@ -134,7 +137,9 @@ test("public tracking waits for hydration before accepting input", async ({
   await page.getByRole("button", { name: "Track", exact: true }).click();
   expect((await response).status()).toBe(200);
   await expect(page).toHaveURL(/tracking=TRK-TEST1234$/);
-  await expect(page.getByText("PICKED UP", { exact: true })).toBeVisible();
+  await expect(
+    page.locator(".tracking-events").getByText("PICKED UP", { exact: true }),
+  ).toBeVisible();
   await expect(page.getByText("Receiver", { exact: true })).toHaveCount(0);
 });
 
@@ -148,6 +153,7 @@ test("public tracking submits autofilled values and refetches the same number", 
     return {
       data: {
         trackingId: shipment.trackingId,
+        status: "PICKED_UP",
         trackings: [
           { id: "event", status: "PICKED_UP", createdAt: shipment.createdAt },
         ],
@@ -162,7 +168,9 @@ test("public tracking submits autofilled values and refetches the same number", 
   }, shipment.trackingId.toLowerCase());
   await page.getByRole("button", { name: "Track", exact: true }).click();
   await expect(page).toHaveURL(/tracking=TRK-TEST1234$/);
-  await expect(page.getByText("PICKED UP", { exact: true })).toBeVisible();
+  await expect(
+    page.locator(".tracking-events").getByText("PICKED UP", { exact: true }),
+  ).toBeVisible();
   await expect(input).toHaveValue(shipment.trackingId);
   expect(lookups).toBe(1);
   await page.getByRole("button", { name: "Track", exact: true }).click();

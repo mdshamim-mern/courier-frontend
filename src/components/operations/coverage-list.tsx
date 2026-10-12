@@ -1,7 +1,8 @@
 "use client";
 import { useUrlState } from "@/hooks/use-url-state";
 import { useQuery } from "@tanstack/react-query";
-import { MapPin, Search, Check, Minus } from "lucide-react";
+import { MapPin, Search, Check, Minus, ArrowUpRight } from "lucide-react";
+import { Link } from "@/i18n/navigation";
 import { useLocale } from "next-intl";
 import DataSkeleton from "@/components/ui/data-skeleton";
 import QueryError from "@/components/ui/query-error";
@@ -26,18 +27,24 @@ export default function CoverageList() {
       placeSearch([area.name, area.district, area.upazila], search),
     ) ?? [];
   return (
-    <div className="page-wrap space-y-8">
-      <header className="space-y-3">
-        <span className="eyebrow">
-          {t("Our service network", "আমাদের সেবার নেটওয়ার্ক")}
-        </span>
-        <h1 className="page-heading">{t("Service coverage", "সেবার এলাকা")}</h1>
-        <p className="max-w-2xl text-muted-foreground">
-          {t(
-            "Find an approved area and check how your parcel can be collected and delivered.",
-            "অনুমোদিত এলাকা খুঁজে পার্সেল সংগ্রহ ও পৌঁছানোর সুবিধা যাচাই করুন।",
-          )}
-        </p>
+    <div className="page-wrap logistics-public-page coverage-workspace">
+      <header className="glass-panel logistics-tool-hero">
+        <div>
+          <span className="eyebrow">
+            {t("Our service network", "আমাদের সেবার নেটওয়ার্ক")}
+          </span>
+          <h1 className="page-heading">{t("Service coverage", "সেবার এলাকা")}</h1>
+          <p className="max-w-2xl text-muted-foreground">
+            {t(
+              "Find an approved area and check how your parcel can be collected and delivered.",
+              "অনুমোদিত এলাকা খুঁজে পার্সেল সংগ্রহ ও পৌঁছানোর সুবিধা যাচাই করুন।",
+            )}
+          </p>
+        </div>
+        <Link className="secondary-button" href="/dashboard/new-shipment">
+          {t("Send a parcel", "পার্সেল পাঠান")}
+          <ArrowUpRight size={16} aria-hidden="true" />
+        </Link>
       </header>
       <label className="glass-panel block p-5 sm:p-6">
         <span className="font-medium">
@@ -56,6 +63,16 @@ export default function CoverageList() {
           />
         </span>
       </label>
+      {!result.isPending && !result.isError && (
+        <p className="coverage-result-count" role="status">
+          {t("Matching service areas", "মিলে যাওয়া সেবার এলাকা")}:{" "}
+          <strong>
+            {new Intl.NumberFormat(bn ? "bn-BD" : "en-BD").format(
+              filtered.length,
+            )}
+          </strong>
+        </p>
+      )}
       {result.isPending && <DataSkeleton />}
       {result.isError && (
         <QueryError
@@ -86,7 +103,7 @@ export default function CoverageList() {
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {filtered.map((area) => (
           <article
-            className="glass-panel info-card space-y-5 p-6"
+            className="glass-panel info-card coverage-area-card space-y-5 p-6"
             key={area.id}
           >
             <span className="icon-tile">
@@ -138,7 +155,9 @@ export default function CoverageList() {
           </article>
         ))}
       </div>
-      <QuoteCalculator />
+      <div id="delivery-estimate" className="coverage-estimate">
+        <QuoteCalculator />
+      </div>
     </div>
   );
 }

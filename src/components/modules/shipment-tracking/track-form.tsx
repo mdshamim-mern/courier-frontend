@@ -1,7 +1,8 @@
 "use client";
 
 import { useUiText, useUiFormat } from "@/i18n/use-ui-text";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useId } from "react";
+import { Search, PackageCheck } from "lucide-react";
 import { SchemaForm } from "@/components/form/schema-form";
 import { TrackingSchema } from "@/validation/operations.validation";
 import { useUrlState } from "@/hooks/use-url-state";
@@ -19,6 +20,7 @@ export default function TrackForm() {
   const ui = useUiText();
   const display = useUiFormat();
   const bn = useLocale() === "bn";
+  const inputId = useId();
   const [trackingId, setTrackingId] = useUrlState("tracking", "");
   const [input, setInput] = useState(trackingId);
   const [ready, setReady] = useState(false);
@@ -34,6 +36,9 @@ export default function TrackForm() {
   });
   return (
     <div className="space-y-6">
+      <label htmlFor={inputId} className="tracking-input-label">
+        {bn ? "পার্সেলের অনুসন্ধানসংখ্যা" : "Tracking ID"}
+      </label>
       <SchemaForm
         schema={TrackingSchema}
         className="flex flex-col sm:flex-row gap-3"
@@ -51,6 +56,7 @@ export default function TrackForm() {
         }}
       >
         <Input
+          id={inputId}
           name="trackingId"
           disabled={!ready}
           value={input}
@@ -62,12 +68,17 @@ export default function TrackForm() {
           aria-label={bn ? "পার্সেলের অনুসন্ধানসংখ্যা" : "Tracking ID"}
         />
         <Button type="submit" disabled={!ready || result.isFetching}>
-          {result.isFetching ? <Spinner /> : bn ? "খুঁজুন" : ui("Track")}
+          {result.isFetching ? (
+            <Spinner />
+          ) : (
+            <Search size={17} aria-hidden="true" />
+          )}
+          {bn ? "খুঁজুন" : ui("Track")}
         </Button>
       </SchemaForm>
       {result.isFetching && <DataSkeleton />}
       {result.isError && (
-        <p role="alert">
+        <p role="alert" className="tracking-error">
           {display.error(
             getApiErrorMessage(
               result.error,
@@ -77,10 +88,20 @@ export default function TrackForm() {
         </p>
       )}
       {result.data?.data && (
-        <div aria-live="polite">
-          <p className="font-semibold mb-4">{result.data.data.trackingId}</p>
-          <TrackingTimeline trackings={result.data.data.trackings} />
-        </div>
+        <section aria-live="polite" className="tracking-result">
+          <div className="tracking-result-heading">
+            <PackageCheck aria-hidden="true" />
+            <div>
+              <p className="font-mono break-all">
+                {result.data.data.trackingId}
+              </p>
+              <strong>{ui(result.data.data.status.replace(/_/g, " "))}</strong>
+            </div>
+          </div>
+          <div className="tracking-events">
+            <TrackingTimeline trackings={result.data.data.trackings} />
+          </div>
+        </section>
       )}
     </div>
   );
