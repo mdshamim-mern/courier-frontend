@@ -100,14 +100,22 @@ for (const locale of ["en", "bn"]) {
   }) => {
     await mockGuest(page);
     await page.goto(`/${locale}/contact`);
-    await expect(page.locator('main a[href^="mailto:"]')).toHaveAttribute(
-      "href",
-      `mailto:${legalOperator.contactEmail}`,
-    );
-    await expect(page.locator('main a[href^="tel:"]')).toHaveAttribute(
-      "href",
-      `tel:${legalOperator.contactPhone.replaceAll("-", "")}`,
-    );
+    const emailLinks = page.locator('main a[href^="mailto:"]');
+    const phoneLinks = page.locator('main a[href^="tel:"]');
+    await expect(emailLinks).toHaveCount(2);
+    await expect(phoneLinks).toHaveCount(2);
+    for (const link of await emailLinks.all()) {
+      await expect(link).toHaveAttribute(
+        "href",
+        `mailto:${legalOperator.contactEmail}`,
+      );
+    }
+    for (const link of await phoneLinks.all()) {
+      await expect(link).toHaveAttribute(
+        "href",
+        `tel:${legalOperator.contactPhone.replaceAll("-", "")}`,
+      );
+    }
     await expect(page.locator("main").first()).not.toContainText(
       /not configured|প্লেসহোল্ডার/,
     );
@@ -166,9 +174,10 @@ for (const locale of ["en", "bn"]) {
           "content",
           /noindex/,
         );
-        await expect(
-          article.locator('a[href^="mailto:"]'),
-        ).toHaveAttribute("href", `mailto:${legalOperator.contactEmail}`);
+        await expect(article.locator('a[href^="mailto:"]')).toHaveAttribute(
+          "href",
+          `mailto:${legalOperator.contactEmail}`,
+        );
       },
     );
   }
@@ -235,7 +244,9 @@ test("Bengali customer totals, parcel status, prices, dates and pagination are l
   await page.goto("/bn/dashboard");
   await expect(page.getByText("২৫১", { exact: true })).toBeVisible();
   await expect(
-    page.getByRole("link", { name: "আমার পার্সেলসমূহ", exact: true }),
+    page
+      .locator('[data-slot="sidebar"]')
+      .getByRole("link", { name: "আমার পার্সেলসমূহ", exact: true }),
   ).toBeVisible();
   await page.goto("/bn/dashboard/my-shipments");
   await expect(
