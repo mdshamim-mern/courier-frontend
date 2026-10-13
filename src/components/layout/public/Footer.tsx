@@ -1,10 +1,8 @@
-"use client";
 import { useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useUiText } from "@/i18n/use-ui-text";
 import Logo from "@/assets/svg/Logo";
 import {
-  ArrowUp,
   ArrowUpRight,
   PackageCheck,
   ScanLine,
@@ -14,6 +12,7 @@ import {
 } from "lucide-react";
 import { legalOperator } from "@/content/legal";
 import DeliveryScene from "@/components/home/delivery-scene";
+import BackToTop from "./back-to-top";
 
 const groups = [
   {
@@ -160,22 +159,7 @@ export default function Footer() {
           <p className="text-sm text-muted-foreground">
             {ui("Designed for secure and fast logistics.")}
           </p>
-          <button
-            type="button"
-            className="footer-top-button"
-            onClick={() =>
-              window.scrollTo({
-                top: 0,
-                behavior: window.matchMedia("(prefers-reduced-motion: reduce)")
-                  .matches
-                  ? "instant"
-                  : "smooth",
-              })
-            }
-          >
-            <ArrowUp size={16} aria-hidden="true" />
-            {t("Back to top", "উপরে যান")}
-          </button>
+          <BackToTop label={t("Back to top", "উপরে যান")} />
         </div>
       </div>
     </footer>

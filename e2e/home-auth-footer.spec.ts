@@ -28,6 +28,45 @@ test("the first home hero remains byte-for-byte unchanged", () => {
     "1d55b477b9c82fc6f550c77139e6b3de50aaf900eeb71a962606026fa9e31d63",
   );
 });
+test("home hero and footer are readable before JavaScript runs", async ({
+  browser,
+}) => {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  try {
+    const page = await context.newPage();
+    await page.goto("http://localhost:3100/en");
+    await expect(page.locator(".hero-panel h1")).toHaveText(
+      "Send a parcel. Follow every step.",
+    );
+    await expect(page.locator("footer")).toContainText(
+      "Your next delivery starts here",
+    );
+    await expect(page.locator(".home-process-card")).toHaveCount(4);
+  } finally {
+    await context.close();
+  }
+});
+test("public homepage does not load the Google sign-in SDK", async ({
+  page,
+}) => {
+  await guest(page);
+  const googleRequests: string[] = [];
+  page.on("request", (request) => {
+    if (request.url().startsWith("https://accounts.google.com/gsi/"))
+      googleRequests.push(request.url());
+  });
+  await page.goto("/en");
+  await expect(page.locator(".home-network-card strong")).toHaveText([
+    "0",
+    "0",
+    "0",
+    "0",
+  ]);
+  await expect(
+    page.locator('script[src*="accounts.google.com/gsi/"]'),
+  ).toHaveCount(0);
+  expect(googleRequests).toEqual([]);
+});
 for (const locale of ["en", "bn"])
   for (const width of [360, 1366]) {
     test(`home lower sections, footer and auth ${locale} at ${width}`, async ({

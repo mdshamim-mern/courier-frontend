@@ -1,4 +1,3 @@
-"use client";
 import { useLocale } from "next-intl";
 import { UserRound, Quote } from "lucide-react";
 

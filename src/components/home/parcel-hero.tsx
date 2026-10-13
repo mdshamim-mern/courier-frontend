@@ -1,4 +1,4 @@
-"use client";
+import { Suspense } from "react";
 import { useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import {
@@ -15,6 +15,7 @@ import TrackForm from "@/components/modules/shipment-tracking/track-form";
 import QuoteCalculator from "@/components/operations/quote-calculator";
 import { HomeNetworkStats, HomePricingExample } from "./home-network";
 import SampleReviews from "./sample-reviews";
+import DataSkeleton from "@/components/ui/data-skeleton";
 export default function ParcelHero() {
   const bn = useLocale() === "bn",
     t = (en: string, bangla: string) => (bn ? bangla : en);
@@ -86,7 +87,9 @@ export default function ParcelHero() {
             <ArrowUpRight size={16} aria-hidden="true" />
           </Link>
         </div>
-        <TrackForm />
+        <Suspense fallback={<DataSkeleton />}>
+          <TrackForm />
+        </Suspense>
       </section>
       <HomeNetworkStats />
       <section className="home-estimate-section">
