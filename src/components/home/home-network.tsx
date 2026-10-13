@@ -5,6 +5,7 @@ import { MapPin, PackageCheck, Truck, Navigation } from "lucide-react";
 import { usePublicCoverage } from "@/hooks/use-public-coverage";
 import PublicDataState from "@/components/operations/public-data-state";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "@/i18n/navigation";
 import { placeName } from "@/i18n/geography";
 import apiClient from "@/lib/apiClient";
@@ -16,6 +17,8 @@ export function HomeNetworkStats() {
     bn = locale === "bn";
   const t = (en: string, bangla: string) => (bn ? bangla : en);
   const coverage = usePublicCoverage();
+  const hasData = coverage.data !== undefined;
+  const loading = coverage.isPending || coverage.isFetching;
   const areas = coverage.data?.data || [];
   const districts = new Set(
     areas.map((a) => a.district.trim().toLowerCase()).filter(Boolean),
@@ -47,46 +50,65 @@ export function HomeNetworkStats() {
           {t("View coverage", "সেবার এলাকা দেখুন")}
         </Link>
       </div>
-      {coverage.isPending || coverage.isError ? (
+      <div className="home-network-grid" aria-busy={loading}>
+        {[
+          {
+            Icon: MapPin,
+            label: t("Districts in coverage", "সেবার আওতায় জেলা"),
+            value: districts.size,
+          },
+          {
+            Icon: PackageCheck,
+            label: t("Service areas", "সেবার এলাকা"),
+            value: areas.length,
+          },
+          {
+            Icon: Truck,
+            label: t("Pickup areas", "সংগ্রহের এলাকা"),
+            value: areas.filter((a) => a.pickupEnabled).length,
+          },
+          {
+            Icon: Navigation,
+            label: t("Delivery areas", "পৌঁছানোর এলাকা"),
+            value: areas.filter((a) => a.deliveryEnabled).length,
+          },
+        ].map(({ Icon, label, value }) => (
+          <article key={label} className="glass-panel home-network-card">
+            <Icon size={22} aria-hidden="true" />
+            <strong>
+              {hasData ? (
+                new Intl.NumberFormat(bn ? "bn-BD" : "en-BD").format(value)
+              ) : loading ? (
+                <Skeleton className="h-10 w-20" aria-hidden="true" />
+              ) : (
+                <>
+                  <span aria-hidden="true">—</span>
+                  <span className="sr-only">
+                    {t("Unavailable", "তথ্য পাওয়া যায়নি")}
+                  </span>
+                </>
+              )}
+            </strong>
+            <p>{label}</p>
+          </article>
+        ))}
+      </div>
+      {hasData && (loading || coverage.isError) && (
+        <p className="tool-caption" role="status">
+          {t(
+            "Showing the last successfully loaded coverage counts while updated data is unavailable.",
+            "নতুন তথ্য এখনো পাওয়া যায়নি; সর্বশেষ সফলভাবে আনা সেবার এলাকার সংখ্যা দেখানো হচ্ছে।",
+          )}
+        </p>
+      )}
+      {(loading || coverage.isError) && (
         <PublicDataState
-          pending={coverage.isPending}
+          pending={loading}
+          showSkeleton={false}
           retry={() => {
             void coverage.refetch();
           }}
         />
-      ) : (
-        <div className="home-network-grid">
-          {[
-            {
-              Icon: MapPin,
-              label: t("Districts in coverage", "সেবার আওতায় জেলা"),
-              value: districts.size,
-            },
-            {
-              Icon: PackageCheck,
-              label: t("Service areas", "সেবার এলাকা"),
-              value: areas.length,
-            },
-            {
-              Icon: Truck,
-              label: t("Pickup areas", "সংগ্রহের এলাকা"),
-              value: areas.filter((a) => a.pickupEnabled).length,
-            },
-            {
-              Icon: Navigation,
-              label: t("Delivery areas", "পৌঁছানোর এলাকা"),
-              value: areas.filter((a) => a.deliveryEnabled).length,
-            },
-          ].map(({ Icon, label, value }) => (
-            <article key={label} className="glass-panel home-network-card">
-              <Icon size={22} aria-hidden="true" />
-              <strong>
-                {new Intl.NumberFormat(bn ? "bn-BD" : "en-BD").format(value)}
-              </strong>
-              <p>{label}</p>
-            </article>
-          ))}
-        </div>
       )}
     </section>
   );

@@ -7,9 +7,11 @@ import { Button } from "@/components/ui/button";
 export default function PublicDataState({
   pending,
   retry,
+  showSkeleton = true,
 }: {
   pending: boolean;
   retry: () => void;
+  showSkeleton?: boolean;
 }) {
   const bn = useLocale() === "bn";
   const [slow, setSlow] = useState(false);
@@ -34,7 +36,7 @@ export default function PublicDataState({
             ? "সার্ভার থেকে তথ্য আনা যায়নি।"
             : "Service information could not be loaded."}
       </p>
-      {pending && (
+      {pending && showSkeleton && (
         <div aria-hidden="true" className="public-state-skeleton">
           <Skeleton className="h-11" />
           <Skeleton className="h-11" />

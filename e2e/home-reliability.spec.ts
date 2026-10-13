@@ -113,6 +113,170 @@ test("slow service coverage keeps skeletons then offers retry without invented p
     page.getByRole("combobox", { name: "Pickup area", exact: true }),
   ).toBeVisible();
 });
+for (const locale of ["en", "bn"]) {
+  test(`coverage stat cards stay visible during cold start, failure and retry (${locale})`, async ({
+    page,
+  }, info) => {
+    await fixture(page);
+    await page.setViewportSize({
+      width: locale === "bn" ? 360 : 1366,
+      height: 900,
+    });
+    let release!: () => void;
+    let gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let fail = true;
+    await page.route("**/api/backend/operations/coverage", async (route) => {
+      await gate;
+      await route.fulfill(
+        fail
+          ? { status: 503, json: { success: false } }
+          : { json: { success: true, data: areas } },
+      );
+    });
+    await page.goto(`/${locale}`);
+    const stats = page.locator(".home-network-section");
+    await expect(stats.locator(".home-network-card")).toHaveCount(4);
+    await expect(
+      stats.locator(".home-network-card [data-slot=skeleton]"),
+    ).toHaveCount(4);
+    await expect(stats.locator(".home-network-grid")).toHaveAttribute(
+      "aria-busy",
+      "true",
+    );
+    await expect(stats.locator(".tool-caption")).toContainText(
+      locale === "bn" ? "সার্ভার চালু হতে সময়" : "The server may be starting up",
+      { timeout: 9000 },
+    );
+    await stats.screenshot({
+      path: info.outputPath(`stats-loading-${locale}.png`),
+    });
+    release();
+    await expect(stats.getByRole("alert")).toBeVisible();
+    await expect(stats.locator("strong > span[aria-hidden=true]")).toHaveText([
+      "—",
+      "—",
+      "—",
+      "—",
+    ]);
+    await expect(stats.locator("[data-slot=skeleton]")).toHaveCount(0);
+    await stats.screenshot({
+      path: info.outputPath(`stats-error-${locale}.png`),
+    });
+    fail = false;
+    gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await stats
+      .getByRole("button", {
+        name: locale === "bn" ? "আবার চেষ্টা করুন" : "Try again",
+        exact: true,
+      })
+      .click();
+    await expect(
+      stats.locator(".home-network-card [data-slot=skeleton]"),
+    ).toHaveCount(4);
+    await expect(stats.getByRole("button")).toHaveCount(0);
+    release();
+    await expect(stats.locator("strong")).toHaveText(
+      locale === "bn" ? ["১", "২", "১", "২"] : ["1", "2", "1", "2"],
+    );
+    await expect(stats.locator(".public-data-state")).toHaveCount(0);
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth + 1,
+        ),
+      )
+      .toBe(true);
+  });
+}
+test("coverage timeout leaves stat labels, unavailable values and a retry action", async ({
+  page,
+}) => {
+  await fixture(page);
+  await page.route("**/api/backend/operations/coverage", () => {});
+  await page.goto("/en");
+  const stats = page.locator(".home-network-section");
+  await expect(stats.getByRole("alert")).toBeVisible({ timeout: 20000 });
+  await expect(stats.locator(".home-network-card")).toHaveCount(4);
+  await expect(stats.locator("strong > span[aria-hidden=true]")).toHaveText([
+    "—",
+    "—",
+    "—",
+    "—",
+  ]);
+  await expect(
+    stats.getByRole("button", { name: "Try again", exact: true }),
+  ).toBeVisible();
+});
+test("invalid coverage payload cannot display invented zero counts", async ({
+  page,
+}) => {
+  await fixture(page);
+  await page.route("**/api/backend/operations/coverage", (route) =>
+    route.fulfill({ json: { success: true, data: null } }),
+  );
+  await page.goto("/en");
+  const stats = page.locator(".home-network-section");
+  await expect(stats.getByRole("alert")).toBeVisible();
+  await expect(stats.locator("strong > span[aria-hidden=true]")).toHaveText([
+    "—",
+    "—",
+    "—",
+    "—",
+  ]);
+});
+test("empty approved coverage returns genuine zero counts", async ({
+  page,
+}) => {
+  await fixture(page);
+  await page.route("**/api/backend/operations/coverage", (route) =>
+    route.fulfill({ json: { success: true, data: [] } }),
+  );
+  await page.goto("/en");
+  await expect(page.locator(".home-network-card strong")).toHaveText([
+    "0",
+    "0",
+    "0",
+    "0",
+  ]);
+  await expect(
+    page.locator(".home-network-section .public-data-state"),
+  ).toHaveCount(0);
+});
+test("a failed refresh retains real cached counts with an explicit last-loaded notice", async ({
+  page,
+}) => {
+  await fixture(page);
+  await page.clock.install();
+  await page.goto("/en");
+  await expect(page.locator(".home-network-card strong")).toHaveText([
+    "1",
+    "2",
+    "1",
+    "2",
+  ]);
+  await page.clock.setFixedTime(new Date(Date.now() + 61000));
+  await page.route("**/api/backend/operations/coverage", (route) =>
+    route.fulfill({ status: 503, json: { success: false } }),
+  );
+  await page
+    .locator(".home-network-section")
+    .getByRole("link", { name: "View coverage", exact: true })
+    .click();
+  await expect(page.getByRole("alert").first()).toContainText(
+    "Service information could not be loaded.",
+  );
+  await page.goBack();
+  const stats = page.locator(".home-network-section");
+  await expect(stats.getByRole("alert")).toBeVisible();
+  await expect(stats.locator("strong")).toHaveText(["1", "2", "1", "2"]);
+  await expect(stats.getByRole("status")).toContainText(
+    "last successfully loaded coverage counts",
+  );
+});
 test("footer contact actions use configured details and support is not listed as a service", async ({
   page,
 }) => {
