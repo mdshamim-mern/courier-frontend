@@ -10,7 +10,7 @@
 
 ## Gemini configuration
 
-Set `GEMINI_API_KEY` in the **frontend** server environment (Vercel Production and Preview), then redeploy. Never use a `NEXT_PUBLIC_` prefix. `GEMINI_MODEL` defaults to `gemini-3.8-flash`; set it to a model available to the configured Google project if needed. See Google's [current model documentation](https://ai.google.dev/gemini-api/docs/models) and [REST API reference](https://ai.google.dev/api/generate-content).
+Set `GEMINI_API_KEY` in the **frontend** server environment (Vercel Production and Preview), then redeploy. Never use a `NEXT_PUBLIC_` prefix. `GEMINI_MODEL` defaults to `gemini-3.5-flash-lite`; set it to a model available to the configured Google project if needed. See Google's [current model documentation](https://ai.google.dev/gemini-api/docs/models) and [REST API reference](https://ai.google.dev/api/generate-content).
 
 Two distinct features use Gemini: `/en/assistant` (or `/bn/assistant`) answers courier support questions; customer/admin overviews generate delivery insights from current authorized aggregate shipment status counts. Both require a signed-in account. The backend `/api/v1/ai/context` enforces a shared Redis quota of 15 requests per user per hour and actor-scoped aggregation. No individual recipient records are sent to Gemini. Questions are sent to Google only on explicit submission.
 

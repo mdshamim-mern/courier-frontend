@@ -87,7 +87,7 @@ export async function POST(request: Request) {
       );
     const context = contextSchema.parse(await contextResponse.json());
     stage = "provider";
-    const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+    const model = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
     if (!/^[a-zA-Z0-9.-]+$/.test(model))
       return reply("Service unavailable", 503);
     const response = await fetch(
