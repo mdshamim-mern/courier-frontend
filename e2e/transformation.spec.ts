@@ -64,9 +64,10 @@ test("public service details and mobile hero remain usable", async ({
   await setSession(page, "GUEST");
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/en");
-  const hero = await page.locator(".hero-panel").boundingBox();
-  expect(hero!.height).toBeGreaterThanOrEqual(844 * 0.6 - 2);
-  expect(hero!.height).toBeLessThanOrEqual(844 * 0.7 + 2);
+  await expect.poll(async () => {
+    const hero = await page.locator(".hero-panel").boundingBox();
+    return !!hero && hero.height >= 844 * 0.6 - 2 && hero.height <= 844 * 0.7 + 2;
+  }).toBe(true);
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,
