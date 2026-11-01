@@ -18,11 +18,11 @@ test("coverage combines filters, sorts, paginates and opens public details", asy
   );
   await page.goto("/en/coverage");
   await expect(page.locator(".coverage-area-card")).toHaveCount(8);
-  await page.getByLabel("District", { exact: true }).selectOption("Dhaka");
-  await page.getByLabel("Pickup", { exact: true }).selectOption("true");
-  await page.getByLabel("Delivery", { exact: true }).selectOption("true");
+  await page.getByRole("combobox", { name: "District", exact: true }).selectOption("Dhaka");
+  await page.getByRole("combobox", { name: "Pickup", exact: true }).selectOption("true");
+  await page.getByRole("combobox", { name: "Delivery", exact: true }).selectOption("true");
   await expect(page.locator(".coverage-area-card")).toHaveCount(6);
-  await page.getByLabel("Sort by name").selectOption("desc");
+  await page.getByRole("combobox", { name: "Sort by name", exact: true }).selectOption("desc");
   await expect(page.locator(".coverage-area-card h2").first()).toHaveText(
     "Area 10",
   );
