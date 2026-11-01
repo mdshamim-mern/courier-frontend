@@ -8,7 +8,7 @@ import PublicDataState from "./public-data-state";
 import { placeName, placeSearch } from "@/i18n/geography";
 import QuoteCalculator from "./quote-calculator";
 import TablePagination from "@/components/ui/table-pagination";
-import Image from "next/image";
+import AreaPhoto from "./area-photo";
 export default function CoverageList() {
   const locale = useLocale(),
     bn = locale === "bn",
@@ -168,16 +168,7 @@ export default function CoverageList() {
             className="glass-panel info-card coverage-area-card space-y-5 p-6"
             key={area.id}
           >
-            <Image
-              src="/service-area.svg"
-              alt={t(
-                "Parcel delivery network illustration",
-                "পার্সেল ডেলিভারি নেটওয়ার্কের চিত্র",
-              )}
-              width={400}
-              height={220}
-              className="w-full rounded-xl"
-            />
+            <AreaPhoto name={area.name} locale={locale} />
             <span className="icon-tile">
               <MapPin aria-hidden="true" />
             </span>

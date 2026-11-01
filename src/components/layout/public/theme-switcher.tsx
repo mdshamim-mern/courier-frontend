@@ -2,6 +2,7 @@
 
 import { useLocale } from "next-intl";
 import { useEffect, useState } from "react";
+import { Moon, Sun } from "lucide-react";
 
 export default function ThemeSwitcher() {
   const bn = useLocale() === "bn";
@@ -22,7 +23,7 @@ export default function ThemeSwitcher() {
   return (
     <button
       type="button"
-      className="language-button"
+      className="language-button header-preference theme-switcher"
       aria-pressed={dark}
       onClick={() => {
         const next = !dark;
@@ -34,7 +35,20 @@ export default function ThemeSwitcher() {
         } catch {}
       }}
     >
-      {bn ? (dark ? "লাইট মোড" : "ডার্ক মোড") : dark ? "Light mode" : "Dark mode"}
+      {dark ? (
+        <Sun size={17} aria-hidden="true" />
+      ) : (
+        <Moon size={17} aria-hidden="true" />
+      )}
+      <span>
+        {bn
+          ? dark
+            ? "লাইট মোড"
+            : "ডার্ক মোড"
+          : dark
+            ? "Light mode"
+            : "Dark mode"}
+      </span>
     </button>
   );
 }

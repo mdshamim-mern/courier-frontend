@@ -4,7 +4,7 @@ import { usePublicCoverage } from "@/hooks/use-public-coverage";
 import { placeName } from "@/i18n/geography";
 import { Link } from "@/i18n/navigation";
 import PublicDataState from "./public-data-state";
-import Image from "next/image";
+import AreaPhoto from "./area-photo";
 
 export default function CoverageDetail({ id }: { id: string }) {
   const locale = useLocale(),
@@ -46,13 +46,7 @@ export default function CoverageDetail({ id }: { id: string }) {
             {placeName(area.upazila, locale)}
           </p>
         </div>
-        <Image
-          src="/service-area.svg"
-          alt={t("Delivery network illustration", "ডেলিভারি নেটওয়ার্কের চিত্র")}
-          width={400}
-          height={220}
-          className="w-full rounded-xl"
-        />
+        <AreaPhoto name={area.name} locale={locale} />
       </header>
       <section className="glass-panel space-y-4 p-6">
         <h2 className="text-2xl font-semibold">{t("Overview", "পরিচিতি")}</h2>

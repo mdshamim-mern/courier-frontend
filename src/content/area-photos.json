@@ -1,0 +1,83 @@
+{
+  "Dhanmondi": {
+    "src": "/areas/dhanmondi.webp",
+    "caption": "Dhanmondi Lake",
+    "captionBn": "ধানমন্ডি লেক",
+    "author": "FahadShovon",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Dhanmondi_Lake_at_road-5_Dhanmondi,Dhaka,_Bangladesh.jpg"
+  },
+  "Gulshan": {
+    "src": "/areas/gulshan.webp",
+    "caption": "Gulshan Lake",
+    "captionBn": "গুলশান লেক",
+    "author": "Jubair Bin Iqbal",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Gulshan_Lake_Dhaka.jpg"
+  },
+  "Mirpur": {
+    "src": "/areas/mirpur.webp",
+    "caption": "Mirpur DOHS",
+    "captionBn": "মিরপুর ডিওএইচএস",
+    "author": "ASaber91",
+    "license": "CC BY 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Mirpur_DOHS_(26088794555).jpg"
+  },
+  "Uttara": {
+    "src": "/areas/uttara.webp",
+    "caption": "Uttara, Dhaka",
+    "captionBn": "উত্তরা, ঢাকা",
+    "author": "ASaber91",
+    "license": "CC BY 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Uttara,_Dhaka_(32949924072).jpg"
+  },
+  "Mohammadpur": {
+    "src": "/areas/mohammadpur.webp",
+    "caption": "Sat Gambuj Mosque, Mohammadpur",
+    "captionBn": "সাত গম্বুজ মসজিদ, মোহাম্মদপুর",
+    "author": "Shafiul Islam Shaikot",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Sat_gambuj_mosque.jpg"
+  },
+  "Bogura Sadar": {
+    "src": "/areas/bogura-sadar.webp",
+    "caption": "Gokul Medh, Bogura",
+    "captionBn": "গোকুল মেধ, বগুড়া",
+    "author": "Shams5627",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Gokul_Medh.jpg"
+  },
+  "Shibganj": {
+    "src": "/areas/shibganj.webp",
+    "caption": "Mahasthangarh, Shibganj",
+    "captionBn": "মহাস্থানগড়, শিবগঞ্জ",
+    "author": "Masum-al-hasan",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Mahasthangarh.jpg"
+  },
+  "Savar — Birulia": {
+    "src": "/areas/savar-birulia.webp",
+    "caption": "Birulia Bridge, Savar",
+    "captionBn": "বিরুলিয়া সেতু, সাভার",
+    "author": "আদিব এহসান",
+    "license": "CC BY-SA 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:%E0%A6%AC%E0%A6%BF%E0%A6%B0%E0%A7%81%E0%A6%B2%E0%A6%BF%E0%A6%AF%E0%A6%BC%E0%A6%BE_%E0%A6%B8%E0%A7%87%E0%A6%A4%E0%A7%81,_%E0%A6%B8%E0%A6%BE%E0%A6%AD%E0%A6%BE%E0%A6%B0.jpg"
+  },
+  "Savar — Dattapara": {
+    "src": "/areas/savar-dattapara.webp",
+    "caption": "Savar landmark · National Martyrs’ Memorial",
+    "captionBn": "সাভারের দর্শনীয় স্থান · জাতীয় স্মৃতিসৌধ",
+    "author": "SM Mostafijur Rahman Nasim",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:National_Martyrs%27_Memorial_in_Savar.jpg"
+  }
+}

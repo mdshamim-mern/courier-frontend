@@ -86,7 +86,7 @@ export default function Header() {
   const language = (
     <button
       type="button"
-      className="language-button"
+      className="language-button header-preference"
       aria-label={t("switchLanguage")}
       onClick={() =>
         router.replace(
@@ -104,9 +104,6 @@ export default function Header() {
       <ThemeSwitcher />
       {!isLoading && !user && (
         <>
-          <Link className="account-link" href="/login">
-            {t("login")}
-          </Link>
           <Link className="brand-button header-register" href="/register">
             {t("register")}
             <ArrowUpRight size={15} aria-hidden="true" />

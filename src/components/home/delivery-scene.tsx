@@ -48,7 +48,14 @@ export default function DeliveryScene() {
           <stop offset="1" stopColor="#F8F3FF" stopOpacity="0" />
         </radialGradient>
       </defs>
-      <ellipse cx="290" cy="220" rx="245" ry="170" fill={`url(#${id}halo)`} />
+      <ellipse
+        className="delivery-halo"
+        cx="290"
+        cy="220"
+        rx="245"
+        ry="170"
+        fill={`url(#${id}halo)`}
+      />
       <ellipse
         cx="294"
         cy="316"
