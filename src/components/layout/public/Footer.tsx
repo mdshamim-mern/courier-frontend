@@ -1,17 +1,17 @@
-import { useLocale } from "next-intl";
-import { Link } from "@/i18n/navigation";
-import { useUiText } from "@/i18n/use-ui-text";
-import Logo from "@/assets/svg/Logo";
 import {
   ArrowUpRight,
-  PackageCheck,
-  ScanLine,
-  Phone,
   Mail,
   MapPin,
+  PackageCheck,
+  Phone,
+  ScanLine,
 } from "lucide-react";
-import { legalOperator } from "@/content/legal";
+import { useLocale } from "next-intl";
+import Logo from "@/assets/svg/Logo";
 import DeliveryScene from "@/components/home/delivery-scene";
+import { legalOperator } from "@/content/legal";
+import { Link } from "@/i18n/navigation";
+import { useUiText } from "@/i18n/use-ui-text";
 import BackToTop from "./back-to-top";
 
 const groups = [
@@ -47,6 +47,7 @@ const groups = [
       { href: "/terms", label: "Terms of Service" },
       { href: "/cookies", label: "Cookie Policy" },
       { href: "/faq", label: "FAQ" },
+      { href: "/assistant", label: "AI support" },
       { href: "/contact", label: "Contact and delivery information" },
     ],
   },
@@ -123,6 +124,30 @@ export default function Footer() {
                   {legalOperator.address}
                 </p>
               </address>
+              <nav
+                aria-label={t(
+                  "Social and messaging links",
+                  "সামাজিক মাধ্যম ও যোগাযোগ",
+                )}
+                className="flex flex-wrap gap-3 text-sm"
+              >
+                {[
+                  ["GitHub", "https://github.com/mdshamim-mern"],
+                  ["Facebook", "https://www.facebook.com/share/1HJb2Cwxvt/"],
+                  ["WhatsApp", "https://wa.me/8801865190471"],
+                  ["Telegram", "https://t.me/md_shamim71"],
+                ].map(([label, href]) => (
+                  <a
+                    key={label}
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-link underline-offset-4 hover:underline"
+                  >
+                    {label}
+                  </a>
+                ))}
+              </nav>
               <Link className="text-link" href="/contact">
                 {t("Talk to our team", "আমাদের দলের সঙ্গে যোগাযোগ")}
                 <ArrowUpRight size={16} aria-hidden="true" />

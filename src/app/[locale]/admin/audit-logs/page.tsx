@@ -30,7 +30,14 @@ export default function AuditLogsPage() {
     t = useAdminText();
   const [page, setPage] = useUrlState("page", 1),
     [selected, setSelected] = useState<AuditLog | null>(null);
-  const result = useGetAuditLogs({ page, limit: 10 });
+  const [action, setAction] = useUrlState("action", "");
+  const [entityType, setEntityType] = useUrlState("entityType", "");
+  const result = useGetAuditLogs({
+    page,
+    limit: 10,
+    action: action || undefined,
+    entityType: entityType || undefined,
+  });
   return (
     <div className="space-y-6">
       <AdminPageHeader
@@ -47,6 +54,24 @@ export default function AuditLogsPage() {
           />
         }
       />
+      <div className="glass-panel grid gap-4 p-5 sm:grid-cols-2">
+        <label>
+          {t("Filter by exact action", "নির্দিষ্ট কাজের নামে ফিল্টার")}
+          <input
+            value={action}
+            onChange={(e) => setAction(e.target.value)}
+            className="mt-2 h-12 w-full rounded-xl border bg-background px-3"
+          />
+        </label>
+        <label>
+          {t("Filter by exact entity type", "নির্দিষ্ট তথ্যের ধরনে ফিল্টার")}
+          <input
+            value={entityType}
+            onChange={(e) => setEntityType(e.target.value)}
+            className="mt-2 h-12 w-full rounded-xl border bg-background px-3"
+          />
+        </label>
+      </div>
       {result.isError ? (
         <AdminFeedback error={result.error} />
       ) : (

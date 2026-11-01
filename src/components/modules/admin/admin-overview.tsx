@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AdminShortcut, RefreshButton, useAdminText } from "./admin-ui";
 import styles from "./admin.module.css";
 import AnalyticsCharts from "./analytics-charts";
+import Assistant from "@/components/ai/assistant";
 
 export default function AdminOverview() {
   const ui = useUiText();
@@ -114,6 +115,7 @@ export default function AdminOverview() {
         </Card>
       </div>
       <AnalyticsCharts stats={stats} />
+      <Assistant mode="insights" />
       <div className={styles.shortcuts}>
         <AdminShortcut
           href="/admin/operations"

@@ -16,6 +16,8 @@ import { Link } from "@/i18n/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { getCourierHistoryAndEarnings } from "@/api";
 import CourierRefresh from "@/components/modules/courier/courier-refresh";
+import { useUrlState } from "@/hooks/use-url-state";
+import TablePagination from "@/components/ui/table-pagination";
 
 export default function EarningsPage() {
   const queryClient = useQueryClient();
@@ -32,7 +34,15 @@ export default function EarningsPage() {
   const { data, isLoading, error, refetch, isFetching } =
     useGetCourierHistoryAndEarnings(courierId || "");
   const stats = data?.data;
-  const history = stats?.shipments?.slice(0, 6) || [];
+  const [search, setSearch] = useUrlState("search", "");
+  const [page, setPage] = useUrlState("page", 1);
+  const history = (stats?.shipments || []).filter((s) =>
+    `${s.trackingId} ${s.receiverName}`
+      .toLowerCase()
+      .includes(search.toLowerCase()),
+  );
+  const totalPages = Math.max(1, Math.ceil(history.length / 10));
+  const currentPage = Math.min(page, totalPages);
   return (
     <div className="space-y-6">
       <CourierPageHeader
@@ -128,6 +138,15 @@ export default function EarningsPage() {
                 {ui("My Deliveries")}
               </Link>
             </div>
+            <label className="block p-4">
+              {bn ? "ডেলিভারির ইতিহাস খুঁজুন" : "Search delivery history"}
+              <input
+                type="search"
+                className="mt-2 h-12 w-full rounded-xl border bg-background px-3"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </label>
             {!history.length ? (
               <EmptyStatePanel
                 title={
@@ -138,26 +157,35 @@ export default function EarningsPage() {
               />
             ) : (
               <div className={styles.history}>
-                {history.map((shipment) => (
-                  <div key={shipment.id} className={styles.historyRow}>
-                    <div>
-                      <Link
-                        href={"/courier/shipments/" + shipment.id}
-                        className="text-primary underline underline-offset-4"
-                      >
-                        <strong>{shipment.trackingId}</strong>
-                      </Link>
-                      <p className={styles.detail}>
-                        {shipment.receiverName} ·{" "}
-                        {display.date(shipment.createdAt)}
-                      </p>
+                {history
+                  .slice((currentPage - 1) * 10, currentPage * 10)
+                  .map((shipment) => (
+                    <div key={shipment.id} className={styles.historyRow}>
+                      <div>
+                        <Link
+                          href={"/courier/shipments/" + shipment.id}
+                          className="text-primary underline underline-offset-4"
+                        >
+                          <strong>{shipment.trackingId}</strong>
+                        </Link>
+                        <p className={styles.detail}>
+                          {shipment.receiverName} ·{" "}
+                          {display.date(shipment.createdAt)}
+                        </p>
+                      </div>
+                      <span className={styles.badge}>
+                        {ui(shipment.status)}
+                      </span>
                     </div>
-                    <span className={styles.badge}>{ui(shipment.status)}</span>
-                  </div>
-                ))}
+                  ))}
               </div>
             )}
           </section>
+          <TablePagination
+            page={currentPage}
+            totalPages={totalPages}
+            handlePageChange={setPage}
+          />
         </>
       )}
     </div>

@@ -42,10 +42,14 @@ export default function ShipmentHistory() {
   const [confirmCancelId, setConfirmCancelId] = useState("");
   const display = useUiFormat();
   const [page, setPage] = useUrlState("page", 1);
+  const [search, setSearch] = useUrlState("search", "");
+  const [status, setStatus] = useUrlState("status", "");
   const [selectedId, setSelectedId] = useState("");
   const { data, isPending, error, refetch } = useGetAllShipments({
     page,
     limit: 10,
+    searchTerm: search || undefined,
+    status: status || undefined,
   });
   const details = useGetSingleShipment(selectedId);
   const { mutate: cancel, isPending: canceling } = useCancelShipment();
@@ -62,9 +66,47 @@ export default function ShipmentHistory() {
         }}
       />
     );
-  if (isPending) return <DataSkeleton />;
   return (
     <div className="space-y-4">
+      <div className="glass-panel grid gap-4 p-5 sm:grid-cols-2">
+        <label>
+          {bn ? "পার্সেল খুঁজুন" : "Search shipments"}
+          <input
+            className="mt-2 h-12 w-full rounded-xl border bg-background px-3"
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </label>
+        <label>
+          {bn ? "অবস্থা" : "Status"}
+          <select
+            className="mt-2 h-12 w-full rounded-xl border bg-background px-3"
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+          >
+            <option value="">{bn ? "সব" : "All"}</option>
+            {[
+              "PENDING",
+              "ASSIGNED",
+              "PICKED_UP",
+              "AT_ORIGIN_HUB",
+              "IN_TRANSIT",
+              "AT_DESTINATION_HUB",
+              "OUT_FOR_DELIVERY",
+              "DELIVERED",
+              "DELIVERY_FAILED",
+              "CANCELLED",
+              "RETURNED",
+            ].map((s) => (
+              <option key={s} value={s}>
+                {ui(s.replaceAll("_", " "))}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      {isPending && <DataSkeleton />}
       <div className="customer-table rounded-md border bg-card">
         <p className="p-4 text-xs text-muted-foreground sm:hidden">
           {ui("Actions")} →

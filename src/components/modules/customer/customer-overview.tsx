@@ -11,6 +11,7 @@ import QueryError from "@/components/ui/query-error";
 import { Link } from "@/i18n/navigation";
 import { useLocale } from "next-intl";
 import CourierRefresh from "../courier/courier-refresh";
+import Assistant from "@/components/ai/assistant";
 
 export default function CustomerOverview() {
   const ui = useUiText();
@@ -103,6 +104,7 @@ export default function CustomerOverview() {
           ))}
         </div>
       </section>
+      <Assistant mode="insights" />
     </div>
   );
 }

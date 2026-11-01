@@ -4,6 +4,8 @@ import type { DashboardStats } from "@/types";
 import { useUiText, useUiFormat } from "@/i18n/use-ui-text";
 import { useLocale } from "next-intl";
 import { EmptyStatePanel } from "@/components/ui/empty-state-panel";
+import { useState } from "react";
+import TablePagination from "@/components/ui/table-pagination";
 
 export default function AnalyticsCharts({ stats }: { stats: DashboardStats }) {
   const bn = useLocale() === "bn",
@@ -15,6 +17,13 @@ export default function AnalyticsCharts({ stats }: { stats: DashboardStats }) {
   }));
   const maximum = Math.max(1, ...rows.map((row) => row.count));
   const months = stats.monthlyRevenue || [];
+  const [monthFilter, setMonthFilter] = useState("");
+  const [tablePage, setTablePage] = useState(1);
+  const filteredMonths = months.filter((row) =>
+    row.month.includes(monthFilter),
+  );
+  const totalPages = Math.max(1, Math.ceil(filteredMonths.length / 3));
+  const currentPage = Math.min(tablePage, totalPages);
   const maximumRevenue = Math.max(1, ...months.map((row) => row.amount));
   return (
     <section className="grid gap-5 xl:grid-cols-2">
@@ -113,6 +122,18 @@ export default function AnalyticsCharts({ stats }: { stats: DashboardStats }) {
               <summary className="cursor-pointer text-primary">
                 {bn ? "হিসাবের তালিকা দেখুন" : "View accessible data table"}
               </summary>
+              <label className="mt-3 block">
+                {bn ? "মাস খুঁজুন (YYYY-MM)" : "Filter month (YYYY-MM)"}
+                <input
+                  type="search"
+                  value={monthFilter}
+                  onChange={(e) => {
+                    setMonthFilter(e.target.value);
+                    setTablePage(1);
+                  }}
+                  className="mt-2 h-11 w-full rounded-xl border bg-background px-3"
+                />
+              </label>
               <table className="mt-3 w-full">
                 <thead>
                   <tr>
@@ -121,14 +142,26 @@ export default function AnalyticsCharts({ stats }: { stats: DashboardStats }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {months.map((row) => (
-                    <tr key={row.month}>
-                      <th scope="row">{row.month}</th>
-                      <td>{display.money(row.amount)}</td>
-                    </tr>
-                  ))}
+                  {filteredMonths
+                    .slice((currentPage - 1) * 3, currentPage * 3)
+                    .map((row) => (
+                      <tr key={row.month}>
+                        <th scope="row">{row.month}</th>
+                        <td>{display.money(row.amount)}</td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
+              {!filteredMonths.length && (
+                <p role="status">
+                  {bn ? "মিলে যাওয়া মাস নেই।" : "No matching months."}
+                </p>
+              )}
+              <TablePagination
+                page={currentPage}
+                totalPages={totalPages}
+                handlePageChange={setTablePage}
+              />
             </details>
           </>
         )}

@@ -43,7 +43,7 @@ async function fixture(page: Page) {
     return route.fulfill({ json: { success: true, data } });
   });
 }
-test("home uses actual coverage counts and current API quote; reviews stay labelled demo", async ({
+test("home uses actual coverage counts and current API quote without dummy reviews", async ({
   page,
 }) => {
   await fixture(page);
@@ -60,12 +60,8 @@ test("home uses actual coverage counts and current API quote; reviews stay label
   await expect(page.locator(".home-example-amount")).toContainText(
     "Dhanmondi → Mirpur",
   );
-  await expect(page.locator(".sample-review-badge")).toHaveCount(3);
-  for (const badge of await page.locator(".sample-review-badge").all())
-    await expect(badge).toHaveText("Sample review · Demo");
-  await expect(page.locator(".home-sample-reviews")).toContainText(
-    "not verified customer reviews",
-  );
+  await expect(page.locator(".sample-review-badge")).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Prepare your parcel" })).toBeVisible();
   await expect(page.locator('input[name="trackingId"]')).toHaveAttribute(
     "placeholder",
     "TRK-12345",

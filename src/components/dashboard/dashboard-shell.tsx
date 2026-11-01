@@ -8,6 +8,7 @@ import { DashboardSidebar } from "./dashboard-sidebar";
 import { useUiText } from "@/i18n/use-ui-text";
 import type { ReactNode } from "react";
 import type { UserRole } from "@/types";
+import AccountMenu from "./account-menu";
 export default function DashboardShell({
   children,
   userRole,
@@ -25,6 +26,7 @@ export default function DashboardShell({
           <span className="text-sm font-medium text-muted-foreground">
             {ui("Dashboard")}
           </span>
+          <AccountMenu />
         </header>
         <div className="dashboard-content">{children}</div>
       </SidebarInset>

@@ -2,6 +2,8 @@
 import { useLocale } from "next-intl";
 import type { ReactNode } from "react";
 import type { Collection, OperationsMine } from "@/types/operations.type";
+import { useUrlState } from "@/hooks/use-url-state";
+import TablePagination from "@/components/ui/table-pagination";
 export default function CollectionTable({
   records,
   totals,
@@ -22,6 +24,18 @@ export default function CollectionTable({
     RECEIVED: bn ? "প্রতিষ্ঠান গ্রহণ করেছে" : "Received by operator",
     PAID: bn ? "ব্যবসায়ীকে দেওয়া হয়েছে" : "Paid to merchant",
   };
+  const [search, setSearch] = useUrlState("search", "");
+  const [status, setStatus] = useUrlState("status", "");
+  const [page, setPage] = useUrlState("page", 1);
+  const filtered = records.filter(
+    (r) =>
+      (!status || r.status === status) &&
+      `${r.shipmentId} ${r.receiptReference || ""} ${r.payoutReference || ""}`
+        .toLowerCase()
+        .includes(search.toLowerCase()),
+  );
+  const totalPages = Math.max(1, Math.ceil(filtered.length / 10));
+  const currentPage = Math.min(page, totalPages);
   return (
     <section className="space-y-4">
       <div className="ledger-heading">
@@ -62,55 +76,91 @@ export default function CollectionTable({
           ))}
         </div>
       )}
-      {!records.length && (
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label>
+          {bn ? "হিসাব খুঁজুন" : "Search collections"}
+          <input
+            type="search"
+            className="mt-2 h-12 w-full rounded-xl border bg-background px-3"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </label>
+        <label>
+          {bn ? "অবস্থা" : "Status"}
+          <select
+            className="mt-2 h-12 w-full rounded-xl border bg-background px-3"
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+          >
+            <option value="">{bn ? "সব" : "All"}</option>
+            {Object.entries(captions).map(([key, label]) => (
+              <option value={key} key={key}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      {!filtered.length && (
         <p>
           {bn ? "এখনো কোনো সংগ্রহের হিসাব নেই।" : "No cash collections recorded."}
         </p>
       )}
       <div className="grid gap-4 sm:grid-cols-2">
-        {records.map((record) => (
-          <article key={record.id} className="space-y-2 rounded-xl border p-4">
-            <p className="break-all text-sm">
-              {bn ? "পার্সেল: " : "Shipment: "}
-              {record.shipmentId}
-            </p>
-            <p>
-              {bn ? "সংগৃহীত: " : "Collected: "}
-              {money(record.amount)}
-            </p>
-            <p>
-              {bn ? "সংগ্রহের মাশুল: " : "Handling fee: "}
-              {money(record.fee)}
-            </p>
-            <p>
-              {bn ? "ব্যবসায়ীর পাওনা: " : "Merchant payable: "}
-              {money(record.payable)}
-            </p>
-            <p>{captions[record.status] || record.status}</p>
-            {record.createdAt && (
-              <p>
-                {bn ? "সংগ্রহের সময়: " : "Collection time: "}
-                {new Intl.DateTimeFormat(bn ? "bn-BD" : "en-GB", {
-                  dateStyle: "medium",
-                  timeStyle: "short",
-                }).format(new Date(record.createdAt))}
+        {filtered
+          .slice((currentPage - 1) * 10, currentPage * 10)
+          .map((record) => (
+            <article
+              key={record.id}
+              className="space-y-2 rounded-xl border p-4"
+            >
+              <p className="break-all text-sm">
+                {bn ? "পার্সেল: " : "Shipment: "}
+                {record.shipmentId}
               </p>
-            )}
-            {record.receiptReference && (
               <p>
-                {bn ? "গ্রহণের রসিদ: " : "Cash receipt: "}
-                {record.receiptReference}
+                {bn ? "সংগৃহীত: " : "Collected: "}
+                {money(record.amount)}
               </p>
-            )}
-            {record.payoutReference && (
               <p>
-                {bn ? "টাকা দেওয়ার প্রমাণ: " : "Payout reference: "}
-                {record.payoutReference}
+                {bn ? "সংগ্রহের মাশুল: " : "Handling fee: "}
+                {money(record.fee)}
               </p>
-            )}
-          </article>
-        ))}
+              <p>
+                {bn ? "ব্যবসায়ীর পাওনা: " : "Merchant payable: "}
+                {money(record.payable)}
+              </p>
+              <p>{captions[record.status] || record.status}</p>
+              {record.createdAt && (
+                <p>
+                  {bn ? "সংগ্রহের সময়: " : "Collection time: "}
+                  {new Intl.DateTimeFormat(bn ? "bn-BD" : "en-GB", {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  }).format(new Date(record.createdAt))}
+                </p>
+              )}
+              {record.receiptReference && (
+                <p>
+                  {bn ? "গ্রহণের রসিদ: " : "Cash receipt: "}
+                  {record.receiptReference}
+                </p>
+              )}
+              {record.payoutReference && (
+                <p>
+                  {bn ? "টাকা দেওয়ার প্রমাণ: " : "Payout reference: "}
+                  {record.payoutReference}
+                </p>
+              )}
+            </article>
+          ))}
       </div>
+      <TablePagination
+        page={currentPage}
+        totalPages={totalPages}
+        handlePageChange={setPage}
+      />
       {records.length >= 200 && (
         <p>
           {bn

@@ -1,12 +1,13 @@
 "use client";
-import Logo from "@/assets/svg/Logo";
-import { Link, usePathname, useRouter } from "@/i18n/navigation";
-import { useLocale, useTranslations } from "next-intl";
-import { useGetMe, useLogout } from "@/hooks";
 import { useQueryClient } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import { ChevronDown, Globe2, Menu, ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, ChevronDown, Globe2, Menu } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef } from "react";
+import Logo from "@/assets/svg/Logo";
+import { Button } from "@/components/ui/button";
+import { useGetMe, useLogout } from "@/hooks";
+import { Link, usePathname, useRouter } from "@/i18n/navigation";
+import ThemeSwitcher from "./theme-switcher";
 
 export default function Header() {
   const locale = useLocale(),
@@ -100,6 +101,7 @@ export default function Header() {
   );
   const accounts = (
     <>
+      <ThemeSwitcher />
       {!isLoading && !user && (
         <>
           <Link className="account-link" href="/login">

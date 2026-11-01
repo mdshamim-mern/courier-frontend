@@ -23,9 +23,15 @@ export default function PaymentsPage() {
   const t = (en: string, bangla: string) => (bn ? bangla : en);
   const display = useUiFormat();
   const [page, setPage] = useUrlState("page", 1);
+  const [search, setSearch] = useUrlState("search", "");
+  const [status, setStatus] = useUrlState("status", "");
+  const [gateway, setGateway] = useUrlState("gateway", "");
   const { data, isLoading, isFetching, isError, refetch } = useGetPayments({
     page,
     limit: 10,
+    searchTerm: search || undefined,
+    status: status || undefined,
+    paymentGateway: gateway || undefined,
   });
   const payments = data?.data || [];
   const meta = data?.meta;
@@ -89,6 +95,44 @@ export default function PaymentsPage() {
       </section>
 
       <div className="customer-table rounded-md border bg-card">
+        <div className="grid gap-4 p-5 sm:grid-cols-3">
+          <label>
+            {t("Search transaction or tracking ID", "লেনদেন বা অনুসন্ধানসংখ্যা খুঁজুন")}
+            <input
+              type="search"
+              className="mt-2 h-12 w-full rounded-xl border bg-background px-3"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </label>
+          <label>
+            {t("Payment status", "অর্থপ্রদানের অবস্থা")}
+            <select
+              className="mt-2 h-12 w-full rounded-xl border bg-background px-3"
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+            >
+              <option value="">{t("All", "সব")}</option>
+              {["PAID", "UNPAID", "FAILED", "REFUNDED"].map((s) => (
+                <option key={s} value={s}>
+                  {ui(s)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            {t("Gateway", "পেমেন্ট মাধ্যম")}
+            <select
+              className="mt-2 h-12 w-full rounded-xl border bg-background px-3"
+              value={gateway}
+              onChange={(e) => setGateway(e.target.value)}
+            >
+              <option value="">{t("All", "সব")}</option>
+              <option value="STRIPE">Stripe</option>
+              <option value="BKASH">bKash</option>
+            </select>
+          </label>
+        </div>
         <div className="payment-ledger-heading">
           <div>
             <h2>{t("Transaction ledger", "লেনদেনের হিসাব")}</h2>

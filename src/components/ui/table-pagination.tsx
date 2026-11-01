@@ -58,7 +58,7 @@ export default function TablePagination({
 }: Props) {
   const ui = useUiText();
   const goToPage = (page: number) => {
-    handlePageChange(page);
+    if (page >= 1 && page <= totalPages) handlePageChange(page);
   };
 
   if (totalPages <= 1) {

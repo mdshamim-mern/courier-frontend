@@ -14,7 +14,7 @@ import DeliveryScene from "./delivery-scene";
 import TrackForm from "@/components/modules/shipment-tracking/track-form";
 import QuoteCalculator from "@/components/operations/quote-calculator";
 import { HomeNetworkStats, HomePricingExample } from "./home-network";
-import SampleReviews from "./sample-reviews";
+import MoreSections from "./more-sections";
 import DataSkeleton from "@/components/ui/data-skeleton";
 export default function ParcelHero() {
   const bn = useLocale() === "bn",
@@ -186,7 +186,7 @@ export default function ParcelHero() {
           })}
         </div>
       </section>
-      <SampleReviews />
+      <MoreSections />
       <section className="glass-panel home-team-panel">
         <div className="home-team-copy">
           <span className="icon-tile">

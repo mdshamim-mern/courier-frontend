@@ -16,7 +16,7 @@
   background:
     radial-gradient(ellipse at 94% 10%, rgb(181 139 230 / 32%), transparent 50%),
     radial-gradient(ellipse at 4% 95%, rgb(208 232 170 / 19%), transparent 45%),
-    linear-gradient(135deg, rgb(247 242 255 / 84%), rgb(255 255 255 / 72%));
+    var(--card);
   box-shadow:
     0 24px 70px rgb(74 35 109 / 7%),
     inset 0 1px 0 rgb(255 255 255 / 90%);
@@ -132,8 +132,8 @@
   border-radius: 1.65rem;
   background: linear-gradient(
     150deg,
-    rgb(255 255 255 / 80%),
-    rgb(248 240 255 / 50%)
+    var(--card),
+    color-mix(in srgb, var(--primary) 5%, var(--card))
   );
   box-shadow:
     0 18px 50px rgb(85 41 121 / 12%),
@@ -201,7 +201,7 @@
   border: 1px solid var(--border);
   border-radius: 1rem;
   color: var(--primary);
-  background: rgb(255 255 255 / 78%);
+  background: var(--card);
   box-shadow: 0 6px 14px rgb(85 41 121 / 4%);
 }
 .routeNode:last-child .routeIcon {
@@ -265,8 +265,8 @@
     box-shadow 180ms ease;
   background: linear-gradient(
     130deg,
-    rgb(255 255 255 / 80%),
-    rgb(249 244 255 / 52%)
+    var(--card),
+    color-mix(in srgb, var(--primary) 5%, var(--card))
   );
 }
 .stepCard:hover {
@@ -365,7 +365,7 @@
   padding: clamp(1.4rem, 3vw, 2.1rem);
   background:
     radial-gradient(ellipse at 0 100%, rgb(208 232 170 / 24%), transparent 60%),
-    linear-gradient(130deg, rgb(255 255 255 / 84%), rgb(237 223 255 / 45%));
+    var(--card);
 }
 .ctaCopy {
   display: flex;
@@ -381,7 +381,7 @@
   height: 56px;
   border-radius: 50%;
   color: var(--primary);
-  background: rgb(255 255 255 / 78%);
+  background: var(--card);
   border: 1px solid var(--border);
 }
 .cta h2 {
