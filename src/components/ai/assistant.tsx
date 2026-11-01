@@ -52,7 +52,7 @@ export default function Assistant({
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ mode, locale, question }),
-                signal: AbortSignal.timeout(45000),
+                signal: AbortSignal.timeout(60000),
               });
               const result = await response.json();
               if (!response.ok) throw new Error(result.message);

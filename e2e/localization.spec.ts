@@ -206,6 +206,15 @@ for (const locale of ["en", "bn"]) {
         );
         continue;
       }
+      if (href.startsWith("https://")) {
+        expect([
+          "https://github.com/mdshamim-mern",
+          "https://www.facebook.com/share/1HJb2Cwxvt/",
+          "https://wa.me/8801865190471",
+          "https://t.me/md_shamim71",
+        ]).toContain(href);
+        continue;
+      }
       expect(href).toMatch(new RegExp(`^/${locale}(?:/|#|$)`));
       const url = new URL(href, page.url());
       const response = await page.request.get(url.toString());
@@ -319,7 +328,7 @@ test("Bengali payment status and monetary amounts are localized", async ({
   await expect(
     page.getByRole("heading", { name: "অর্থপ্রদানের ইতিহাস" }),
   ).toBeVisible();
-  await expect(page.getByText("পরিশোধিত", { exact: true })).toBeVisible();
+  await expect(page.getByRole("table").getByText("পরিশোধিত", { exact: true })).toBeVisible();
   await expect(page.getByText("৳১২০.০০", { exact: true })).toBeVisible();
 });
 

@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+export const maxDuration = 60;
+
 const input = z.object({
   mode: z.enum(["support", "insights"]),
   locale: z.enum(["en", "bn"]),
@@ -53,6 +55,7 @@ export async function POST(request: Request) {
     process.env.NEXT_PUBLIC_API_BASE_URL ||
     process.env.NEXT_PUBLIC_API_URL;
   if (!base) return reply("Service unavailable", 503);
+  let stage = "context";
   try {
     const contextResponse = await fetch(
       `${base.replace(/\/$/, "")}/ai/context`,
@@ -83,6 +86,7 @@ export async function POST(request: Request) {
           : 503,
       );
     const context = contextSchema.parse(await contextResponse.json());
+    stage = "provider";
     const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
     if (!/^[a-zA-Z0-9.-]+$/.test(model))
       return reply("Service unavailable", 503);
@@ -114,7 +118,7 @@ export async function POST(request: Request) {
           ],
           generationConfig: { maxOutputTokens: 700, temperature: 0.3 },
         }),
-        signal: AbortSignal.timeout(25000),
+        signal: AbortSignal.timeout(40000),
       },
     );
     if (!response.ok)
@@ -124,6 +128,7 @@ export async function POST(request: Request) {
           : "AI is busy. Please try again shortly.",
         503,
       );
+    stage = "response";
     const result = await response.json();
     const answer = result.candidates?.[0]?.content?.parts
       ?.map((part: { text?: string }) => part.text || "")
@@ -140,12 +145,17 @@ export async function POST(request: Request) {
       { answer, generatedAt: context.data.generatedAt },
       { headers: { "Cache-Control": "private, no-store" } },
     );
-  } catch {
-    return reply(
-      body.locale === "bn"
-        ? "AI সেবা পাওয়া যায়নি। আবার চেষ্টা করুন।"
-        : "AI could not respond. Please try again.",
-      503,
+  } catch (error) {
+    const code = `${stage}_${error instanceof Error && error.name === "TimeoutError" ? "timeout" : "unavailable"}`;
+    return Response.json(
+      {
+        code,
+        message:
+          body.locale === "bn"
+            ? "AI সেবা পাওয়া যায়নি। আবার চেষ্টা করুন।"
+            : "AI could not respond. Please try again.",
+      },
+      { status: 503, headers: { "Cache-Control": "private, no-store" } },
     );
   }
 }

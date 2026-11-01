@@ -66,7 +66,7 @@ export default function MoreSections() {
         <p>
           {t(
             "Apply for a business account, save pickup details, upload parcel batches and follow recorded COD collections. Administrator approval is required before COD bookings.",
-            "ব্যবসায়িক হিসাবের আবেদন, সংগ্রহের তথ্য সংরক্ষণ, একসঙ্গে পার্সেল বুকিং ও নথিভুক্ত পণ্যের টাকা অনুসরণ করুন। COD বুকিংয়ের আগে প্রশাসকের অনুমোদন লাগে।",
+            "ব্যবসায়িক হিসাবের আবেদন, সংগ্রহের তথ্য সংরক্ষণ, একসঙ্গে পার্সেল বুকিং ও নথিভুক্ত পণ্যের টাকা অনুসরণ করুন। পণ্যের টাকা সংগ্রহের বুকিংয়ের আগে প্রশাসকের অনুমোদন লাগে।",
           )}
         </p>
         <Link className="secondary-button" href="/merchant-register">
@@ -91,7 +91,7 @@ export default function MoreSections() {
           ],
           [
             "Is product COD the delivery fee?",
-            "পণ্যের COD কি ডেলিভারি মাশুল?",
+            "সংগৃহীত পণ্যের মূল্য কি ডেলিভারি মাশুল?",
             "The delivery fee is paid online; product COD is the amount collected from the receiver for an approved business.",
             "ডেলিভারি মাশুল অনলাইনে পরিশোধ হয়। অনুমোদিত ব্যবসার পণ্যের মূল্য প্রাপকের কাছ থেকে সংগ্রহ করা হয়।",
           ],

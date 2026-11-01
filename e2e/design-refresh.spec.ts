@@ -114,7 +114,7 @@ for (const locale of ["en", "bn"]) {
     ).toBeVisible();
     await expect(
       page
-        .locator("select")
+        .locator(".coverage-estimate select")
         .first()
         .locator('option[value="' + areaId + '"]'),
     ).toContainText(display);
